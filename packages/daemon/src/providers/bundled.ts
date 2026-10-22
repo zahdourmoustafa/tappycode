@@ -26,6 +26,7 @@ import cursor_agent from "../../../../providers/cursor-agent.json" with { type: 
 import echo from "../../../../providers/echo.json" with { type: "json" };
 import gemini_cli from "../../../../providers/gemini-cli.json" with { type: "json" };
 import ggcoder from "../../../../providers/ggcoder.json" with { type: "json" };
+import ggcoder_app from "../../../../providers/ggcoder-app.json" with { type: "json" };
 import goose from "../../../../providers/goose.json" with { type: "json" };
 import hermes from "../../../../providers/hermes.json" with { type: "json" };
 import openclaw from "../../../../providers/openclaw.json" with { type: "json" };
@@ -41,6 +42,7 @@ export const BUNDLED_MANIFESTS: ProviderManifestInput[] = [
   echo as ProviderManifestInput,
   gemini_cli as ProviderManifestInput,
   ggcoder as ProviderManifestInput,
+  ggcoder_app as ProviderManifestInput,
   goose as ProviderManifestInput,
   hermes as ProviderManifestInput,
   openclaw as ProviderManifestInput,

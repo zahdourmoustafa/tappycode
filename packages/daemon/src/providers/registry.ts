@@ -11,6 +11,7 @@ import { statSync } from "node:fs";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { BUNDLED_MANIFESTS } from "./bundled.js";
+import { ggAppInstalled } from "../gg-app/installed.js";
 import {
   ProviderManifest,
   formatManifestError,
@@ -164,6 +165,41 @@ function canResolveCommand(command: string, env: NodeJS.ProcessEnv): boolean {
   return findOnPath(command, env) !== undefined;
 }
 
+/**
+ * Whether a provider's agent is on this machine. A CLI agent is a PATH lookup;
+ * the GG Coder app runs inside tappy itself, so for it "installed" means the
+ * desktop app is — otherwise every machine would offer an app it does not have.
+ */
+function agentInstalled(id: string, command: string, env: NodeJS.ProcessEnv): boolean {
+  if (id === "ggcoder-app") return ggAppInstalled(env);
+  return canResolveCommand(command, env);
+}
+
+/** True inside a `bun build --compile` binary, whose modules live in `$bunfs`. */
+function compiledBinary(): boolean {
+  return import.meta.url.includes("/$bunfs/");
+}
+
+/**
+ * A manifest command of exactly `tappy` means *this* tappy, never whatever
+ * `tappy` is on PATH — a provider such as the GG Coder app bridge runs inside
+ * tappy itself, and a PATH lookup could find a different version or nothing
+ * at all under launchd. A compiled binary is its own executable; a source
+ * checkout is bun running the CLI entry beside this file.
+ */
+export function resolveSelfCommand(
+  command: string,
+  args: string[],
+  compiled: boolean = compiledBinary(),
+): { command: string; args: string[] } {
+  if (command !== "tappy") return { command, args };
+  if (compiled) return { command: process.execPath, args };
+  return {
+    command: process.execPath,
+    args: [resolve(fileURLToPath(new URL("../cli/index.ts", import.meta.url))), ...args],
+  };
+}
+
 export interface LoadResult {
   providers: LoadedProvider[];
   /** Manifests that failed to parse or validate. Never throws — one bad file
@@ -224,7 +260,8 @@ function addManifest(
   if (seen.has(parsed.id)) return;
   seen.set(parsed.id, source);
 
-  const { command, args: rawArgs } = resolveCommand(parsed);
+  const resolved = resolveCommand(parsed);
+  const { command, args: rawArgs } = resolveSelfCommand(resolved.command, resolved.args);
   const args =
     parsed.distribution.type === "command"
       ? rawArgs.map((arg) => (/^\.{1,2}\//.test(arg) ? resolve(dirname(source), arg) : arg))
@@ -239,7 +276,7 @@ function addManifest(
     command,
     args,
     missingEnv,
-    commandMissing: !canResolveCommand(command, env),
+    commandMissing: !agentInstalled(parsed.id, command, env),
   });
 }
 
@@ -323,7 +360,8 @@ async function loadOneDir(
     }
     seen.set(manifest.id, source);
 
-    const { command, args: rawArgs } = resolveCommand(manifest);
+    const resolved = resolveCommand(manifest);
+    const { command, args: rawArgs } = resolveSelfCommand(resolved.command, resolved.args);
     // Resolve explicitly relative arguments against the manifest, not the
     // working directory. Under launchd there is no meaningful cwd, and a session
     // sets its own to the user's workspace, so `./agent.ts` would resolve
@@ -339,7 +377,7 @@ async function loadOneDir(
     const missingEnv = manifest.tappy.env
       .filter((v) => v.required && !env[v.name])
       .map((v) => v.name);
-    const commandMissing = !canResolveCommand(command, env);
+    const commandMissing = !agentInstalled(manifest.id, command, env);
 
     providers.push({ manifest, source, command, args, missingEnv, commandMissing });
   }
@@ -385,6 +423,7 @@ export function isAvailable(provider: LoadedProvider): boolean {
 
 export function unavailableReason(provider: LoadedProvider): string | undefined {
   if (provider.commandMissing) {
+    if (provider.manifest.id === "ggcoder-app") return "Not installed: the GG Coder desktop app";
     return `Not installed: '${provider.command}' is not on PATH`;
   }
   if (provider.missingEnv.length > 0) {

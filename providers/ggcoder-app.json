@@ -1,0 +1,28 @@
+{
+  "$schema": "../schemas/provider.schema.json",
+  "id": "ggcoder-app",
+  "name": "GG Coder App",
+  "version": "1.0.0",
+  "description": "The GG Coder desktop app that is open on this computer. Prompts from the phone run in the app's own window, and its turns stream to the phone. Needs the GG Coder build from github.com/zahdourmoustafa/gg-coder.",
+  "distribution": {
+    "type": "command",
+    "command": "tappy",
+    "args": [
+      "gg-app-bridge"
+    ]
+  },
+  "repository": "https://github.com/zahdourmoustafa/gg-coder",
+  "authors": [
+    "zahdourmoustafa"
+  ],
+  "license": "AGPL-3.0",
+  "tappy": {
+    "transport": "acp",
+    "label": "GG Coder App",
+    "color": "#22c55e",
+    "commandDirs": [
+      ".gg/commands",
+      "~/.gg/commands"
+    ]
+  }
+}

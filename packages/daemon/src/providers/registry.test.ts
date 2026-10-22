@@ -17,6 +17,7 @@ import {
   providerDirs,
   userProvidersDir,
   loadProviders,
+  resolveSelfCommand,
 } from "./registry.js";
 
 const original = process.cwd();
@@ -120,4 +121,20 @@ test("the bundled providers still load when cwd is elsewhere", async () => {
   // Named explicitly: a passing test that silently loaded zero providers would
   // be exactly as broken as the bug.
   expect(fromElsewhere.providers.map((p) => p.manifest.id)).toContain("claude-code");
+});
+
+test("a manifest command of `tappy` runs this tappy, never one on PATH", () => {
+  // Compiled: the binary is tappy, so it calls itself.
+  expect(resolveSelfCommand("tappy", ["gg-app-bridge"], true)).toEqual({
+    command: process.execPath,
+    args: ["gg-app-bridge"],
+  });
+  // From source: bun runs the CLI entry that sits in this checkout.
+  const source = resolveSelfCommand("tappy", ["gg-app-bridge"], false);
+  expect(source.command).toBe(process.execPath);
+  expect(source.args[0]).toEndWith(join("cli", "index.ts"));
+  expect(existsSync(source.args[0] ?? "")).toBe(true);
+  expect(source.args.slice(1)).toEqual(["gg-app-bridge"]);
+  // Any other command is left alone.
+  expect(resolveSelfCommand("ggcoder", ["acp"], false)).toEqual({ command: "ggcoder", args: ["acp"] });
 });

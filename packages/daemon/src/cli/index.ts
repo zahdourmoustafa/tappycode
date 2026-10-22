@@ -723,6 +723,14 @@ async function main() {
     return runWrap(argv.slice(1));
   }
 
+  // The GG Coder desktop app as an ACP agent: the `ggcoder-app` provider spawns
+  // this. It owns stdio for the rest of the process, so it never returns.
+  if (argv[0] === "gg-app-bridge") {
+    const { runBridge } = await import("../gg-app/bridge.js");
+    await runBridge();
+    return new Promise<number>(() => {});
+  }
+
   const flags = new Set(argv.filter((a) => a.startsWith("--")));
   const [group, command, arg] = argv.filter((a) => !a.startsWith("--"));
 
