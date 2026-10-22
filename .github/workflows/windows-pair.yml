@@ -75,7 +75,7 @@ jobs:
           }
           "service health ok=$ok after ${i}s"
           Start-Sleep -Seconds 5
-          $env:PROBE_DEVICE = "phone-ci-service"
+          $env:PROBE_DEVICE = "phone-ci-probe"  # the device that already claimed this pairing
           bun run packages/daemon/src/testing/phone-pair-probe.ts
           $probe = $LASTEXITCODE
           "--- doctor"; & "$env:LOCALAPPDATA\tappy\tappy.exe" doctor
