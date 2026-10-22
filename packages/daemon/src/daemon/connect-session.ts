@@ -159,7 +159,7 @@ export abstract class DaemonConnectSession extends DaemonPromptQueue {
                 ? [{ type: "text", text: message.text }, ...message.images]
                 : { type: "text", text: message.text },
           }))
-        : provider.manifest.id === "ggcoder"
+        : provider.manifest.id === "ggcoder" || provider.manifest.id === "ggcoder-app"
           ? await loadGgCoderDisplayHistory(loadSessionId, cwd)
           : // A past replay is only a snapshot: it misses later turns, including
             // work done at the desktop. Without a current native history file,

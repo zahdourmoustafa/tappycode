@@ -28,6 +28,7 @@ import { Readable, Writable } from "node:stream";
 
 import { AppClient, type AppEvent, type AppWindow } from "./client.js";
 import { discoverApps } from "./discovery.js";
+import { listConversations, type StoredConversation } from "./sessions.js";
 
 /** ACP `kind` for GG Coder's tool names; the same table `acp-mode.ts` uses. */
 const TOOL_KINDS: Record<string, string> = {
@@ -129,6 +130,15 @@ async function samePath(a: string, b: string): Promise<boolean> {
   return (await canon(a)) === (await canon(b));
 }
 
+/** Same file, ignoring separator style and (on Windows) letter case. */
+export function samePathSync(a: string, b: string): boolean {
+  const norm = (p: string) => {
+    const absolute = resolve(p);
+    return process.platform === "win32" ? absolute.toLowerCase() : absolute;
+  };
+  return norm(a) === norm(b);
+}
+
 /**
  * The open window to join for a project: the one the user is looking at
  * (most viewers), preferring an idle one so the phone does not barge into a
@@ -152,6 +162,9 @@ interface Turn {
 }
 
 interface Joined {
+  /** The id tappy knows this conversation by. */
+  externalId: string;
+  /** The id the app's engine knows it by; changes whenever the app restarts. */
   appSessionId: string;
   stream: AbortController;
   turn?: Turn;
@@ -159,9 +172,10 @@ interface Joined {
 
 /** Run the bridge on stdio. Exits with the parent, like every ACP agent. */
 export async function runBridge(): Promise<void> {
+  // Keyed by the id tappy uses. A stored chat keeps its GG conversation id on
+  // the phone for good, while the app hands out a fresh session id each time
+  // it reopens one, so every request is translated through this map.
   const joined = new Map<string, Joined>();
-  // A conversation the phone opened is keyed by the app's own session id, so
-  // reopening it later finds the same window if it is still open.
   let client: AppClient | undefined;
 
   async function app(): Promise<AppClient> {
@@ -180,20 +194,22 @@ export async function runBridge(): Promise<void> {
 
   async function join(
     ctx: { client: { notify: (method: string, params: unknown) => Promise<void>; request: (method: string, params: unknown) => Promise<unknown> } },
-    appSessionId: string,
+    externalId: string,
+    appSessionId: string = externalId,
   ): Promise<Joined> {
-    const existing = joined.get(appSessionId);
-    if (existing) return existing;
+    const existing = joined.get(externalId);
+    if (existing?.appSessionId === appSessionId) return existing;
+    existing?.stream.abort();
     const api = client ?? (await app());
-    const entry: Joined = { appSessionId, stream: new AbortController() };
-    joined.set(appSessionId, entry);
+    const entry: Joined = { externalId, appSessionId, stream: new AbortController() };
+    joined.set(externalId, entry);
 
     void (async () => {
       try {
         for await (const event of api.events(appSessionId, entry.stream.signal)) {
           const update = translateEvent(event);
           if (update) {
-            await ctx.client.notify("session/update", { sessionId: appSessionId, update });
+            await ctx.client.notify("session/update", { sessionId: externalId, update });
             continue;
           }
           if (event.type === "run_end") {
@@ -208,7 +224,7 @@ export async function runBridge(): Promise<void> {
             // answer the same question, and whichever lands first wins there.
             void ctx.client
               .request("_gg/ask_user", {
-                sessionId: appSessionId,
+                sessionId: externalId,
                 questions: event.data.questions,
               })
               .then((answer) => api.answer(appSessionId, askId, answer ?? { action: "cancel" }))
@@ -222,7 +238,7 @@ export async function runBridge(): Promise<void> {
       } finally {
         entry.turn?.resolve("cancelled");
         entry.turn = undefined;
-        joined.delete(appSessionId);
+        if (joined.get(externalId) === entry) joined.delete(externalId);
       }
     })();
     return entry;
@@ -230,12 +246,13 @@ export async function runBridge(): Promise<void> {
 
   async function replay(
     ctx: { client: { notify: (method: string, params: unknown) => Promise<void> } },
-    appSessionId: string,
+    externalId: string,
+    appSessionId: string = externalId,
   ): Promise<void> {
     const api = client ?? (await app());
     for (const row of await api.history(appSessionId)) {
       await ctx.client.notify("session/update", {
-        sessionId: appSessionId,
+        sessionId: externalId,
         update: {
           sessionUpdate: row.role === "user" ? "user_message_chunk" : "agent_message_chunk",
           content: { type: "text", text: row.text },
@@ -251,6 +268,14 @@ export async function runBridge(): Promise<void> {
     return win?.sessionId ?? (await api.createSession(cwd, sessionPath));
   }
 
+  function appIdFor(externalId: string): string {
+    return joined.get(externalId)?.appSessionId ?? externalId;
+  }
+
+  async function findStored(sessionId: string): Promise<StoredConversation | undefined> {
+    return (await listConversations()).find((entry) => entry.sessionId === sessionId);
+  }
+
   const app_ = connection
     .onRequest("initialize", async () => {
       await app();
@@ -258,6 +283,8 @@ export async function runBridge(): Promise<void> {
         protocolVersion: 1,
         agentCapabilities: {
           loadSession: true,
+          // Listed from ~/.gg/sessions, which the app and the CLI share.
+          sessionCapabilities: { list: {} },
           promptCapabilities: { image: false },
           // Questions are GG's `_gg/ask_user`, which tappy already renders.
           _meta: { gg: { askUser: true } },
@@ -272,24 +299,39 @@ export async function runBridge(): Promise<void> {
       await join(ctx, sessionId);
       return { sessionId };
     })
+    .onRequest("session/list", async () => ({
+      sessions: (await listConversations()).map((entry) => ({
+        sessionId: entry.sessionId,
+        cwd: entry.cwd,
+        title: entry.title,
+        updatedAt: entry.updatedAt,
+      })),
+    }))
     .onRequest("session/load", async (ctx) => {
       const { sessionId, cwd } = ctx.params as { sessionId: string; cwd: string };
       const api = client ?? (await app());
-      // App session ids live only as long as the app does, so a conversation
-      // from before the app restarted (or a closed window) cannot be rejoined.
-      const open = (await api.windows()).some((w) => w.sessionId === sessionId);
-      if (!open) {
-        throw new Error(
-          `That GG Coder app conversation is no longer open (${cwd}). Start a new one.`,
-        );
+      const windows = await api.windows();
+      // A conversation started from the phone this app session: still open.
+      if (windows.some((w) => w.sessionId === sessionId)) {
+        await replay(ctx, sessionId);
+        await join(ctx, sessionId);
+        return {};
       }
-      await replay(ctx, sessionId);
-      await join(ctx, sessionId);
+      // A stored chat. Join the window that has it open if there is one, so
+      // phone and window stay in step; otherwise reopen it in the app's engine.
+      const stored = await findStored(sessionId);
+      if (!stored) {
+        throw new Error(`GG Coder has no chat '${sessionId}' on this computer (${cwd}).`);
+      }
+      const open = windows.find((w) => w.sessionPath !== null && samePathSync(w.sessionPath, stored.path));
+      const appSessionId = open?.sessionId ?? (await api.createSession(stored.cwd, stored.path));
+      await replay(ctx, sessionId, appSessionId);
+      await join(ctx, sessionId, appSessionId);
       return {};
     })
     .onNotification("session/cancel", async (ctx) => {
       const { sessionId } = (ctx.params ?? {}) as { sessionId?: string };
-      if (sessionId && client) await client.cancel(sessionId).catch(() => {});
+      if (sessionId && client) await client.cancel(appIdFor(sessionId)).catch(() => {});
     })
     .onRequest("session/prompt", async (ctx) => {
       const { sessionId, prompt } = ctx.params as {
@@ -301,13 +343,13 @@ export async function runBridge(): Promise<void> {
         .map((block) => block.text ?? "")
         .join("\n")
         .trim();
-      const entry = await join(ctx, sessionId);
+      const entry = joined.get(sessionId) ?? (await join(ctx, sessionId));
       const api = client ?? (await app());
       const done = new Promise<StopReason>((resolveTurn) => {
         entry.turn = { resolve: resolveTurn };
       });
       try {
-        await api.prompt(sessionId, text);
+        await api.prompt(entry.appSessionId, text);
       } catch (error) {
         entry.turn = undefined;
         throw error;

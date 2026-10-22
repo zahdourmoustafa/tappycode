@@ -20,5 +20,7 @@ export async function hydrateMessageCounts(
   sessions: AgentSession[],
 ): Promise<void> {
   if (providerId === "claude-code") await hydrateClaudeMessageCounts(sessions);
-  else if (providerId === "ggcoder") await hydrateGgCoderMessageCounts(sessions);
+  // The GG Coder app writes the same session files as the CLI.
+  else if (providerId === "ggcoder" || providerId === "ggcoder-app")
+    await hydrateGgCoderMessageCounts(sessions);
 }
