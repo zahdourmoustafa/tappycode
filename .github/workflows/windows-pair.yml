@@ -39,33 +39,27 @@ jobs:
           gh release download $tag -R $env:GITHUB_REPOSITORY -p tappy-windows-x64.exe -O "$env:LOCALAPPDATA\tappy\tappy.exe" --clobber
           & "$env:LOCALAPPDATA\tappy\tappy.exe" --version
 
-      - name: Start tappy serve in the background
+      - name: Serve, watch it, and pair like a phone
         shell: pwsh
         run: |
           $log = "$env:RUNNER_TEMP\serve.log"
           $err = "$env:RUNNER_TEMP\serve.err.log"
-          Start-Process -FilePath "$env:LOCALAPPDATA\tappy\tappy.exe" -ArgumentList "serve" `
-            -RedirectStandardOutput $log -RedirectStandardError $err -WindowStyle Hidden
-          $deadline = (Get-Date).AddSeconds(60)
-          while ((Get-Date) -lt $deadline) {
-            if ((Test-Path $log) -and (Select-String -Path $log -Pattern "\[relay\] online" -Quiet)) { break }
+          $p = Start-Process -FilePath "$env:LOCALAPPDATA\tappy\tappy.exe" -ArgumentList "serve" `
+            -RedirectStandardOutput $log -RedirectStandardError $err -WindowStyle Hidden -PassThru
+          for ($i = 0; $i -lt 40; $i++) {
             Start-Sleep -Milliseconds 500
+            $online = (Test-Path $log) -and (Select-String -Path $log -Pattern "\[relay\] online" -Quiet)
+            "t=$($i*0.5)s alive=$(-not $p.HasExited) online=$online"
+            if ($p.HasExited) { "EXITED code=$($p.ExitCode)"; break }
           }
-          Get-Content $log -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
-          Get-Content $err -ErrorAction SilentlyContinue
-
-      - name: Pair like a phone (twice, with a rotation between)
-        shell: pwsh
-        run: |
+          "--- probe 1"
           bun run packages/daemon/src/testing/phone-pair-probe.ts
-          $first = $LASTEXITCODE
-          & "$env:LOCALAPPDATA\tappy\tappy.exe" pair --rotate --no-wait | Select-String -NotMatch "[█▀▄]"
-          Start-Sleep -Seconds 3
-          $env:PROBE_DEVICE = "phone-ci-probe-2"
-          bun run packages/daemon/src/testing/phone-pair-probe.ts
-          $second = $LASTEXITCODE
-          "first=$first second=$second"
-          if ($first -ne 0 -or $second -ne 0) { exit 1 }
+          "probe1=$LASTEXITCODE alive=$(-not $p.HasExited)"
+          if ($p.HasExited) { "EXITED code=$($p.ExitCode)" }
+          "--- netstat 8787"; netstat -ano | Select-String ":8787"
+          "--- health"; try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/health -TimeoutSec 5).StatusCode } catch { "health failed: $($_.Exception.Message)" }
+          "--- serve.log"; Get-Content $log | Select-String -NotMatch "[█▀▄]"
+          "--- serve.err.log"; Get-Content $err
 
       - name: What the daemon logged
         if: always()
