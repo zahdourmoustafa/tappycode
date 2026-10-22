@@ -1,8 +1,8 @@
 /**
  * The folder a conversation belongs to, for the drawer's session rows.
  *
- * A full path (`/Users/kenkai/gg-projects/pew2`) is noise in a 44pt row; the
- * folder name alone (`pew2`) is how people actually tell their projects apart.
+ * A full path (`/Users/kenkai/gg-projects/tappy`) is noise in a 44pt row; the
+ * folder name alone (`tappy`) is how people actually tell their projects apart.
  * Pure so the edge cases stay testable.
  */
 
@@ -10,7 +10,7 @@
 export function folderName(cwd: string | undefined): string | undefined {
   if (!cwd) return undefined;
   // Both separators, because this string was written by the *daemon's* platform
-  // and not the phone's. A Windows desktop sends `D:\code\pew2`, which split on
+  // and not the phone's. A Windows desktop sends `D:\code\tappy`, which split on
   // "/" alone is a single long segment — so the drawer printed the entire path
   // under every conversation, which is the exact noise this function exists to
   // remove. `node:path` would not help: the phone is always POSIX, and it is the

@@ -1,7 +1,7 @@
 /**
  * A health check must not leave the patient running.
  *
- * `pew2 setup` starts every installed agent to find out whether it works. That
+ * `tappy setup` starts every installed agent to find out whether it works. That
  * is the only way to know — but it means setup's failure modes are *processes*,
  * not just wrong words on a screen.
  *
@@ -24,7 +24,7 @@ import { countProcessesMatching } from "../testing/platform.js";
 import type { LoadedProvider } from "./registry.js";
 
 /** A marker in argv, so only this test's children are ever counted or killed. */
-const MARK = `pew2-verify-leak-${process.pid}`;
+const MARK = `tappy-verify-leak-${process.pid}`;
 
 /**
  * Counting is shared and platform-aware.
@@ -58,7 +58,7 @@ async function settle(deadlineMs = 15_000): Promise<number> {
 
 /** An agent that answers `initialize` and then goes silent, as a wedged one does. */
 async function stallingAgent(stage: "handshake" | "session"): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pew2-leak-"));
+  const dir = await mkdtemp(join(tmpdir(), "tappy-leak-"));
   const file = join(dir, "agent.mjs");
   await writeFile(
     file,
@@ -94,7 +94,7 @@ function provider(script: string): LoadedProvider {
     manifest: {
       id: "staller",
       name: "Staller",
-      pew: { transport: "acp", env: [] },
+      tappy: { transport: "acp", env: [] },
     },
     source: "test",
     command: process.execPath,

@@ -108,7 +108,7 @@ export function Glass({
       <GlassView
         glassEffectStyle="regular"
         colorScheme="dark"
-        // Every pew2 control keeps its semantic Pressable as a child. Let that
+        // Every tappy control keeps its semantic Pressable as a child. Let that
         // child own hit-testing; otherwise UIVisualEffectView can swallow taps.
         isInteractive={interactive}
         pointerEvents="box-none"

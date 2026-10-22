@@ -184,6 +184,36 @@ export function createActions(refs: ActionRefs, deps: ActionDeps) {
   const { post, deliverPrompt, sendImageRequest, deviceId } = deps;
   return {
   /**
+   * Keystrokes for an agent running in a terminal on the laptop.
+   *
+   * Never queued: a keystroke typed offline means nothing minutes later, after
+   * the screen it was aimed at has moved on. False when it did not go, so the
+   * composer keeps what it last sent and catches up on the next change.
+   */
+  typeIntoTerminal: (terminalId: string, data: string): boolean =>
+    post({ t: "terminal.input", terminalId, data }),
+  /**
+   * Open an agent in a terminal on the computer: a past conversation, or a new
+   * one. The phone follows the window once it opens. False when not connected.
+   */
+  launchTerminal: (launch: {
+    agent: "claude" | "codex" | "ggcoder";
+    cwd: string;
+    resume?: string;
+    bypass?: boolean;
+  }): boolean => {
+    const sent = post({ t: "terminal.launch", ...launch });
+    if (sent) {
+      setState((prev) => ({
+        ...prev,
+        terminalLaunch: { agent: launch.agent, cwd: launch.cwd, status: "opening", at: Date.now() },
+      }));
+    }
+    return sent;
+  },
+  /** Forget the last launch, once its window has been followed or its notice read. */
+  clearTerminalLaunch: () => setState((prev) => (prev.terminalLaunch ? { ...prev, terminalLaunch: undefined } : prev)),
+  /**
    * `initialText` and its attachments are sent automatically once the
    * session is ready.
    */

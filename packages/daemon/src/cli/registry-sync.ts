@@ -1,5 +1,5 @@
 /**
- * `pew2 registry sync` — pull the official ACP Agent Registry.
+ * `tappy registry sync` — pull the official ACP Agent Registry.
  *
  * The curated catalog in `detect.ts` can only ever be a snapshot of what
  * someone remembered to add. This makes new agents available without a release,
@@ -22,7 +22,7 @@ import {
   type SkippedAgent,
 } from "../providers/acp-registry.js";
 import { defaultProvidersDir, userProvidersDir } from "../providers/registry.js";
-import type { ProviderManifest } from "@pew2/protocol";
+import type { ProviderManifest } from "@tappy/protocol";
 
 export const REGISTRY_URL = "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json";
 
@@ -48,7 +48,7 @@ export interface BundledEntry {
 }
 
 /**
- * The agents that ship with pew2, which a synced manifest must never shadow.
+ * The agents that ship with tappy, which a synced manifest must never shadow.
  *
  * Returns what each one launches as well as its id, because the registry names
  * several of them differently — `gemini` for our `gemini-cli`, `cursor` for our
@@ -169,7 +169,7 @@ async function readIfPresent(path: string): Promise<string | undefined> {
  * "unchanged" instead of "conflict", so the command is safe to run repeatedly.
  *
  * No `$schema` key: the bundled manifests use a repo-relative path that means
- * nothing from `~/.pew2/providers`, and a broken pointer in every synced file
+ * nothing from `~/.tappy/providers`, and a broken pointer in every synced file
  * would be worse than none.
  */
 function serialise(manifest: ProviderManifest): string {

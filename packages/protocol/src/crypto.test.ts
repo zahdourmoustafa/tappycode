@@ -203,12 +203,12 @@ test("derivation is pinned to fixed vectors", () => {
   // connection. Pinning them makes that a failing test rather than a support
   // request. Regenerate deliberately if the scheme is ever versioned up.
   const key = fromHex("00".repeat(32));
-  expect(roomId(key)).toBe("138b8c2ed6a1ad86ffb6e84c023630967f8539b2aab4770f");
+  expect(roomId(key)).toBe("84ff754ecbaef0a0012189dbcc6ed877d6eb2a392d291b91");
   expect(toHex(directionKey(key, "daemon-to-app")).slice(0, 32)).toBe(
-    "09f1840f5c7e4d0b3389ccd964bbbe87",
+    "2431ecd510580eca77dac4c16daefa9f",
   );
   expect(toHex(directionKey(key, "app-to-daemon")).slice(0, 32)).toBe(
-    "d5c6fc8300c2bcded2ff769cf9e5d87a",
+    "c6677dfc189f1958512cf92bc93bad83",
   );
 });
 
@@ -226,7 +226,7 @@ test("generated root keys are the right size and not constant", () => {
 });
 
 test("a key derived from a secret is stable, full-size, and not the secret", () => {
-  // `PEW2_TOKEN` runs through this, so tests and containers exercise the same
+  // `TAPPY_TOKEN` runs through this, so tests and containers exercise the same
   // encrypted protocol as production rather than a plaintext side-path that
   // would rot unnoticed.
   const first = deriveKeyFromSecret("fixed-test-secret");

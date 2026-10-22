@@ -25,7 +25,7 @@ const MEANINGFUL_KEYS = ["details", "detail", "message", "error", "reason", "des
  * actionable than "Internal error".
  */
 const BY_CODE: Record<number, string> = {
-  [-32700]: "The agent sent a reply pew2 could not read.",
+  [-32700]: "The agent sent a reply tappy could not read.",
   [-32600]: "The agent rejected the request.",
   [-32601]: "The agent does not support that.",
   [-32602]: "The agent rejected the request's arguments.",

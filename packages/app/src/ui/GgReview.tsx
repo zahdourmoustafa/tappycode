@@ -19,8 +19,8 @@ import { PressScale } from "./stage/PressScale";
 import { withAlpha } from "../motion";
 import { MarkdownText } from "./MarkdownText";
 import { Dissolve } from "./motion/Dissolve";
-import { Pew } from "../pew/Pew";
-import { KEN_COLOR } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { KEN_COLOR } from "../tappy/palette";
 import {
   CHECKLIST_STATUS_LABEL,
   checklistRunPrompt,
@@ -79,7 +79,7 @@ function PlanReviewSheetView({
     <Sheet
       visible={plan !== undefined && plan.generation !== deferred}
       label="Plan ready"
-      pewMood="happy"
+      tappyMood="happy"
       title={doc.title ?? "The plan"}
       dismissLabel="Decide later"
       onClose={() => setDeferred(plan?.generation)}
@@ -177,7 +177,7 @@ function GgControlStripView({
           style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
           onPress={onToggleAutopilot}
         >
-          <Pew size={22} style={styles.pew} color={KEN_COLOR} mood={autopilot?.reviewing ? "thinking" : on ? "idle" : "sleepy"} paused={!on} />
+          <Tappy size={22} style={styles.tappy} color={KEN_COLOR} mood={autopilot?.reviewing ? "thinking" : on ? "idle" : "sleepy"} paused={!on} />
           <Text style={[styles.chipText, on && styles.chipTextOn]}>
             {autopilot?.reviewing ? "Ken is reviewing…" : on ? "Autopilot on" : "Autopilot"}
           </Text>
@@ -323,9 +323,9 @@ function ChecklistSheetView({
 export const ChecklistSheet = memo(ChecklistSheetView);
 
 const styles = StyleSheet.create({
-  // Pew's globe fills the middle of its box; the rest is room to bounce,
+  // Tappy's globe fills the middle of its box; the rest is room to bounce,
   // so the box overhangs the old icon's footprint instead of growing the row.
-  pew: { margin: -4 },
+  tappy: { margin: -4 },
   scroll: { maxHeight: 560 },
   body: { gap: theme.space(3), paddingBottom: theme.space(2) },
   planCard: { padding: theme.space(4), borderRadius: theme.radius.md },

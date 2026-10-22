@@ -13,7 +13,7 @@
  * frames; what the app *does* with them is `replayFold.ts` and its tests. The
  * seam is exactly the wire, which is the part neither side could test alone.
  */
-import { SecureChannel, e2e, envelopeHeader, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, envelopeHeader, wire } from "@tappy/protocol";
 import type { RunningDaemon } from "./daemon-process.js";
 
 /** A frame the daemon sent, after decryption. */

@@ -17,7 +17,7 @@ const PNG = Buffer.from(
 );
 
 async function project() {
-  const root = await mkdtemp(join(tmpdir(), "pew2-images-"));
+  const root = await mkdtemp(join(tmpdir(), "tappy-images-"));
   await mkdir(join(root, "out"), { recursive: true });
   await writeFile(join(root, "out", "plot.png"), PNG);
   return root;
@@ -97,7 +97,7 @@ test("a symlink is judged by where it points, not how it is spelled", async () =
 });
 
 test("the temp directory is readable, because generated images land there", async () => {
-  const temp = await mkdtemp(join(tmpdir(), "pew2-generated-"));
+  const temp = await mkdtemp(join(tmpdir(), "tappy-generated-"));
   await writeFile(join(temp, "out.png"), PNG);
   const image = await loadImage(join(temp, "out.png"), { cwd: await project(), env: {} });
   expect(image.mimeType).toBe("image/png");

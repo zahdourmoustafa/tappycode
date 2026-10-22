@@ -56,6 +56,11 @@ export abstract class DaemonProjects extends DaemonProbes {
     // *previous* project while pointing at this one — which is worse than no
     // label, because it is confidently wrong.
     if (this.offeredWorkspaces.has(cwd)) return this.rememberProject(cwd);
+    // A directory an agent is running in right now, in a terminal on this
+    // machine. The terminal list already published it, and the phone follows
+    // that terminal into its project — refusing here left the composer naming
+    // "Unknown project" beside a window that was open in it.
+    if (this.isTerminalProject(cwd)) return this.rememberProject(cwd);
     // Chosen in an earlier run of this daemon. The path was published then, by
     // one of the two checks above; a restart is not consent being withdrawn.
     return (await this.chosenProjects()).has(cwd) ? cwd : undefined;
@@ -70,6 +75,11 @@ export abstract class DaemonProjects extends DaemonProbes {
    * recognising a perfectly genuine project a race against a spawn. This reads
    * the same file the probe would serve from and never starts an agent.
    */
+  /** Is an agent running in `cwd` in a terminal? Answered by `Daemon`. */
+  protected isTerminalProject(_cwd: string): boolean {
+    return false;
+  }
+
   protected async projectsWithHistory(providerId: string): Promise<AgentSession[]> {
     const known = this.projectHistory.get(providerId);
     if (known) return known;

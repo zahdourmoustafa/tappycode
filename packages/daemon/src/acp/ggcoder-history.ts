@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { asRecord, asString } from "@pew2/protocol";
+import { asRecord, asString } from "@tappy/protocol";
 import { promisify } from "node:util";
 import { createGunzip, gunzip } from "node:zlib";
 import type { AgentSession } from "./connect.js";
@@ -19,7 +19,7 @@ interface StoredMessage {
 }
 
 /** GG Coder's stable cwd-to-directory encoding, shared by every persisted session. */
-function encodeCwd(cwd: string): string {
+export function encodeCwd(cwd: string): string {
   return cwd
     .replace(/^\\\\\?\\UNC\\/i, "\\\\")
     .replace(/^\\\\\?\\/i, "")

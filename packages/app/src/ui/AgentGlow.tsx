@@ -1,5 +1,5 @@
 /**
- * The soft pool of the agent's colour behind a large Pew (home, the agent
+ * The soft pool of the agent's colour behind a large Tappy (home, the agent
  * carousel).
  *
  * A colour change blends on the UI thread, from whatever is showing to the new

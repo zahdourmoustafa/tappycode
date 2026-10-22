@@ -23,7 +23,7 @@ function targets() {
 }
 
 test("a rotated token moves both transports", () => {
-  // The bug: `pew2 pair --rotate` writes a new token, the running daemon keeps
+  // The bug: `tappy pair --rotate` writes a new token, the running daemon keeps
   // the old one, and the relay room is derived from it. The daemon ends up in a
   // room the freshly paired phone will never join.
   const { calls, spy } = targets();
@@ -57,7 +57,7 @@ test("an unchanged file is not a rotation", () => {
 });
 
 test("changing only the relay still reloads", () => {
-  // `pew2 relay <url>` rewrites the same file. A daemon that ignored it would
+  // `tappy relay <url>` rewrites the same file. A daemon that ignored it would
   // keep using the old relay until someone restarted it.
   const { calls, spy } = targets();
   const next = pairing({ key: "e".repeat(64) });

@@ -23,7 +23,7 @@ import {
   type ChatImage,
 } from "./images";
 import { readGgEvent } from "./ggReview";
-import { asRecord, asString } from "@pew2/protocol";
+import { asRecord, asString } from "@tappy/protocol";
 
 /** "note": a neutral marker (plan decisions) — never an error, never a retry target. */
 export type ChunkRole = "user" | "agent" | "thought" | "system" | "ken" | "note";

@@ -24,7 +24,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /** Marks a root as ours, so a nested `bun test` does not create a second one. */
-const ROOT_VAR = "PEW2_TEST_TMP_ROOT";
+const ROOT_VAR = "TAPPY_TEST_TMP_ROOT";
+
+// A fresh pairing would otherwise be given the real public relay, and a test
+// daemon would dial it. Empty means "no default relay"; inherited by children.
+process.env.TAPPY_DEFAULT_RELAY ??= "";
 
 const inherited = process.env[ROOT_VAR];
 if (inherited) {
@@ -34,7 +38,7 @@ if (inherited) {
   process.env.TEMP = inherited;
   process.env.TMP = inherited;
 } else {
-  const root = mkdtempSync(join(tmpdir(), "pew2-test-run-"));
+  const root = mkdtempSync(join(tmpdir(), "tappy-test-run-"));
   process.env[ROOT_VAR] = root;
   // All three, because `os.tmpdir()` reads TMPDIR on POSIX and TEMP/TMP on
   // Windows, and both are consulted by different libraries on both platforms.

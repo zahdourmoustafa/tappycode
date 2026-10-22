@@ -1,14 +1,14 @@
 /**
- * The pew2 mark.
+ * The tappy mark.
  *
- * Pew, the same living mascot that stands for an agent everywhere else in
- * the app, in pew2's own coral rather than a provider colour, because at
+ * Tappy, the same living mascot that stands for an agent everywhere else in
+ * the app, in tappy's own coral rather than a provider colour, because at
  * launch no agent has been chosen yet.
  *
  * The wordmark is lowercase to match how the command is typed.
  */
 import { StyleSheet, Text, View } from "react-native";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { theme } from "../theme";
 
 interface LogoProps {
@@ -22,12 +22,12 @@ export function Logo({ size = 72 }: LogoProps) {
       style={styles.root}
       accessible
       accessibilityRole="image"
-      accessibilityLabel="pew2"
+      accessibilityLabel="tappy"
     >
-      {/* Pew, pew2's own living mark, in its own coral. Its box has room
+      {/* Tappy, tappy's own living mark, in its own coral. Its box has room
           for bounce and shadow around the globe, so it is drawn larger than
           the old orb's diameter to read at the same size. */}
-      <Pew size={Math.round(size * 1.7)} style={styles.mark} />
+      <Tappy size={Math.round(size * 1.7)} style={styles.mark} />
       <Text
         style={[
           styles.word,
@@ -48,7 +48,7 @@ export function Logo({ size = 72 }: LogoProps) {
         accessibilityElementsHidden
         importantForAccessibility="no"
       >
-        pew2
+        tappy
       </Text>
     </View>
   );

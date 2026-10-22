@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The app icon: Pew, drawn by the real engine (`pew-frame.ts`), on the Stage
+The app icon: Tappy, drawn by the real engine (`tappy-frame.ts`), on the Stage
 canvas (near-black, a faint LED dot grid, his own glow).
 
     python3 packages/app/scripts/make-icon.py            # previews of every variant
@@ -9,7 +9,7 @@ canvas (near-black, a faint LED dot grid, his own glow).
 iOS draws the squircle itself: an App Store icon is a full-bleed opaque square
 and the system cuts the continuous-corner shape, so the art keeps everything
 that matters inside the squircle's safe circle. Android's adaptive icon is a
-foreground (Pew, transparent) over a background (the canvas), with Pew inside
+foreground (Tappy, transparent) over a background (the canvas), with Tappy inside
 the 66% safe zone so any launcher mask keeps him whole.
 
 Needs numpy, scipy and Pillow, and `bun` for the engine.
@@ -35,7 +35,7 @@ CORAL = "#d97757"
 
 def frame(size: int, mood: str, color: str = "", t: float = 4.0, seed: str = "", lift: float = 0.28) -> dict:
     out = subprocess.run(
-        ["bun", os.path.join(HERE, "pew-frame.ts"), str(size), mood, color, str(t), seed, str(lift)],
+        ["bun", os.path.join(HERE, "tappy-frame.ts"), str(size), mood, color, str(t), seed, str(lift)],
         cwd=ROOT, check=True, capture_output=True, text=True,
     )
     return json.loads(out.stdout)
@@ -106,8 +106,8 @@ class Canvas:
             self.over(sl, cov, c, a)
 
 
-def paint_pew(cv: Canvas, data: dict, ox: float, oy: float, scale: float, shadow: bool = True) -> None:
-    """Replays the engine's draw calls with the same meaning as `Pew.tsx`'s Skia painter."""
+def paint_tappy(cv: Canvas, data: dict, ox: float, oy: float, scale: float, shadow: bool = True) -> None:
+    """Replays the engine's draw calls with the same meaning as `Tappy.tsx`'s Skia painter."""
     k = scale
     col = lambda c: np.asarray(c, dtype=float) / 255.0
     for op in data["ops"]:
@@ -197,7 +197,7 @@ def coral_rgb():
 
 
 def variant_hero(mood="happy") -> Image.Image:
-    """A: Pew, big and centred, glowing on the dot grid."""
+    """A: Tappy, big and centred, glowing on the dot grid."""
     n = N * SS
     cv = Canvas(n)
     radial(cv, n / 2, n * 0.5, n * 0.42, coral_rgb(), 0.16)
@@ -205,12 +205,12 @@ def variant_hero(mood="happy") -> Image.Image:
     size = 980
     data = frame(size, mood, CORAL)
     scale = (n * 0.9) / size
-    paint_pew(cv, data, (n - size * scale) / 2, (n - size * scale) / 2 + n * 0.015, scale)
+    paint_tappy(cv, data, (n - size * scale) / 2, (n - size * scale) / 2 + n * 0.015, scale)
     return to_image(cv)
 
 
 def variant_peek() -> Image.Image:
-    """B: Pew rising over the bottom edge like a sun, a horizon of lit dots."""
+    """B: Tappy rising over the bottom edge like a sun, a horizon of lit dots."""
     n = N * SS
     cv = Canvas(n)
     radial(cv, n / 2, n * 0.78, n * 0.55, coral_rgb(), 0.22)
@@ -218,12 +218,12 @@ def variant_peek() -> Image.Image:
     size = 1200
     data = frame(size, "happy", CORAL)
     scale = (n * 1.12) / size
-    paint_pew(cv, data, (n - size * scale) / 2, n * 0.2, scale)
+    paint_tappy(cv, data, (n - size * scale) / 2, n * 0.2, scale)
     return to_image(cv)
 
 
 def variant_ring() -> Image.Image:
-    """C: Pew inside a ring of LED dots, like the thinking dial at full."""
+    """C: Tappy inside a ring of LED dots, like the thinking dial at full."""
     n = N * SS
     cv = Canvas(n)
     radial(cv, n / 2, n / 2, n * 0.45, coral_rgb(), 0.2)
@@ -237,7 +237,7 @@ def variant_ring() -> Image.Image:
     size = 900
     data = frame(size, "idle", CORAL)
     scale = (n * 0.7) / size
-    paint_pew(cv, data, (n - size * scale) / 2, (n - size * scale) / 2 + n * 0.01, scale)
+    paint_tappy(cv, data, (n - size * scale) / 2, (n - size * scale) / 2 + n * 0.01, scale)
     return to_image(cv)
 
 
@@ -274,7 +274,7 @@ def preview(images: dict, path: str) -> None:
 def apply(name: str) -> None:
     icon = VARIANTS[name]()
     icon.save(os.path.join(ASSETS, "icon.png"))
-    # Android adaptive: the canvas as background, Pew alone as foreground,
+    # Android adaptive: the canvas as background, Tappy alone as foreground,
     # inside the 66% safe zone.
     n = N * SS
     bg = Canvas(n)
@@ -289,10 +289,10 @@ def apply(name: str) -> None:
     data = frame(size, "idle", CORAL)
     scale = (n * 0.6) / size
     # No ground shadow: a launcher draws its own under the icon.
-    paint_pew(fg, data, (n - size * scale) / 2, (n - size * scale) / 2, scale, shadow=False)
+    paint_tappy(fg, data, (n - size * scale) / 2, (n - size * scale) / 2, scale, shadow=False)
     fg_img = lift_off(fg)
     fg_img.save(os.path.join(ASSETS, "android-icon-foreground.png"))
-    # Monochrome (themed icons): Pew's silhouette.
+    # Monochrome (themed icons): Tappy's silhouette.
     mono = fg_img.split()[3].point(lambda v: 255 if v > 60 else 0)
     Image.merge("RGBA", (mono, mono, mono, mono)).save(os.path.join(ASSETS, "android-icon-monochrome.png"))
     print(f"applied variant {name}")

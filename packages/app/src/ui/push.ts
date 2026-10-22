@@ -24,6 +24,23 @@ import { ensureNotificationPermission } from "./notifier";
 export interface PushAddress {
   token: string;
   platform: "ios" | "android";
+  /** Who delivers to it: Expo's service, or Firebase through the pairing's relay. */
+  service: "expo" | "fcm";
+}
+
+/**
+ * This Android phone's own Firebase token, for a build made without any Expo
+ * account — the relay sends to it directly. Undefined when the build has no
+ * Firebase configuration (`google-services.json`), which is a fresh clone's
+ * normal state, not an error.
+ */
+async function firebaseToken(): Promise<string | undefined> {
+  try {
+    const token = await Notifications.getDevicePushTokenAsync();
+    return token.type === "android" && typeof token.data === "string" && token.data ? token.data : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -56,6 +73,13 @@ function projectId(): string | undefined {
 export async function pushAddress(): Promise<PushAddress | undefined> {
   if (Platform.OS !== "ios" && Platform.OS !== "android") return undefined;
   const id = projectId();
+  // An Android build carrying its own Firebase configuration needs no Expo
+  // project: its token goes to the relay, which sends to it.
+  if (Platform.OS === "android") {
+    if (!(await ensureNotificationPermission())) return undefined;
+    const token = await firebaseToken();
+    if (token) return { token, platform: "android", service: "fcm" };
+  }
   if (!id) return undefined;
   // Permission first, and load-bearing beyond permission: this is also what
   // creates the Android channel and the reply category. Expo does not show a
@@ -64,7 +88,7 @@ export async function pushAddress(): Promise<PushAddress | undefined> {
   if (!(await ensureNotificationPermission())) return undefined;
   try {
     const { data } = await Notifications.getExpoPushTokenAsync({ projectId: id });
-    return data ? { token: data, platform: Platform.OS } : undefined;
+    return data ? { token: data, platform: Platform.OS, service: "expo" } : undefined;
   } catch {
     // Simulator, no network, or a build without push entitlements. The app
     // works; it just falls back to announcing turns it is awake for.

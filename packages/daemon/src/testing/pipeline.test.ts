@@ -143,7 +143,7 @@ test("an unopened session crosses ACP, daemon state, and drawer formatting", asy
     // client does that, so a count appears only when the agent supplies one.
     //
     // The folder comes from `process.cwd()` by way of the echo agent, so
-    // hardcoding "pew2" made this pass only in a checkout named that.
+    // hardcoding "tappy" made this pass only in a checkout named that.
     expect(formatHistoryMetadata(unopened!)).toBe(basename(process.cwd()));
   } finally {
     daemon.closeAll();
@@ -287,7 +287,7 @@ test("a warm process is not reused for a different project", async () => {
     const warmed = { cwd: warmedDirs[0]! };
 
     // Somewhere real, and definitely not where the spare was booted.
-    const elsewhere = await mkdtemp(join(tmpdir(), "pew2-elsewhere-"));
+    const elsewhere = await mkdtemp(join(tmpdir(), "tappy-elsewhere-"));
     expect(elsewhere).not.toBe(warmed.cwd);
 
     await daemon.startSession("echo", elsewhere);
@@ -314,7 +314,7 @@ test("opening a project warms that project, evicting the last one", async () => 
     await daemon.probeProvider("echo", { refresh: true });
     const first = daemon.spareDirs("echo")[0]!;
 
-    const elsewhere = await mkdtemp(join(tmpdir(), "pew2-second-"));
+    const elsewhere = await mkdtemp(join(tmpdir(), "tappy-second-"));
     await daemon.startSession("echo", elsewhere);
     await new Promise((r) => setTimeout(r, 800));
 
@@ -340,7 +340,7 @@ test("a provider never holds more than one warm process", async () => {
 
     // Three different projects, opened in turn.
     for (let i = 0; i < 3; i++) {
-      const dir = await mkdtemp(join(tmpdir(), `pew2-cap-${i}-`));
+      const dir = await mkdtemp(join(tmpdir(), `tappy-cap-${i}-`));
       await daemon.startSession("echo", dir);
       await new Promise((r) => setTimeout(r, 400));
       expect(daemon.spareDirs("echo").length).toBeLessThanOrEqual(1);
@@ -358,9 +358,9 @@ test("a turned-off agent cannot be started by a client holding a stale list", as
   const { Daemon } = await import("../index.js");
   const { setEnabled } = await import("../providers/enabled.js");
 
-  const home = await mkdtemp(join(tmpdir(), "pew2-off-"));
-  const previous = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = home;
+  const home = await mkdtemp(join(tmpdir(), "tappy-off-"));
+  const previous = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = home;
 
   try {
     await setEnabled(["echo"], false);
@@ -378,7 +378,7 @@ test("a turned-off agent cannot be started by a client holding a stale list", as
       daemon.closeAll();
     }
   } finally {
-    if (previous === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = previous;
+    if (previous === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = previous;
   }
 }, 60_000);

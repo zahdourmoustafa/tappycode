@@ -17,7 +17,7 @@
     "Anomaly"
   ],
   "license": "MIT",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#e4e4e7"
   }

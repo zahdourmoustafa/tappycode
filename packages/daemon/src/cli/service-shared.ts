@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
 /** One name across all three supervisors, so a machine cannot host two. */
-export const LABEL = "dev.pew2.daemon";
+export const LABEL = "dev.tappy.daemon";
 
 export type ServiceState = "running" | "installed" | "not-installed" | "unsupported";
 
@@ -79,7 +79,7 @@ export function serverEntry(): string {
 /**
  * What the supervisor should actually execute.
  *
- * Two different programs, because there are two ways pew2 is installed: from a
+ * Two different programs, because there are two ways tappy is installed: from a
  * checkout it is `bun run <abs path to server.ts>`, and from a released binary
  * it is the binary itself with `serve`.
  */

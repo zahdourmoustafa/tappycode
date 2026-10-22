@@ -19,7 +19,7 @@ const CASES: Array<{ note: string; props: Omit<React.ComponentProps<typeof Conte
   {
     note: "Everything — real Claude Code reading (21,325 / 1,000,000)",
     props: {
-      workspace: { cwd: "/Users/k/gg-projects/pew2", folder: "pew2", repo: true, uncommitted: 9 },
+      workspace: { cwd: "/Users/k/gg-projects/tappy", folder: "tappy", repo: true, uncommitted: 9 },
       usage: { used: 21325, size: 1000000 },
       showCommands: true,
       onCommands: () => {},
@@ -28,7 +28,7 @@ const CASES: Array<{ note: string; props: Omit<React.ComponentProps<typeof Conte
   {
     note: "High — 78%, accent",
     props: {
-      workspace: { cwd: "/Users/k/p/pew2", folder: "pew2", repo: true, uncommitted: 2 },
+      workspace: { cwd: "/Users/k/p/tappy", folder: "tappy", repo: true, uncommitted: 2 },
       usage: { used: 78000, size: 100000 },
       showCommands: true,
       onCommands: () => {},
@@ -37,7 +37,7 @@ const CASES: Array<{ note: string; props: Omit<React.ComponentProps<typeof Conte
   {
     note: "Critical — 94%, compaction close",
     props: {
-      workspace: { cwd: "/Users/k/p/pew2", folder: "pew2", repo: true, uncommitted: 1 },
+      workspace: { cwd: "/Users/k/p/tappy", folder: "tappy", repo: true, uncommitted: 1 },
       usage: { used: 94000, size: 100000 },
       showCommands: true,
       onCommands: () => {},
@@ -46,7 +46,7 @@ const CASES: Array<{ note: string; props: Omit<React.ComponentProps<typeof Conte
   {
     note: "No usage — GG Coder today. Reading omitted, not zeroed",
     props: {
-      workspace: { cwd: "/Users/k/p/pew2", folder: "pew2", repo: true, uncommitted: 4 },
+      workspace: { cwd: "/Users/k/p/tappy", folder: "tappy", repo: true, uncommitted: 4 },
       showCommands: true,
       onCommands: () => {},
     },

@@ -58,7 +58,7 @@ function AskUserSheetView({ ask, onAnswer }: AskUserSheetProps) {
       visible={ask !== undefined}
       label="Question"
       labelTone="attention"
-      pewMood="talking"
+      tappyMood="talking"
       title={single ? "One question" : `${shown?.questions.length ?? 0} questions`}
       dismissLabel="Skip these questions"
       onClose={() => {

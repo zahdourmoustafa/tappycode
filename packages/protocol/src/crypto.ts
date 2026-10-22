@@ -47,9 +47,9 @@ export const NONCE_BYTES = 24;
  * though the app had sent it.
  */
 const INFO = {
-  room: "pew2/room/v1",
-  daemonToApp: "pew2/daemon-to-app/v1",
-  appToDaemon: "pew2/app-to-daemon/v1",
+  room: "tappy/room/v1",
+  daemonToApp: "tappy/daemon-to-app/v1",
+  appToDaemon: "tappy/app-to-daemon/v1",
 } as const;
 
 /** Which way a frame travels. Selects the key, and so cannot be forged across. */
@@ -78,7 +78,7 @@ export function randomRootKey(random: RandomBytes = defaultRandom): Uint8Array {
 /**
  * A root key derived deterministically from an arbitrary secret string.
  *
- * Exists for `PEW2_TOKEN`, which lets a test or a container run without touching
+ * Exists for `TAPPY_TOKEN`, which lets a test or a container run without touching
  * a real home directory. Deriving a key from it keeps those runs on the *same*
  * encrypted protocol as production — the alternative is a plaintext code path
  * that only tests exercise, which is the path most likely to rot unnoticed.
@@ -87,7 +87,7 @@ export function randomRootKey(random: RandomBytes = defaultRandom): Uint8Array {
  * exactly the entropy of what it is given.
  */
 export function deriveKeyFromSecret(secret: string): Uint8Array {
-  return hkdf(sha256, utf8(secret), undefined, utf8("pew2/token-key/v1"), ROOT_KEY_BYTES);
+  return hkdf(sha256, utf8(secret), undefined, utf8("tappy/token-key/v1"), ROOT_KEY_BYTES);
 }
 
 function derive(rootKey: Uint8Array, info: string, length: number): Uint8Array {
@@ -163,7 +163,7 @@ function associatedData(envelope: Pick<Envelope, "sid" | "seq" | "ctr">): Uint8A
   const sid = envelope.sid === undefined ? "" : envelope.sid;
   const sidLength = envelope.sid === undefined ? -1 : utf8(sid).length;
   const seq = envelope.seq === undefined ? -1 : envelope.seq;
-  return utf8(`pew2/v2|${sidLength}|${sid}|${seq}|${envelope.ctr}`);
+  return utf8(`tappy/v2|${sidLength}|${sid}|${seq}|${envelope.ctr}`);
 }
 
 /**

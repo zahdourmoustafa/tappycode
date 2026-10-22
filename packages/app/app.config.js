@@ -39,8 +39,18 @@ module.exports = () => {
   const owner = process.env.EAS_OWNER ?? local.owner;
   const projectId = process.env.EAS_PROJECT_ID ?? local.projectId;
 
+  // Android notifications without any Expo account: the Firebase project's
+  // client file, which identifies the project (it is not a secret, but it is
+  // one person's project, so it is gitignored like the identity above). Only
+  // named when present — naming a missing file fails the build.
+  const googleServices = path.join(__dirname, "google-services.json");
+  const android = fs.existsSync(googleServices)
+    ? { ...expo.android, googleServicesFile: "./google-services.json" }
+    : expo.android;
+
   return {
     ...expo,
+    android,
     ...(owner ? { owner } : {}),
     ...(projectId
       ? { extra: { ...expo.extra, eas: { ...expo.extra?.eas, projectId } } }

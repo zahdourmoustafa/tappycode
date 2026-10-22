@@ -1,5 +1,5 @@
 /**
- * What `pew2 doctor` shows you.
+ * What `tappy doctor` shows you.
  *
  * The old screen listed every agent, flagged the eight you had not installed,
  * then listed those same eight again underneath with a fix that suggested
@@ -108,7 +108,7 @@ export function doctorView(report: DoctorReport, options: RenderOptions = {}): s
   const errors = report.problems.filter((p) => p.severity === "error");
   const warnings = report.problems.filter((p) => p.severity === "warning");
 
-  const out = [...r.intro("pew2 doctor", "checking this machine")];
+  const out = [...r.intro("tappy doctor", "checking this machine")];
 
   const facts = checks(report);
   out.push(...r.step("Checked", plural(facts.length, "thing")));

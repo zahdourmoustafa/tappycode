@@ -20,6 +20,7 @@ import {
   rotatePairing,
   setRelay,
   claimPairing,
+  DEFAULT_RELAY,
   tokenFromUrl,
   tokenMatches,
   qrCode,
@@ -37,8 +38,8 @@ import { POSIX_MODES } from "./testing/platform.js";
 const FIXED = "fixed-test-secret-fixed-test-secret";
 
 async function sandbox() {
-  const home = await mkdtemp(join(tmpdir(), "pew2-pairing-"));
-  return { home, env: { PEW2_HOME: home } as NodeJS.ProcessEnv };
+  const home = await mkdtemp(join(tmpdir(), "tappy-pairing-"));
+  return { home, env: { TAPPY_HOME: home } as NodeJS.ProcessEnv };
 }
 
 test("a minted pairing is long, hex, and unpredictable", () => {
@@ -83,7 +84,7 @@ test("the token survives a restart and is not world-readable", async () => {
 
 test("a too-short stored token is replaced rather than trusted", async () => {
   const { env } = await sandbox();
-  await mkdir(join(env.PEW2_HOME!), { recursive: true });
+  await mkdir(join(env.TAPPY_HOME!), { recursive: true });
   await writeFile(pairingPath(env), JSON.stringify({ token: "guessme" }));
 
   const pairing = await loadPairing(env);
@@ -98,7 +99,7 @@ test("a pairing stored without a key is replaced rather than reused", async () =
   // still accepts unencrypted connections — the silent downgrade this change
   // exists to remove — so it is treated as no pairing at all.
   const { env } = await sandbox();
-  await mkdir(join(env.PEW2_HOME!), { recursive: true });
+  await mkdir(join(env.TAPPY_HOME!), { recursive: true });
   const legacy = "a".repeat(48);
   await writeFile(pairingPath(env), JSON.stringify({ token: legacy }));
 
@@ -114,7 +115,7 @@ test("upgrading a pre-encryption pairing keeps the relay", async () => {
   // worked from anywhere into one that only works on the same Wi-Fi, silently,
   // on upgrade, with nothing in the output to explain why.
   const { env } = await sandbox();
-  await mkdir(join(env.PEW2_HOME!), { recursive: true });
+  await mkdir(join(env.TAPPY_HOME!), { recursive: true });
   await writeFile(
     pairingPath(env),
     JSON.stringify({ token: "a".repeat(48), relay: "wss://relay.example.com" }),
@@ -128,11 +129,11 @@ test("upgrading a pre-encryption pairing keeps the relay", async () => {
   expect((await loadPairing(env)).relay).toBe("wss://relay.example.com");
 });
 
-test("an explicit PEW2_TOKEN still yields a usable, stable pairing", async () => {
+test("an explicit TAPPY_TOKEN still yields a usable, stable pairing", async () => {
   // Tests and containers run this way. Deriving a key rather than skipping
   // encryption keeps those runs on the same protocol as production, so the
   // encrypted path is the one actually exercised.
-  const env = { PEW2_TOKEN: FIXED } as NodeJS.ProcessEnv;
+  const env = { TAPPY_TOKEN: FIXED } as NodeJS.ProcessEnv;
 
   const first = await loadPairing(env);
   const second = await loadPairing(env);
@@ -183,7 +184,9 @@ test("token comparison rejects wrong, short, long and missing values", () => {
   expect(tokenMatches(token, token.slice(0, -1))).toBe(false);
   expect(tokenMatches(token, `${token}0`)).toBe(false);
   // A near-miss must not pass: the comparison is constant-time, not lenient.
-  expect(tokenMatches(token, `${token.slice(0, -1)}${token.endsWith("0") ? "1" : "0"}`)).toBe(false);
+  expect(tokenMatches(token, `${token.slice(0, -1)}${token.endsWith("0") ? "1" : "0"}`)).toBe(
+    false,
+  );
 });
 
 test("the pairing url round-trips through the app's parser", () => {
@@ -288,7 +291,7 @@ test("doctor reports pairing without minting a token", async () => {
   expect(paired.pairing.url).toBe(`ws://192.168.1.24:8787/?token=${token}`);
 });
 
-test("a running daemon with no token blocks, and points at `pew2 pair`", async () => {
+test("a running daemon with no token blocks, and points at `tappy pair`", async () => {
   const { env } = await sandbox();
 
   const report = await doctor({
@@ -301,7 +304,7 @@ test("a running daemon with no token blocks, and points at `pew2 pair`", async (
 
   const problem = report.problems.find((p) => p.id === "not-paired");
   expect(problem?.severity).toBe("error");
-  expect(problem?.fix).toBe("pew2 pair");
+  expect(problem?.fix).toBe("tappy pair");
   expect(report.ok).toBe(false);
 });
 
@@ -356,7 +359,9 @@ test("a relay makes the LAN address irrelevant", async () => {
 
   expect(report.problems.map((p) => p.id)).not.toContain("no-lan-address");
   expect(report.pairing.remote).toBe(true);
-  expect(report.pairing.url).toBe(`wss://relay.test/connect?pairing=${"t".repeat(48)}&role=app&deviceId=phone`);
+  expect(report.pairing.url).toBe(
+    `wss://relay.test/connect?pairing=${"t".repeat(48)}&role=app&deviceId=phone`,
+  );
 });
 
 test("without a relay, doctor warns that it is local-network only", async () => {
@@ -372,7 +377,7 @@ test("without a relay, doctor warns that it is local-network only", async () => 
   });
 
   const problem = report.problems.find((p) => p.id === "local-only");
-  expect(problem?.fix).toContain("pew2 relay");
+  expect(problem?.fix).toContain("tappy relay");
   // A warning, not an error: LAN-only is a working setup, just a limited one,
   // and an agent must not loop trying to "fix" a deliberate choice.
   expect(problem?.severity).toBe("warning");
@@ -383,12 +388,12 @@ test("without a relay, doctor warns that it is local-network only", async () => 
   );
 });
 
-test("a short PEW2_TOKEN is refused instead of quietly becoming a weak key", async () => {
+test("a short TAPPY_TOKEN is refused instead of quietly becoming a weak key", async () => {
   // The derivation is one HKDF pass with no salt and no stretching, so the root
-  // key inherits exactly the entropy of this string. `PEW2_TOKEN=pew2-staging`
+  // key inherits exactly the entropy of this string. `TAPPY_TOKEN=tappy-staging`
   // is a key that can be brute-forced offline against the room id the relay is
   // given — and the room id is public by design.
-  const env = { PEW2_TOKEN: "pew2-staging" } as NodeJS.ProcessEnv;
+  const env = { TAPPY_TOKEN: "tappy-staging" } as NodeJS.ProcessEnv;
 
   expect(loadPairing(env)).rejects.toThrow(/at least 32 characters/);
   // Named requirement, and a way to satisfy it: this fires at startup, where
@@ -434,7 +439,7 @@ test("rotating clears the claim, so a new phone can pair", async () => {
 });
 
 test("pointing at a relay keeps the claim", async () => {
-  // `pew2 relay <url>` rewrites the same file. Dropping the claim there would
+  // `tappy relay <url>` rewrites the same file. Dropping the claim there would
   // silently unlock the pairing as a side effect of changing where it connects.
   const { env } = await sandbox();
   await loadPairing(env);
@@ -445,11 +450,11 @@ test("pointing at a relay keeps the claim", async () => {
   expect((await loadPairing(env)).claimedBy).toBe("phone-aaaa");
 });
 
-test("a claim is never written beside a derived PEW2_TOKEN pairing", async () => {
+test("a claim is never written beside a derived TAPPY_TOKEN pairing", async () => {
   // That pairing is never read back from disk, so a file written here would be
   // ignored on the next run — a claim that looks enforced and is not.
   const { env } = await sandbox();
-  const scoped = { ...env, PEW2_TOKEN: FIXED };
+  const scoped = { ...env, TAPPY_TOKEN: FIXED };
 
   await claimPairing("phone-aaaa", scoped);
 
@@ -468,3 +473,48 @@ test("a placeholder claim left by a pre-gate app is overwritten", async () => {
 
   expect((await loadPairing(env)).claimedBy).toBe("phone-aaaa");
 });
+
+/** Runs `body` as a real install would: without the test run's "no default relay" guard. */
+async function withDefaultRelay(body: () => Promise<void>): Promise<void> {
+  const saved = process.env.TAPPY_DEFAULT_RELAY;
+  delete process.env.TAPPY_DEFAULT_RELAY;
+  try {
+    await body();
+  } finally {
+    if (saved !== undefined) process.env.TAPPY_DEFAULT_RELAY = saved;
+  }
+}
+
+test("a brand-new machine pairs through the public relay, so the first phone works anywhere", () =>
+  withDefaultRelay(async () => {
+    const { env } = await sandbox();
+    const pairing = await loadPairing(env);
+    expect(pairing.relay).toBe(DEFAULT_RELAY);
+    expect(DEFAULT_RELAY).toMatch(/^wss:\/\//);
+    // Written down, so it is the machine's setting from now on, not a guess per run.
+    expect(JSON.parse(await readFile(pairingPath(env), "utf8")).relay).toBe(DEFAULT_RELAY);
+  }));
+
+test("a machine that turned the relay off, or chose its own, is never given the default", () =>
+  withDefaultRelay(async () => {
+    const off = (await sandbox()).env;
+    await loadPairing(off);
+    await setRelay(undefined, off);
+    expect((await loadPairing(off)).relay).toBeUndefined();
+    // Not even when the pairing is re-minted.
+    expect((await rotatePairing(off)).relay).toBeUndefined();
+
+    const own = (await sandbox()).env;
+    await mkdir(own.TAPPY_HOME!, { recursive: true });
+    await writeFile(
+      pairingPath(own),
+      JSON.stringify({ token: "a".repeat(48), relay: "wss://mine.example.com" }),
+    );
+    expect((await loadPairing(own)).relay).toBe("wss://mine.example.com");
+
+    // And an old file with no relay in it stays same-network: it was never new.
+    const old = (await sandbox()).env;
+    await mkdir(old.TAPPY_HOME!, { recursive: true });
+    await writeFile(pairingPath(old), JSON.stringify({ token: "b".repeat(48) }));
+    expect((await loadPairing(old)).relay).toBeUndefined();
+  }));

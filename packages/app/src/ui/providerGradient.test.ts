@@ -9,7 +9,7 @@ function shippedColors(): { id: string; color: string }[] {
   return readdirSync(dir)
     .filter((name) => name.endsWith(".json"))
     .map((name) => JSON.parse(readFileSync(join(dir, name), "utf8")))
-    .map((manifest) => ({ id: manifest.id as string, color: manifest.pew?.color ?? "" }))
+    .map((manifest) => ({ id: manifest.id as string, color: manifest.tappy?.color ?? "" }))
     .filter((entry) => entry.color !== "");
 }
 

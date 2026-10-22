@@ -1,8 +1,8 @@
 /**
- * Painting one frame of Pew: projection, the LED face, the drawn face for
+ * Painting one frame of Tappy: projection, the LED face, the drawn face for
  * small sizes, and the extras around the head.
  *
- * Split out of `engine.ts`, which re-exports `ledFace` and `paintPew`. Reads
+ * Split out of `engine.ts`, which re-exports `ledFace` and `paintTappy`. Reads
  * the pose that `engineBody.ts` simulated; never moves a dot itself.
  *
  * Imports are safe for worklets in a way a helper further down this file is
@@ -10,7 +10,7 @@
  * defined, so every imported helper is captured as itself.
  */
 import {
-  PEW_AMBER,
+  TAPPY_AMBER,
   SCALE,
   TAU,
   blink,
@@ -24,10 +24,10 @@ import {
   talkOpen,
   type Motion,
   type MoodState,
-  type PewBody,
-  type PewMood,
-  type PewPainter,
-  type PewPalette,
+  type TappyBody,
+  type TappyMood,
+  type TappyPainter,
+  type TappyPalette,
   type RGB,
 } from "./engineBody";
 
@@ -41,7 +41,7 @@ const WHITE: RGB = [255, 255, 255];
 const LED_FACE_MIN = 300;
 /** Extras (thought bubbles, z's, sparkles) need room to read. */
 const EXTRAS_MIN = 56;
-/** How far a small Pew's unlit dots glow toward its colour (0 off, 1 lit). */
+/** How far a small Tappy's unlit dots glow toward its colour (0 off, 1 lit). */
 const SMALL_GLOW = 0.6;
 const SMALL_GLOW_SLEEPY = 0.42;
 
@@ -95,7 +95,7 @@ function proj3(x: number, y: number, z: number, V: View, out: Projected): Projec
   return out;
 }
 
-function projectAll(B: PewBody, V: View): void {
+function projectAll(B: TappyBody, V: View): void {
   "worklet";
   const p = B.p;
   const s = B.scr;
@@ -132,7 +132,7 @@ function snore(T: number): number {
   return 0.5 + 0.5 * Math.sin(T * 0.9);
 }
 
-/** The LED face of a sleeping Pew in style `sl`; `T` is its sleep clock. */
+/** The LED face of a sleeping Tappy in style `sl`; `T` is its sleep clock. */
 function sleepFace(u: number, w: number, T: number, sl: number): number {
   "worklet";
   const ey = 0.17;
@@ -174,7 +174,7 @@ function sleepFace(u: number, w: number, T: number, sl: number): number {
 }
 
 /** Is the LED at face coordinates (u, w) part of the face for this mood? 0..1 */
-export function ledFace(u: number, w: number, mood: PewMood, open: number, t: number, sleepIn?: number): number {
+export function ledFace(u: number, w: number, mood: TappyMood, open: number, t: number, sleepIn?: number): number {
   "worklet";
   if (mood === "sleepy") return sleepFace(u, w, t, sleepIn ?? 0);
   for (let side = -1; side <= 1; side += 2) {
@@ -225,7 +225,7 @@ const C1: RGB = [0, 0, 0];
 /** Seconds a face takes to dissolve into the next mood's. */
 const FACE_BLEND = 0.35;
 
-function paintLeds(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number, open: number, P: PewPainter): void {
+function paintLeds(B: TappyBody, V: View, pal: TappyPalette, st: MoodState, t: number, open: number, P: TappyPainter): void {
   "worklet";
   const R = V.R;
   const base = R * Math.sqrt((4 * Math.PI) / B.n) * 0.36;
@@ -238,12 +238,12 @@ function paintLeds(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: numbe
     gu = 0.1;
     gw = 0.08;
   }
-  const lit = mood === "oops" ? PEW_AMBER : pal.base;
+  const lit = mood === "oops" ? TAPPY_AMBER : pal.base;
   const ledFaceOn = B.n >= LED_FACE_MIN;
   const T = mood === "sleepy" ? sleepClock(B, t) : t;
   // How much of the previous face is still showing: 1 at the change, eased to
   // 0 over FACE_BLEND seconds.
-  const prev: PewMood = B.prevMood === "" ? mood : B.prevMood;
+  const prev: TappyMood = B.prevMood === "" ? mood : B.prevMood;
   const blendOld = prev !== mood ? 1 - smooth(0, FACE_BLEND, st.age) : 0;
   for (let oi = 0; oi < B.order.length; oi++) {
     const i = B.order[oi]!;
@@ -300,7 +300,7 @@ function paintLeds(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: numbe
         if (hash(i * 3.1 + Math.floor(t * 14)) > 0.86) on = Math.max(on, 0.8 * st.decay + 0.15);
         break;
     }
-    // A small Pew has no LED face to light, so the Matrix look (a dark globe
+    // A small Tappy has no LED face to light, so the Matrix look (a dark globe
     // with a lit face) would read as a dark ball: its body glows faintly in its
     // colour instead, which is what tells one agent's chip from another's.
     if (!ledFaceOn) on = Math.max(on, mood === "sleepy" ? SMALL_GLOW_SLEEPY : SMALL_GLOW);
@@ -342,7 +342,7 @@ function faceProj(u: number, w: number, V: View, out: Projected): Projected {
   return proj3(u, w, zc, V, out);
 }
 
-function drawFace(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number, open: number, P: PewPainter, fade = 1): void {
+function drawFace(B: TappyBody, V: View, pal: TappyPalette, st: MoodState, t: number, open: number, P: TappyPainter, fade = 1): void {
   "worklet";
   const mood = st.mood;
   const oops = mood === "oops";
@@ -360,8 +360,8 @@ function drawFace(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number
   }
   const R = V.R;
   const fx = Math.max(0.3, V.facing);
-  const col = oops ? PEW_AMBER : pal.eye;
-  const gc = oops ? PEW_AMBER : pal.glow;
+  const col = oops ? TAPPY_AMBER : pal.eye;
+  const gc = oops ? TAPPY_AMBER : pal.glow;
   const halo = R * 0.2;
   const rot = V.m.rot;
   const E: Projected = { sx: 0, sy: 0, z: 0, f: 1, x1: 0, y2: 0 };
@@ -453,7 +453,7 @@ function star(x: number, y: number, r: number): number[] {
   return pts;
 }
 
-function extras(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number, ground: number, P: PewPainter): void {
+function extras(B: TappyBody, V: View, pal: TappyPalette, st: MoodState, t: number, ground: number, P: TappyPainter): void {
   "worklet";
   const R = V.R;
   const ax = V.cx;
@@ -513,7 +513,7 @@ function extras(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number, 
       if (sc <= 0) break;
       const x = ax + R * 0.85;
       const y = ay - R * 0.1 + Math.sin(t * 3) * R * 0.04;
-      P.dot(x, y, R * 0.22 * sc, PEW_AMBER, 1);
+      P.dot(x, y, R * 0.22 * sc, TAPPY_AMBER, 1);
       P.line([x, y - R * 0.11 * sc, x, y + R * 0.02 * sc], R * 0.06 * sc, AMBER_INK, 1, 0, AMBER_INK);
       P.dot(x, y + R * 0.095 * sc, R * 0.035 * sc, AMBER_INK, 1);
       break;
@@ -527,10 +527,10 @@ function extras(B: PewBody, V: View, pal: PewPalette, st: MoodState, t: number, 
 // ── a frame ─────────────────────────────────────────────────
 
 /**
- * Paint the current pose. `advancePew` (or `settlePew`) must have run for
+ * Paint the current pose. `advanceTappy` (or `settleTappy`) must have run for
  * this `t` first; painting never changes the body except its draw order.
  */
-export function paintPew(B: PewBody, t: number, mood: PewMood, pal: PewPalette, P: PewPainter): void {
+export function paintTappy(B: TappyBody, t: number, mood: TappyMood, pal: TappyPalette, P: TappyPainter): void {
   "worklet";
   const S = B.S;
   const st = effectiveMood(B, t, mood);
@@ -573,7 +573,7 @@ export function paintPew(B: PewBody, t: number, mood: PewMood, pal: PewPalette, 
   projectAll(B, V);
   paintLeds(B, V, pal, st, t, open, P);
   if (B.n < LED_FACE_MIN) {
-    // Small Pews draw the face as shapes: mid-change, the old face fades out
+    // Small Tappies draw the face as shapes: mid-change, the old face fades out
     // under the new one fading in, the same cross-dissolve as the LED face.
     const prev = B.prevMood;
     const k = prev !== "" && prev !== st.mood ? smooth(0, FACE_BLEND, st.age) : 1;

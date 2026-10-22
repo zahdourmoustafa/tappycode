@@ -133,7 +133,7 @@ export function useTypingState() {
   // `typingRef` mirrors the app's own keyboard state (set from the will-show /
   // will-hide events below). `Keyboard.isVisible()` was the first try and is
   // not reliable here: it could stay true after the keyboard had gone, and
-  // then every tap on Pew only "dismissed" a keyboard that wasn't there.
+  // then every tap on Tappy only "dismissed" a keyboard that wasn't there.
   const typingRef = useRef(false);
 
   // Composing takes the screen. iOS gets `will`, so the button is gone before

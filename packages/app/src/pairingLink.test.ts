@@ -63,7 +63,7 @@ test("adds the device id the relay requires", () => {
 });
 
 test("replaces the device id carried by the link with this install's own", () => {
-  // `pew2 pair` prints `deviceId=phone` so the URL is valid standalone. Keeping
+  // `tappy pair` prints `deviceId=phone` so the URL is valid standalone. Keeping
   // it would give every phone that scanned a QR the same identity — and the
   // daemon admits one device per pairing by exactly this id, so a shared
   // placeholder would let a leaked link impersonate the phone that claimed it.
@@ -94,7 +94,7 @@ test("rejects a link with no token", () => {
   expect(result.ok).toBe(false);
   if (result.ok) return;
   // Names the command that produces a correct link.
-  expect(result.error).toContain("pew2 pair");
+  expect(result.error).toContain("tappy pair");
 });
 
 test("rejects a truncated token rather than failing later at the socket", () => {
@@ -158,7 +158,7 @@ test("a link with no key is refused with something to do about it", () => {
 
   expect(result.ok).toBe(false);
   if (result.ok) return;
-  expect(result.error).toContain("pew2 pair");
+  expect(result.error).toContain("tappy pair");
 });
 
 test("a damaged or wrong-length key is refused rather than used", () => {

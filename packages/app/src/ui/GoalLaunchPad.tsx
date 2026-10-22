@@ -19,8 +19,8 @@ import { theme } from "../theme";
 import { haptics } from "./haptics";
 import { Led } from "./stage/Led";
 import { StageButton } from "./stage/StageButton";
-import { Pew } from "../pew/Pew";
-import { KEN_COLOR } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { KEN_COLOR } from "../tappy/palette";
 import { EASE_OUT } from "./motion/ease";
 import { DUR } from "../motion";
 import type { LaunchFxValues } from "./LaunchFx";
@@ -44,7 +44,7 @@ export const COVER_LAG_S = 0.07;
 /** A full hold, start to blast. Long enough to feel the build. */
 const HOLD_MS = 1600;
 const KEN_SIZE = 180;
-/** The globe fills about 60% of Pew's box. */
+/** The globe fills about 60% of Tappy's box. */
 const KEN_RADIUS = KEN_SIZE * 0.3;
 const RING_BOX = Math.ceil(KEN_RADIUS * RING_SCALE * 2 + 48);
 
@@ -156,7 +156,7 @@ export function LaunchPad({ ready, pending, plain, fx, onFire, onLaunch, onScene
       <View style={styles.ring}>
         <Reanimated.View style={kenStyle}>
           <View ref={ken} collapsable={false} onLayout={measure}>
-            <Pew size={KEN_SIZE} mood={holding || pending ? "working" : "happy"} color={KEN_COLOR} accessibilityLabel="Ken" />
+            <Tappy size={KEN_SIZE} mood={holding || pending ? "working" : "happy"} color={KEN_COLOR} accessibilityLabel="Ken" />
           </View>
         </Reanimated.View>
       </View>

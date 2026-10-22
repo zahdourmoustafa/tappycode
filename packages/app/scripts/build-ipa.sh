@@ -36,7 +36,7 @@ export LC_ALL=en_US.UTF-8
 EAS="npx -y eas-cli@21.7.0"
 
 DESKTOP="$HOME/Desktop"
-STAGE="$(mktemp -d)/pew2.ipa"
+STAGE="$(mktemp -d)/tappy.ipa"
 
 # `appVersionSource: remote` in eas.json means the build number lives on Expo's
 # servers and `autoIncrement` in the production profile bumps it there. So this
@@ -55,13 +55,13 @@ $EAS build --local --platform ios --profile production --output "$STAGE"
 # was actually built is the thing that was built.
 WORK="$(mktemp -d)"
 unzip -q "$STAGE" -d "$WORK"
-APP="$WORK/Payload/pew2.app"
+APP="$WORK/Payload/tappy.app"
 PLIST="$APP/Info.plist"
 BUILD=$(plutil -extract CFBundleVersion raw "$PLIST")
 VERSION=$(plutil -extract CFBundleShortVersionString raw "$PLIST")
 
 # Both are used to name the file that replaces the previous one, so an empty
-# read would delete a good build and leave `pew2-build.ipa` behind.
+# read would delete a good build and leave `tappy-build.ipa` behind.
 if [ -z "$BUILD" ] || [ -z "$VERSION" ]; then
   echo "Could not read a version out of the archive; leaving the Desktop alone." >&2
   exit 1
@@ -90,8 +90,8 @@ fi
 
 # Only now is the old one removed. Deleting first and building second leaves the
 # Desktop with nothing to upload if the build fails.
-rm -f "$DESKTOP"/pew2-build*.ipa
-FINAL="$DESKTOP/pew2-build$BUILD.ipa"
+rm -f "$DESKTOP"/tappy-build*.ipa
+FINAL="$DESKTOP/tappy-build$BUILD.ipa"
 mv "$STAGE" "$FINAL"
 rm -rf "$WORK"
 

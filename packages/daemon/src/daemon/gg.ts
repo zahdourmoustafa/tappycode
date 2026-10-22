@@ -7,7 +7,7 @@ import { connectProvider, type AcpSessionHandle } from "../acp/connect.js";
 import { resolve as __resolve } from "node:path";
 import { resolveWorkspace } from "../workspace.js";
 import { pushFinishedTurn } from "../push.js";
-import { wire } from "@pew2/protocol";
+import { wire } from "@tappy/protocol";
 import { DaemonProjects } from "./projects.js";
 import { AUTOPILOT_PHASES, GG_GOALS_ID, GG_PROVIDER_ID, type ActiveSession } from "./types.js";
 

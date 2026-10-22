@@ -6,7 +6,7 @@ import { goalFilesRoot, storeGoalFiles } from "./goalFiles";
 
 const b64 = (s: string) => Buffer.from(s).toString("base64");
 
-test("phone files are written under pew2's home, owner-only, in order", async () => {
+test("phone files are written under tappy's home, owner-only, in order", async () => {
   const root = await mkdtemp(join(tmpdir(), "goal-files-"));
   const paths = await storeGoalFiles(
     [
@@ -35,7 +35,7 @@ test("the attachment ceilings apply", async () => {
   ).rejects.toThrow();
 });
 
-test("lives under PEW2_HOME, never the tempdir", () => {
+test("lives under TAPPY_HOME, never the tempdir", () => {
   // Built with join on both sides, so the separator is the platform's own.
-  expect(goalFilesRoot({ PEW2_HOME: join("x", "home") } as NodeJS.ProcessEnv)).toBe(join("x", "home", "goal-files"));
+  expect(goalFilesRoot({ TAPPY_HOME: join("x", "home") } as NodeJS.ProcessEnv)).toBe(join("x", "home", "goal-files"));
 });

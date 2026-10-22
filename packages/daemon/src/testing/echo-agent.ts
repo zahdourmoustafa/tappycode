@@ -2,7 +2,7 @@
 /**
  * A minimal, dependency-light ACP agent used as a test fixture.
  *
- * It needs no API key and no network, so `pew2 providers verify echo` exercises
+ * It needs no API key and no network, so `tappy providers verify echo` exercises
  * the entire pipeline — spawn, initialize, session/new, prompt, streamed updates,
  * permission request — on any machine.
  *
@@ -81,7 +81,7 @@ const configOptions = [
   },
 ];
 
-const app = agent({ name: "pew2-echo" })
+const app = agent({ name: "tappy-echo" })
   .onRequest("initialize", async () => ({
     protocolVersion: 1,
     agentCapabilities: {
@@ -89,7 +89,7 @@ const app = agent({ name: "pew2-echo" })
       sessionCapabilities: { list: {}, resume: {} },
       promptCapabilities: { image: false },
     },
-    agentInfo: { name: "pew2-echo", title: "Echo", version: "0.1.0" },
+    agentInfo: { name: "tappy-echo", title: "Echo", version: "0.1.0" },
     authMethods: [],
   }))
   .onRequest("session/new", async (ctx) => {

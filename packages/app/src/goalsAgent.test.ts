@@ -35,10 +35,10 @@ describe("suggestGoalName", () => {
 });
 
 describe("goalDrawerRow", () => {
-  const goal = { id: "g1", name: "Pew2-gg", status: "interrupted", path: "/goals/g1", lastActiveMs: 5 };
+  const goal = { id: "g1", name: "Tappy-gg", status: "interrupted", path: "/goals/g1", lastActiveMs: 5 };
   test("reads like a chat row: title, then status · when", () => {
     const { row, meta } = goalDrawerRow(goal, "11m ago");
-    expect(row.title).toBe("Pew2-gg");
+    expect(row.title).toBe("Tappy-gg");
     expect(row.busy).toBe(false);
     expect(meta).toBe("Interrupted · 11m ago");
   });

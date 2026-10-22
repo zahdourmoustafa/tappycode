@@ -1,5 +1,5 @@
 /**
- * The layout of `pew2 pair`, as pure functions.
+ * The layout of `tappy pair`, as pure functions.
  *
  * Rendering is separated from doing so the screen can be tested without a
  * daemon, a relay, a phone or a terminal. Every function here takes plain data
@@ -74,7 +74,7 @@ const GUTTER_WIDTH = 2;
  * The rail prefix every line hangs off.
  *
  * This screen used to indent with two plain spaces under its own rule, which
- * made `pew2 pair` the one command that did not look like the rest of pew2.
+ * made `tappy pair` the one command that did not look like the rest of tappy.
  * The pipe carries colour, so unlike a bare string it has to be built per call
  * from the caller's style.
  */
@@ -128,7 +128,7 @@ export function blockWidth(block: string): number {
  * together, and a rule on top of it is two borders doing one job.
  */
 export function header(options: RenderOptions = {}): string[] {
-  return rail(options).intro("pew2 pair", "connect a phone");
+  return rail(options).intro("tappy pair", "connect a phone");
 }
 
 /** The two things the user physically does, numbered so neither is skipped. */
@@ -140,7 +140,7 @@ export function steps(options: RenderOptions = {}): string[] {
 
   return [
     ...rail(options).step("On your phone"),
-    `${g_}${bullet(1)} ${s.dim("Open")} pew2 ${s.dim("on your phone")}`,
+    `${g_}${bullet(1)} ${s.dim("Open")} tappy ${s.dim("on your phone")}`,
     `${g_}${bullet(2)} ${s.dim("Tap")} Pair ${s.dim("and scan the code above")}`,
   ];
 }
@@ -206,7 +206,7 @@ export function statusRows(view: PairView, options: RenderOptions = {}): string[
   rows.push(
     view.daemonRunning
       ? `${g_}${label("daemon")}${mark("ok")} ${s.dim(`running ${g.dot} port ${view.port}`)}`
-      : `${g_}${label("daemon")}${mark("bad")} ${s.bold("not running")} ${s.dim(`${g.dot} pew2 service install`)}`,
+      : `${g_}${label("daemon")}${mark("bad")} ${s.bold("not running")} ${s.dim(`${g.dot} tappy service install`)}`,
   );
 
   // ── token ──────────────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ export function closingLines(daemonRunning: boolean, options: RenderOptions = {}
   return rail(options).outro(
     daemonRunning
       ? s.dim("Scan the code above when you are ready.")
-      : `${s.dim("Start the daemon before scanning:")} ${s.bold("pew2 service install")}`,
+      : `${s.dim("Start the daemon before scanning:")} ${s.bold("tappy service install")}`,
     daemonRunning ? undefined : "stop",
   );
 }

@@ -1,6 +1,6 @@
-# pew2 installer for Windows.
+# tappy installer for Windows.
 #
-#   irm https://raw.githubusercontent.com/KenKaiii/pew2/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/zahdourmoustafa/tappycode/main/install.ps1 | iex
 #
 # Downloads one self-contained executable. No Node, no Bun, no git clone - the
 # runtime is compiled in, which is the point: someone who installed the phone
@@ -11,10 +11,10 @@
 
 $ErrorActionPreference = 'Stop'
 
-$Repo = 'KenKaiii/pew2'
+$Repo = 'zahdourmoustafa/tappycode'
 # LOCALAPPDATA rather than Program Files: no administrator prompt, and it is a
 # per-user install, which is what this is.
-$InstallDir = if ($env:PEW2_INSTALL_DIR) { $env:PEW2_INSTALL_DIR } else { "$env:LOCALAPPDATA\pew2" }
+$InstallDir = if ($env:TAPPY_INSTALL_DIR) { $env:TAPPY_INSTALL_DIR } else { "$env:LOCALAPPDATA\tappy" }
 
 function Say  { param($m) Write-Host $m }
 function Step { param($m) Write-Host "  $m" -ForegroundColor DarkGray }
@@ -22,7 +22,7 @@ function Ok   { param($m) Write-Host "  " -NoNewline; Write-Host "OK" -Foregroun
 function Die  { param($m) Write-Host ""; Write-Host "  X $m" -ForegroundColor Red; Write-Host ""; exit 1 }
 
 Say ""
-Write-Host "  pew2" -ForegroundColor White
+Write-Host "  tappy" -ForegroundColor White
 Step "your coding agents, on your phone"
 Say ""
 
@@ -31,16 +31,18 @@ Say ""
 # Only x64 is published today. ARM64 Windows runs x64 through emulation, so the
 # x64 build works there rather than failing outright - slower, but working beats
 # an error telling someone their laptop is unsupported.
-$asset = 'pew2-windows-x64.exe'
-$url   = "https://github.com/$Repo/releases/latest/download/$asset"
+$asset = 'tappy-windows-x64.exe'
+# Overridable so a build can be installed exactly as a user would, before it is public.
+$base  = if ($env:TAPPY_DOWNLOAD_BASE) { $env:TAPPY_DOWNLOAD_BASE } else { "https://github.com/$Repo/releases/latest/download" }
+$url   = "$base/$asset"
 
 Step "Downloading..."
 
 # --- download ---------------------------------------------------------------
 
-$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("pew2-" + [guid]::NewGuid())
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("tappy-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmp -Force | Out-Null
-$exe = Join-Path $tmp 'pew2.exe'
+$exe = Join-Path $tmp 'tappy.exe'
 
 try {
   # Invoke-WebRequest shows a progress bar that is slower than the download on
@@ -67,7 +69,7 @@ if (-not (Test-Path $exe) -or (Get-Item $exe).Length -eq 0) {
 $expected = $null
 try {
   $ProgressPreference = 'SilentlyContinue'
-  $sumFile = Join-Path $tmp 'pew2.sha256'
+  $sumFile = Join-Path $tmp 'tappy.sha256'
   Invoke-WebRequest -Uri "$url.sha256" -OutFile $sumFile -UseBasicParsing
   # sha256sum writes "<hash>  <filename>", so the hash is the first field.
   $expected = (Get-Content $sumFile -Raw).Split(' ')[0].Trim().ToLower()
@@ -86,14 +88,14 @@ if ($expected) {
 # --- install ----------------------------------------------------------------
 
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-$target = Join-Path $InstallDir 'pew2.exe'
+$target = Join-Path $InstallDir 'tappy.exe'
 
 try {
   # A running daemon holds a lock on its own executable, so overwriting fails
   # with a message about the file being in use. Saying what to do beats that.
   Move-Item -Path $exe -Destination $target -Force
 } catch {
-  Die "Could not write to $InstallDir. If pew2 is already running, close it and try again."
+  Die "Could not write to $InstallDir. If tappy is already running, close it and try again."
 }
 
 Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
@@ -106,8 +108,8 @@ Ok "Installed to $target"
 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 
 # Compared entry by entry rather than with -like. That does wildcard matching, so
-# a bracket in a custom PEW2_INSTALL_DIR would break the test, and a substring
-# match would see an existing "C:\tools\pew2-old" as this directory already
+# a bracket in a custom TAPPY_INSTALL_DIR would break the test, and a substring
+# match would see an existing "C:\tools\tappy-old" as this directory already
 # being present and skip adding the real one.
 $entries = @()
 if ($userPath) { $entries = $userPath.Split(';') | Where-Object { $_ } }
@@ -125,12 +127,21 @@ if (-not $already) {
   Step "Open a new terminal for this to apply everywhere."
 }
 
+# Straight into pairing, so installing is the only command anyone runs: it
+# starts tappy in the background, sets up the terminal, and shows the code the
+# phone scans. Skipped when nobody is there to scan it.
+if (-not $env:TAPPY_NO_PAIR -and [Environment]::UserInteractive -and -not [Console]::IsOutputRedirected) {
+  Say ""
+  Write-Host "  Connect your phone" -ForegroundColor White
+  & (Join-Path $InstallDir 'tappy.exe') pair
+  exit $LASTEXITCODE
+}
+
 Say ""
 Write-Host "  Done." -ForegroundColor White -NoNewline
 Say " Next, run:"
 Say ""
-Write-Host "    pew2 setup" -ForegroundColor White
+Write-Host "    tappy pair" -ForegroundColor White
 Say ""
-Step "It finds your coding agents, gets them running, and shows the"
-Step "code you scan with the app."
+Step "It starts tappy in the background and shows the code you scan with the app."
 Say ""

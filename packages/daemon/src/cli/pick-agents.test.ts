@@ -23,7 +23,7 @@ test("without a terminal it takes the defaults instead of waiting forever", asyn
 });
 
 test("a previous choice survives a non-interactive run", async () => {
-  // `pew2 setup` piped into a log must not quietly re-enable what someone
+  // `tappy setup` piped into a log must not quietly re-enable what someone
   // turned off by hand.
   const chosen = await pickAgents(items, {
     disabled: new Set(["opencode"]),

@@ -1,6 +1,6 @@
 /** GG Coder useAgentEvents.ts: first-immediate / subsequent-100ms batching.
- * Unlike GG's concatenated buffer, retain pew2's chunk seams and sequence IDs.
- * See DESIGN.md. Bounds are pew2 safety limits, not upstream tuning.
+ * Unlike GG's concatenated buffer, retain tappy's chunk seams and sequence IDs.
+ * See DESIGN.md. Bounds are tappy safety limits, not upstream tuning.
  */
 import type { Chunk } from "./chunks";
 import { applyChunk, capTurns } from "./replayFold";

@@ -17,7 +17,7 @@
     "Cline"
   ],
   "license": "Apache-2.0",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#818cf8"
   }

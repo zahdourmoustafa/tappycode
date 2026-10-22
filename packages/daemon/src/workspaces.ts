@@ -86,15 +86,15 @@ const SKIP = new Set([
  * matters: `/` would expose every other account on a shared machine, plus system
  * directories that are nobody's project.
  *
- * `PEW2_BROWSE_ROOTS` exists for the volume-of-code-on-an-external-disk case,
- * and is opt-in for the same reason `PEW2_IMAGE_ROOTS` is.
+ * `TAPPY_BROWSE_ROOTS` exists for the volume-of-code-on-an-external-disk case,
+ * and is opt-in for the same reason `TAPPY_IMAGE_ROOTS` is.
  */
 export function browsableRoots(
   env: NodeJS.ProcessEnv = process.env,
   home: string = homedir(),
 ): string[] {
   const roots = [resolve(home)];
-  for (const extra of (env.PEW2_BROWSE_ROOTS ?? "").split(":")) {
+  for (const extra of (env.TAPPY_BROWSE_ROOTS ?? "").split(":")) {
     if (extra.trim()) roots.push(resolve(extra.trim()));
   }
   return roots;
@@ -269,7 +269,7 @@ async function modifiedAt(path: string): Promise<string | undefined> {
 /**
  * The folders the phone's suggestions are looked for in: the ones the user has
  * already added — GG Coder's own project list (`~/.gg/projects.json`) and the
- * folders pew2 has been pointed at (`known-projects.json`). Nothing else.
+ * folders tappy has been pointed at (`known-projects.json`). Nothing else.
  *
  * Scanning the whole home folder for repositories reached into Documents,
  * Desktop, Downloads, Photos and Music, and macOS asked permission for each
@@ -292,7 +292,7 @@ export async function suggestionRoots(
       if (typeof path === "string" && isAbsolute(path)) candidates.push(path);
     }
   } catch {
-    // No GG Coder projects file: suggestions come from pew2's own list alone.
+    // No GG Coder projects file: suggestions come from tappy's own list alone.
   }
   const seen = new Set<string>();
   const roots: string[] = [];

@@ -1,6 +1,6 @@
 /**
  * The Skia plumbing shared by everything that records a picture per frame on
- * the UI thread (Pew, the goal launch, the thinking dial).
+ * the UI thread (Tappy, the goal launch, the thinking dial).
  *
  * Why it exists: React Native Skia (2.2) files every Skia object a worklet
  * touches into one global table per runtime, and that table has no lock. An
@@ -44,9 +44,9 @@ interface FrameKit {
 /** Start recording a w×h frame on the UI thread, with the runtime's one recorder. */
 export function beginFrame(w: number, h: number): SkCanvas {
   "worklet";
-  const g = globalThis as unknown as { __pewFrameKit?: FrameKit };
-  if (!g.__pewFrameKit) g.__pewFrameKit = { recorder: Skia.PictureRecorder(), rects: {} };
-  const kit = g.__pewFrameKit;
+  const g = globalThis as unknown as { __tappyFrameKit?: FrameKit };
+  if (!g.__tappyFrameKit) g.__tappyFrameKit = { recorder: Skia.PictureRecorder(), rects: {} };
+  const kit = g.__tappyFrameKit;
   const key = w + "x" + h;
   let rect = kit.rects[key];
   if (!rect) {
@@ -59,6 +59,6 @@ export function beginFrame(w: number, h: number): SkCanvas {
 /** Finish the frame `beginFrame` started. */
 export function endFrame(): SkPicture {
   "worklet";
-  const g = globalThis as unknown as { __pewFrameKit: FrameKit };
-  return g.__pewFrameKit.recorder.finishRecordingAsPicture();
+  const g = globalThis as unknown as { __tappyFrameKit: FrameKit };
+  return g.__tappyFrameKit.recorder.finishRecordingAsPicture();
 }

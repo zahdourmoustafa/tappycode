@@ -13,7 +13,7 @@
     ]
   },
   "license": "MIT",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#8b8b8b",
     "requiresWorkspace": false,

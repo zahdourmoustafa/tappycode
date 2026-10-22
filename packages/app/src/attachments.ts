@@ -6,7 +6,7 @@
  * Expo bindings live in `ui/attachmentPicker.ts`, so this module stays
  * importable by `bun test` (which cannot parse React Native's Flow syntax).
  *
- * The limits are duplicated from `@pew2/protocol` rather than imported, and
+ * The limits are duplicated from `@tappy/protocol` rather than imported, and
  * that is deliberate: Metro cannot resolve that package's `.js`-suffixed TS
  * imports, so importing it fails the *bundle*, not just a type check. The
  * daemon holds the authoritative copy and re-checks every prompt — these exist

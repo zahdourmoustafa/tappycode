@@ -16,7 +16,7 @@
     "kenkaiiii"
   ],
   "license": "MIT",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#4ade80",
     "commandDirs": [

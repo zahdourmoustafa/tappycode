@@ -1,5 +1,5 @@
 /**
- * pew2 daemon.
+ * tappy daemon.
  *
  * Runs on the user's machine. Owns provider discovery, agent processes, and the
  * per-session event log, then bridges all of it to the relay over one WebSocket.
@@ -16,8 +16,30 @@ import { discardAttachments } from "./attachments.js";
 import { folderName } from "./workspace.js";
 import { writeConfigPref } from "./config-prefs.js";
 import { writeSessionPrefs } from "./session-prefs.js";
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 import { DaemonConnectSession } from "./daemon/connect-session.js";
+import {
+  codexHome,
+  codexSource,
+  ggcoderSessions,
+  ggcoderSource,
+} from "./terminals/agent-mirrors.js";
+import { claudeHome, claudeSource } from "./terminals/claude-mirror.js";
+import {
+  launchAgent,
+  type LaunchOptions,
+  type LaunchResult,
+  rememberTerminalApp,
+} from "./terminals/launch.js";
+import { samePath, terminalPlatform } from "./terminals/platform.js";
+import { GgcoderLog, type LogRun } from "./terminals/ggcoder-log.js";
+import { dirname, join } from "node:path";
+import { type MirrorSource, TerminalMirror } from "./terminals/mirror.js";
+import { TerminalRegistry } from "./terminals/registry.js";
+import { pushFinishedTurn } from "./push.js";
+
+/** How each terminal agent is named in a notification. */
+const TERMINAL_AGENT_NAMES = { claude: "Claude", codex: "Codex", ggcoder: "GG Coder" } as const;
 import {
   GG_GOALS_ID,
   GG_PROVIDER_ID,
@@ -38,6 +60,307 @@ export {
 } from "./daemon/types.js";
 
 export class Daemon extends DaemonConnectSession {
+  /**
+   * Agents started the ordinary way in a terminal, that the phone can type into.
+   * Every change goes to every client, the same fan-out as the session log.
+   */
+  readonly terminals = new TerminalRegistry(
+    () => {
+      this.syncMirrors();
+      this.announceTerminals();
+    },
+    Date.now,
+    {
+      activity: (id, activity) => this.terminalActivity(id, activity),
+      live: (id, live) => {
+        this.screenLive.add(id);
+        this.terminalLive(id, live);
+      },
+    },
+  );
+
+  /** Terminals whose wrapper reads the screen itself; GG Coder's log is not needed for them. */
+  private readonly screenLive = new Set<string>();
+  /** GG Coder's debug log, followed while any GG Coder terminal is open (`ggcoder-log.ts`). */
+  private ggcoderLog?: GgcoderLog;
+
+  /**
+   * What GG Coder's log says one of its processes is doing, for the terminals
+   * running it — only those whose wrapper predates the screen reader, so the
+   * two never both drive one terminal.
+   */
+  private ggcoderRun(run: LogRun) {
+    for (const link of this.terminals.links()) {
+      if (link.agent !== "ggcoder" || link.pid !== run.pid || this.screenLive.has(link.id))
+        continue;
+      // Activity first: a run starting sets the previous screen aside, and the
+      // run itself then replaces it.
+      this.terminalActivity(link.id, run.activity);
+      this.terminalLive(link.id, { turn: run.turn, messages: run.messages });
+    }
+  }
+
+  /**
+   * The run each terminal's screen shows that its file does not have yet.
+   *
+   * Shown only while it is news: while the agent works, and for a moment after
+   * it stops while the file is written. The file wins as soon as it has the
+   * turn — the first time the mirror appends a message from the person, the
+   * live copy of that turn is retired for good, so the phone never shows the
+   * same turn twice. Retired too after a grace period if the file never comes
+   * (an agent that crashed mid-turn), rather than a stale screen staying up.
+   */
+  private readonly live = new Map<
+    string,
+    {
+      turn: number;
+      messages: wire.TerminalMessage[];
+      retired?: number;
+      sent: string;
+      grace?: ReturnType<typeof setTimeout>;
+      /**
+       * Whether `messages` was read during this run. A run starting is
+       * reported before its screen is; until then `messages` is the screen
+       * from before, which must not be shown as the new run.
+       */
+      fresh?: boolean;
+    }
+  >();
+  private static readonly LIVE_GRACE_MS = 15_000;
+
+  private terminalLive(id: string, report: { turn: number; messages: wire.TerminalMessage[] }) {
+    const state = this.live.get(id) ?? { turn: report.turn, messages: [], sent: "[]" };
+    this.live.set(id, state);
+    if (report.turn !== state.turn) {
+      state.turn = report.turn;
+      clearTimeout(state.grace);
+      state.grace = undefined;
+    }
+    state.messages = report.messages;
+    state.fresh = true;
+    this.publishLive(id);
+  }
+
+  /** Send a terminal's live run if it is worth showing, or take it down if it is not. */
+  private publishLive(id: string) {
+    const state = this.live.get(id);
+    if (!state) return;
+    const terminal = this.terminals.list().find((t) => t.id === id);
+    const showing =
+      state.fresh === true &&
+      state.retired !== state.turn &&
+      (terminal?.activity === "working" || state.grace !== undefined);
+    const messages = showing ? state.messages : [];
+    const key = JSON.stringify(messages);
+    if (key === state.sent) return;
+    state.sent = key;
+    this.send({ t: "terminal.live", terminalId: id, messages } satisfies wire.TerminalLive);
+  }
+
+  /** What the agent said last in the run on screen, while the file may not have it yet. */
+  private liveAgentText(id: string): string | undefined {
+    const state = this.live.get(id);
+    if (!state || state.retired === state.turn) return undefined;
+    return [...state.messages].reverse().find((m) => m.role === "agent")?.text;
+  }
+
+  /** The run on screen is now in the file, or never will be: stop showing it. */
+  private retireLive(id: string) {
+    const state = this.live.get(id);
+    if (!state) return;
+    clearTimeout(state.grace);
+    state.grace = undefined;
+    state.retired = state.turn;
+    this.publishLive(id);
+  }
+
+  /** Each terminal's conversation, followed for the phone. */
+  private readonly mirrors = new Map<string, TerminalMirror>();
+
+  /**
+   * Where a terminal's conversation is, by agent. Claude and Codex are found
+   * through the agent's own process, so they need the pid a current wrapper
+   * sends; GG Coder through its project's folder.
+   */
+  private mirrorSource(
+    link: ReturnType<TerminalRegistry["links"]>[number],
+  ): MirrorSource | undefined {
+    switch (link.agent) {
+      case "claude":
+        return link.pid
+          ? claudeSource(link.pid, link.cwd, claudeHome(this.env), link.startedAt)
+          : undefined;
+      case "codex":
+        return link.pid
+          ? codexSource(link.pid, codexHome(this.env), { cwd: link.cwd, openedAt: link.startedAt })
+          : undefined;
+      case "ggcoder":
+        return ggcoderSource(link.cwd, link.startedAt, ggcoderSessions(this.env));
+    }
+  }
+
+  /** Notifications waiting to see whether a change of activity sticks. */
+  private readonly pendingNotices = new Map<string, ReturnType<typeof setTimeout>>();
+
+  /**
+   * What an agent in a terminal says it is doing, and the two moments worth a
+   * notification: a turn finishing, and the agent stopping to ask something.
+   * The first reading after a terminal registers (or the daemon restarts) is
+   * only a baseline — nothing has happened yet.
+   *
+   * Both wait a moment before sending: an agent can flick to idle between two
+   * steps of one turn, and the question it stops on is read off its screen a
+   * beat after its status says it is waiting.
+   */
+  private terminalActivity(id: string, activity: "working" | "waiting" | "idle") {
+    const before = this.terminals.setActivity(id, activity);
+    const live = this.live.get(id);
+    // A run starting: what the screen showed until now belongs to the one before.
+    if (live && activity === "working" && before !== "working") live.fresh = false;
+    if (live && before === "working" && activity !== "working" && live.retired !== live.turn) {
+      // Stopped: the file is about to be written. Keep the live copy up until
+      // it is, but not for ever.
+      clearTimeout(live.grace);
+      live.grace = setTimeout(() => this.retireLive(id), Daemon.LIVE_GRACE_MS);
+      live.grace.unref?.();
+    }
+    if (live) this.publishLive(id);
+    if (before === undefined || before === activity) return;
+    clearTimeout(this.pendingNotices.get(id));
+    this.pendingNotices.delete(id);
+    const finished = before === "working" && activity === "idle";
+    const asking = activity === "waiting";
+    if (!finished && !asking) return;
+    const timer = setTimeout(
+      () => {
+        this.pendingNotices.delete(id);
+        const terminal = this.terminals.list().find((t) => t.id === id);
+        if (!terminal || terminal.activity !== activity) return;
+        const question = this.terminals.questionOf(id);
+        void pushFinishedTurn(this.pushTargets, {
+          sessionId: `term:${id}`,
+          folder: terminal.folder,
+          agentName: TERMINAL_AGENT_NAMES[terminal.agent],
+          lastText: asking
+            ? `Needs your answer: ${question?.text ?? "it is waiting for you in the terminal."}`
+            : (this.liveAgentText(id) ?? this.mirrors.get(id)?.lastAgentText()),
+        });
+      },
+      finished ? 2500 : 1500,
+    );
+    timer.unref?.();
+    this.pendingNotices.set(id, timer);
+  }
+
+  /** One mirror per terminal whose conversation can be found; none for the rest. */
+  private syncMirrors() {
+    // Where this person runs agents, so one started from the phone opens there.
+    const newest = this.terminals.links().sort((a, b) => b.startedAt - a.startedAt)[0];
+    if (newest?.app) void rememberTerminalApp(newest.app, this.env).catch(() => {});
+    const live = new Map(this.terminals.links().map((link) => [link.id, link]));
+    for (const [id, mirror] of this.mirrors) {
+      if (live.has(id)) continue;
+      mirror.stop();
+      this.mirrors.delete(id);
+      clearTimeout(this.pendingNotices.get(id));
+      this.pendingNotices.delete(id);
+    }
+    for (const id of this.screenLive) if (!live.has(id)) this.screenLive.delete(id);
+    const ggcoders = [...live.values()].filter((link) => link.agent === "ggcoder" && link.pid);
+    if (ggcoders.length === 0) {
+      this.ggcoderLog?.stop();
+      this.ggcoderLog = undefined;
+    } else if (!this.ggcoderLog) {
+      this.ggcoderLog = new GgcoderLog(
+        join(dirname(ggcoderSessions(this.env)), "debug.log"),
+        (run) => this.ggcoderRun(run),
+      );
+      void this.ggcoderLog.begin();
+    } else {
+      // A terminal opened while the log was already followed: tell it where its process is.
+      for (const run of this.ggcoderLog.runs()) {
+        if (ggcoders.some((link) => link.pid === run.pid && !this.live.has(link.id)))
+          this.ggcoderRun(run);
+      }
+    }
+    for (const [id, state] of this.live) {
+      if (live.has(id)) continue;
+      clearTimeout(state.grace);
+      this.live.delete(id);
+    }
+    for (const link of live.values()) {
+      if (this.mirrors.has(link.id)) continue;
+      const source = this.mirrorSource(link);
+      if (!source) continue;
+      const mirror = new TerminalMirror(
+        source,
+        (update) => {
+          this.send({ t: "terminal.transcript", terminalId: link.id, ...update });
+          // The file now holds a turn from the person: whatever the screen
+          // showed live of it is there too. That includes the first read of a
+          // file found for the first time — GG Coder creates the file with a
+          // conversation's first run. Not while a run is going, though: a file
+          // written as the next run starts is the previous one's turn, and the
+          // run on screen is still news.
+          const working =
+            this.terminals.list().find((t) => t.id === link.id)?.activity === "working";
+          if (!working && update.messages.some((m) => m.role === "user")) this.retireLive(link.id);
+        },
+        undefined,
+        (conversation) => this.terminals.setConversation(link.id, conversation),
+        (activity) => this.terminalActivity(link.id, activity),
+      );
+      this.mirrors.set(link.id, mirror);
+      mirror.begin();
+    }
+  }
+
+  /** Tell every client which terminals exist now. */
+  announceTerminals() {
+    this.send(this.terminalsFrame());
+  }
+
+  protected override isTerminalProject(cwd: string): boolean {
+    const platform = terminalPlatform(this.env);
+    return this.terminals.list().some((terminal) => samePath(terminal.cwd, cwd, platform));
+  }
+
+  /** Open an agent in a terminal on this computer, for the phone. See `terminals/launch.ts`. */
+  launchTerminal(options: Omit<LaunchOptions, "env">): Promise<LaunchResult> {
+    return launchAgent({ ...options, env: this.env });
+  }
+
+  terminalsFrame(): wire.Terminals {
+    return { t: "terminals", terminals: this.terminals.list() };
+  }
+
+  /**
+   * Everything a client is sent the moment its `hello` is accepted: what it
+   * missed while away, then which terminals it can type into.
+   *
+   * One method because both transports answer `hello` themselves rather than
+   * through `handleMessage`; a frame added to only one of them is a phone that
+   * works at home and not on the bus. The terminal list was exactly that bug.
+   */
+  greet(
+    cursors: Record<string, number>,
+  ): Array<wire.Replay | wire.Terminals | wire.TerminalTranscript | wire.TerminalLive> {
+    const transcripts = [...this.mirrors].map(([terminalId, mirror]): wire.TerminalTranscript => ({
+      t: "terminal.transcript",
+      terminalId,
+      ...mirror.snapshot(),
+    }));
+    // A run in progress, for a phone that connects in the middle of it.
+    const live = [...this.live]
+      .filter(([, state]) => state.sent !== "[]")
+      .map(([terminalId, state]): wire.TerminalLive => ({
+        t: "terminal.live",
+        terminalId,
+        messages: JSON.parse(state.sent) as wire.TerminalMessage[],
+      }));
+    return [...this.catchUp(cursors), this.terminalsFrame(), ...transcripts, ...live];
+  }
+
   /** Point the daemon at a transport. Called with the relay socket's `send`. */
   attach(send: (message: unknown) => void) {
     this.send = send;
@@ -202,7 +525,7 @@ export class Daemon extends DaemonConnectSession {
       providers.splice(gg + 1, 0, goalsProviderFrom(ggProvider));
     }
     this.providers = providers;
-    // Re-read every refresh, so `pew2 providers disable` takes effect without
+    // Re-read every refresh, so `tappy providers disable` takes effect without
     // restarting the daemon.
     this.disabled = await readDisabled();
     this.closeDisabled();
@@ -248,7 +571,7 @@ export class Daemon extends DaemonConnectSession {
       providers: this.providers
         // Test fixtures are hidden unless explicitly asked for, so a demo or a
         // local run can still exercise the pipeline without any API keys.
-        .filter((p) => !p.manifest.pew.experimental || this.includeExperimental)
+        .filter((p) => !p.manifest.tappy.experimental || this.includeExperimental)
         // Turned off by the user. Filtered here rather than in the app, so the
         // phone is never even told about an agent it should not offer.
         .filter((p) => this.isEnabled(p.manifest.id))
@@ -258,7 +581,7 @@ export class Daemon extends DaemonConnectSession {
         // phone \u2014 you cannot install a CLI from there \u2014 so a dimmed row for it
         // is a permanent piece of furniture that never becomes useful.
         //
-        // This is also what makes the phone agree with `pew2 setup`: the picker
+        // This is also what makes the phone agree with `tappy setup`: the picker
         // will not let these be chosen, so announcing them showed agents the
         // user was never offered. An agent that is installed but still needs a
         // key is a different case and stays, because it is really here and the
@@ -268,9 +591,9 @@ export class Daemon extends DaemonConnectSession {
           id: p.manifest.id,
           name: p.manifest.name,
           description: p.manifest.description,
-          transport: p.manifest.pew.transport,
-          color: p.manifest.pew.color,
-          requiresWorkspace: p.manifest.pew.requiresWorkspace,
+          transport: p.manifest.tappy.transport,
+          color: p.manifest.tappy.color,
+          requiresWorkspace: p.manifest.tappy.requiresWorkspace,
           available: isAvailable(p),
           unavailableReason: unavailableReason(p),
         })),

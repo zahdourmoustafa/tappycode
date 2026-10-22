@@ -102,10 +102,10 @@ const THINK_PATH = [1, 2, 3, 4, 4, 3, 2, 1, 0, 0];
 
 const DEMO_GOAL: GoalSummary = {
   id: "g1",
-  name: "Pew2 polish",
+  name: "Tappy polish",
   goal: "Make every screen feel alive.",
   context: [],
-  path: "/tmp/pew2-polish",
+  path: "/tmp/tappy-polish",
   createdAt: "2026-10-14T00:00:00Z",
   lastActiveMs: 0,
   status: "briefing",

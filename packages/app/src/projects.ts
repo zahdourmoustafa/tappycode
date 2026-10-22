@@ -19,6 +19,7 @@
  * directly testable.
  */
 import { folderName } from "./projectFolder";
+import { agentForProvider, type Terminal } from "./terminalTyping";
 import type { Session } from "./useDaemon";
 
 /** A project as the drawer offers it. */
@@ -31,6 +32,8 @@ export interface Project {
   sessions?: number;
   /** ISO 8601 of the newest of those, for ordering. */
   updatedAt?: string;
+  /** This agent is running in it right now, in a terminal on the laptop. */
+  live?: boolean;
 }
 
 /** As announced by the daemon, folded from the agent's full history. */
@@ -53,6 +56,7 @@ export function projectsForProvider(
   announced: WireProject[] | undefined,
   sessions: Session[],
   providerId: string | undefined,
+  terminals: readonly Terminal[] = [],
 ): Project[] {
   if (!providerId) return [];
 
@@ -85,7 +89,30 @@ export function projectsForProvider(
     }
   }
 
-  return [...byPath.values()].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+  // A project this agent was just opened in on the laptop, in a terminal. It
+  // belongs in the list the moment the window opens — before the agent has
+  // written a single conversation into it, which is when history alone would
+  // first notice it. Stamped with when the window opened, so it sorts with
+  // the newest work.
+  const agent = agentForProvider(providerId);
+  for (const terminal of terminals) {
+    if (terminal.agent !== agent || !terminal.cwd) continue;
+    const name = folderName(terminal.cwd);
+    if (!name) continue;
+    const opened = Number.isFinite(terminal.startedAt) ? new Date(terminal.startedAt).toISOString() : undefined;
+    const known = byPath.get(terminal.cwd);
+    byPath.set(terminal.cwd, {
+      ...(known ?? { path: terminal.cwd, name }),
+      live: true,
+      updatedAt: [known?.updatedAt, opened].filter(Boolean).sort().at(-1),
+    });
+  }
+
+  // Projects open in a terminal first — the ones being worked on right now —
+  // then everything else, newest first.
+  return [...byPath.values()].sort(
+    (a, b) => Number(b.live ?? false) - Number(a.live ?? false) || (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""),
+  );
 }
 
 /**
@@ -163,6 +190,12 @@ export interface ProjectTabItem {
 export function projectTabItems(projects: readonly Project[]): ProjectTabItem[] {
   return [
     { label: "All", a11y: "All projects" },
-    ...projects.map((project) => ({ path: project.path, label: project.name, a11y: `Project ${project.name}` })),
+    ...projects.map((project) => ({
+      path: project.path,
+      // A dot for a project open in a terminal on the laptop right now: the
+      // one the composer will type into, told apart at a glance.
+      label: project.live ? `● ${project.name}` : project.name,
+      a11y: project.live ? `Project ${project.name}, open in a terminal` : `Project ${project.name}`,
+    })),
   ];
 }

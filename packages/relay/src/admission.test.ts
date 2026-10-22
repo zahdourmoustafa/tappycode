@@ -26,7 +26,7 @@ test("only tokens shaped like a minted one may name a room", () => {
   expect(isPairingToken(null)).toBe(false);
   expect(isPairingToken("")).toBe(false);
   expect(isPairingToken("a".repeat(MIN_PAIRING_TOKEN_LENGTH - 1))).toBe(false);
-  // Long enough, but not hex — never something `pew2` produced.
+  // Long enough, but not hex — never something `tappy` produced.
   expect(isPairingToken("not-a-real-token-but-long-enough-xxxxx")).toBe(false);
   expect(isPairingToken(`${TOKEN}/../other`)).toBe(false);
   expect(isPairingToken(`${"a".repeat(40)} `)).toBe(false);

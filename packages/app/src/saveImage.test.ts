@@ -38,7 +38,7 @@ test("an inline picture with no name gets a searchable timestamp", () => {
     new Date("2026-08-01T12:34:56.000Z"),
   );
   // No colons: illegal in Android file names.
-  expect(name).toBe("pew2-2026-08-01-12-34-56.png");
+  expect(name).toBe("tappy-2026-08-01-12-34-56.png");
 });
 
 test("a dotfile source does not become a hidden file in the camera roll", () => {
@@ -46,7 +46,7 @@ test("a dotfile source does not become a hidden file in the camera roll", () => 
   // Nothing left but the extension: falls through to the timestamp.
   expect(
     saveFileName({ src: "/tmp/.png", mimeType: "image/png" }, new Date("2026-08-01T00:00:00Z")),
-  ).toBe("pew2-2026-08-01-00-00-00.png");
+  ).toBe("tappy-2026-08-01-00-00-00.png");
 });
 
 test("alt text names a picture that arrived inline with one", () => {

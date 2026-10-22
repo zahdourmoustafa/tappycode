@@ -2,17 +2,17 @@
 
 Last updated: 20 September 2026
 
-pew2 is an app for controlling coding agents that run on your own computer. This
-policy covers the pew2 iOS app and the pew2 command line tool.
+tappy is an app for controlling coding agents that run on your own computer. This
+policy covers the tappy iOS app and the tappy command line tool.
 
-The short version: pew2 has no accounts, advertising, or analytics. Conversation
+The short version: tappy has no accounts, advertising, or analytics. Conversation
 traffic between the phone and your computer is encrypted end to end. Optional
 push notifications take a separate path through Expo and Apple, which can read
 their contents. The coding agents you choose have their own data practices.
 
 ## What the developer collects
 
-pew2 does not maintain a developer-operated database of users or conversations.
+tappy does not maintain a developer-operated database of users or conversations.
 There is no account to create, analytics SDK, crash reporter, or advertising
 identifier in the app. The transport and notification services described below
 handle data needed to deliver the service.
@@ -33,7 +33,7 @@ and cached agent information in the iOS Keychain. Keychain entries can survive
 uninstalling the app. Use **Forget** in the app to remove its saved pairing and
 cached agent list; this does not remove agent history on your computer or all
 Keychain preferences. To invalidate an old pairing, rotate the pairing token on
-your computer using `pew2 pair --rotate`.
+your computer using `tappy pair --rotate`.
 
 Images you attach, share, or save can create temporary files on your phone.
 Images you choose to save to Photos remain there until you delete them. Data
@@ -91,12 +91,12 @@ active debugging. Apple's delivery handling is subject to its own policies.
 Turning notifications off in iOS stops banners, but does not immediately remove
 a push address already registered with your computer. To stop the daemon from
 sending further push payloads for that phone, disable notifications and restart
-the daemon (`pew2 service restart`). The app will not register a new push address while
+the daemon (`tappy service restart`). The app will not register a new push address while
 notification permission is denied.
 
 ## Third parties
 
-pew2 has no analytics, advertising, or crash reporting SDKs. Delivery services
+tappy has no analytics, advertising, or crash reporting SDKs. Delivery services
 include [Expo](https://expo.dev/privacy), [Apple](https://www.apple.com/legal/privacy/),
 and [Cloudflare](https://www.cloudflare.com/privacypolicy/), as described above.
 Opening the privacy policy or support links contacts GitHub in your browser;
@@ -104,14 +104,14 @@ Opening the privacy policy or support links contacts GitHub in your browser;
 applies to that visit. Do not post private conversations, credentials, or other
 sensitive information in public issues.
 
-The coding agents you connect to pew2 are separate programs under their own
+The coding agents you connect to tappy are separate programs under their own
 terms and privacy policies. They may send your prompts, code, or attachments to
-their providers. pew2 passes your messages to the agent you choose; it does not
+their providers. tappy passes your messages to the agent you choose; it does not
 make those providers' processing local-only.
 
 ## Children
 
-pew2 is a developer tool and is not directed at children.
+tappy is a developer tool and is not directed at children.
 
 ## Changes
 
@@ -121,4 +121,4 @@ date at the top will change with it.
 ## Contact
 
 Questions, or anything that looks wrong, at
-<https://github.com/KenKaiii/pew2/issues>.
+<https://github.com/zahdourmoustafa/tappycode/issues>.

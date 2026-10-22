@@ -13,6 +13,7 @@ import { isEmptyChunk, readChunk } from "./chunks";
 import { readAvailableCommands } from "./slashCommands";
 import { readUsage } from "./contextUsage";
 import { applyChunk, capTurns, isOptimistic } from "./replayFold";
+import { foldLive, foldTranscript, pruneTranscripts } from "./terminalTyping";
 import { readPermissionRequest } from "./permissions";
 import type { Session } from "./daemonTypes";
 import { firstUserText, type State, type TurnFinished } from "./daemonState";
@@ -31,6 +32,43 @@ export interface MessageScope {
 export function reduceMessage(prev: State, message: any, scope: MessageScope): State {
   const { sessionRef, pendingCapabilities, claimsScreen, adoptedRequestId, completedTurn, now } = scope;
   switch (message.t) {
+    case "terminals":
+      // The daemon's whole list each time, so this replaces rather than merges.
+    {
+      const terminals = Array.isArray(message.terminals) ? message.terminals : [];
+      return {
+        ...prev,
+        terminalsKnown: true,
+        terminals,
+        // A closed terminal's conversation goes with it.
+        terminalTranscripts: pruneTranscripts(prev.terminalTranscripts, terminals),
+        terminalLive: pruneTranscripts(prev.terminalLive, terminals),
+      };
+    }
+
+    case "terminal.launched":
+      return {
+        ...prev,
+        terminalLaunch: {
+          agent: message.agent,
+          cwd: message.cwd,
+          status: message.ok ? "opened" : "failed",
+          app: message.app,
+          message: message.message,
+          at: Date.now(),
+        },
+      };
+
+    case "terminal.transcript": {
+      const terminalTranscripts = foldTranscript(prev.terminalTranscripts, message);
+      return terminalTranscripts === prev.terminalTranscripts ? prev : { ...prev, terminalTranscripts };
+    }
+
+    case "terminal.live": {
+      const terminalLive = foldLive(prev.terminalLive, message);
+      return terminalLive === prev.terminalLive ? prev : { ...prev, terminalLive };
+    }
+
     case "providers":
       return {
         ...prev,

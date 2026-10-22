@@ -22,7 +22,7 @@ test("children are only detached where a process group means what we need", () =
 });
 
 async function home(): Promise<NodeJS.ProcessEnv> {
-  return { PEW2_HOME: await mkdtemp(join(tmpdir(), "pew2-children-")) } as NodeJS.ProcessEnv;
+  return { TAPPY_HOME: await mkdtemp(join(tmpdir(), "tappy-children-")) } as NodeJS.ProcessEnv;
 }
 
 /**
@@ -78,14 +78,14 @@ posixTest("terminateChild escalates to SIGKILL when SIGTERM is ignored", async (
 });
 
 posixTest("terminateChild reaches a grandchild behind a wrapper", async () => {
-  // Stands in for `npx <agent>`: the process pew2 spawned is a launcher, and
+  // Stands in for `npx <agent>`: the process tappy spawned is a launcher, and
   // killing only it would reparent the real agent to pid 1 forever.
   // The pid is handed over through a file, not a pipe. A piped stdout from a
   // detached child never delivers under this Bun, so the read hung until the
   // 5s test timeout — and the timing-out test left the runtime in a state where
   // every later `ps` in this file read back empty, failing two more tests that
   // were themselves correct.
-  const relay = join(await mkdtemp(join(tmpdir(), "pew2-relay-")), "pid");
+  const relay = join(await mkdtemp(join(tmpdir(), "tappy-relay-")), "pid");
   const child = spawn("bash", ["-c", `sleep 30 & echo $! > ${relay}; wait`], {
     stdio: "ignore",
     detached: true,
@@ -125,7 +125,7 @@ posixTest("sweepOrphans kills children of a dead daemon and leaves live ones alo
   await registerChild({ pid: orphan.pid!, providerId: "echo", fallbackCommand: "echo" }, env);
   await registerChild({ pid: owned.pid!, providerId: "echo", fallbackCommand: "echo" }, env);
 
-  const registryFile = join(env.PEW2_HOME!, "children.json");
+  const registryFile = join(env.TAPPY_HOME!, "children.json");
   const records = JSON.parse(await readFile(registryFile, "utf8")) as { pid: number }[];
   await writeFile(
     registryFile,
@@ -174,7 +174,7 @@ posixTest("sweepOrphans spares a pid that has been reused by something else", as
   await armed();
 
   await writeFile(
-    join(env.PEW2_HOME!, "children.json"),
+    join(env.TAPPY_HOME!, "children.json"),
     JSON.stringify([
       {
         pid: innocent.pid,
@@ -198,7 +198,7 @@ posixTest("register and unregister round-trip through the registry file", async 
   // `process.env` inside the write, which meant a caller passing a temp home
   // read one file and rewrote a different one — in a test, the real registry.
   const env = await home();
-  const path = join(env.PEW2_HOME!, "children.json");
+  const path = join(env.TAPPY_HOME!, "children.json");
 
   const child = stubborn();
   await armed();
@@ -251,7 +251,7 @@ posixTest("Ctrl-C kills the agents this process owns, and still ends it", async 
   // process is signalled here rather than a stubbed one, because the property
   // under test is precisely what the kernel does to a process that has a
   // listener installed.
-  const dir = await mkdtemp(join(tmpdir(), "pew2-signal-"));
+  const dir = await mkdtemp(join(tmpdir(), "tappy-signal-"));
   const pidFile = join(dir, "pid");
   const script = join(dir, "owner.ts");
   await writeFile(
@@ -263,7 +263,7 @@ posixTest("Ctrl-C kills the agents this process owns, and still ends it", async 
       `const child = spawn("bash", ["-c", "sleep 30 & wait"], { stdio: "ignore", detached: true });`,
       `await registerChild(`,
       `  { pid: child.pid, providerId: "echo", fallbackCommand: "bash" },`,
-      `  { PEW2_HOME: ${JSON.stringify(dir)} },`,
+      `  { TAPPY_HOME: ${JSON.stringify(dir)} },`,
       `);`,
       `await writeFile(${JSON.stringify(pidFile)}, String(child.pid));`,
       // Keep the loop alive, the way a daemon's server does, so the only way

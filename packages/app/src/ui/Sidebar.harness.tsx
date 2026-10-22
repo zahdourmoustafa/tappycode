@@ -27,7 +27,7 @@ const PROVIDERS: Provider[] = [
 ];
 
 const PROJECTS: Project[] = [
-  { path: "/Users/k/gg-projects/pew2", name: "pew2", sessions: 24 },
+  { path: "/Users/k/gg-projects/tappy", name: "tappy", sessions: 24 },
   { path: "/Users/k/gg-projects/kencode-search", name: "kencode-search", sessions: 7 },
   { path: "/Users/k/work/acme-storefront", name: "acme-storefront", sessions: 3 },
   { path: "/Users/k/work/notes", name: "notes", sessions: 1 },
@@ -114,7 +114,7 @@ export default function SidebarHarness() {
           <Drawer />
         </Mount>
         <Mount label="ONE PROJECT SELECTED">
-          <Drawer initialPath="/Users/k/gg-projects/pew2" />
+          <Drawer initialPath="/Users/k/gg-projects/tappy" />
         </Mount>
         {/* The bottom row in both of its states: the tappable instruction for a
             machine that cannot update itself, and the passive note for one

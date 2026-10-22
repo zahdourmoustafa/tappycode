@@ -2,13 +2,13 @@
  * Model / thinking-level selector: Stage's "Dial" sheet.
  *
  * Everything here comes from the agent's own `configOptions`, so connecting a
- * new app brings its models and reasoning levels with it and pew2 never carries
+ * new app brings its models and reasoning levels with it and tappy never carries
  * a hardcoded model list that would go stale.
  *
  * Models are a compact list capped at ~5 rows that scrolls inside the sheet
  * (agents like GG Coder carry dozens), with a filter field once it is long. A thinking level, when the agent
  * advertises one, is a dial (`ThinkingDial.tsx`): an LED arc lit up to the
- * chosen level with Pew in the middle, the level shown as energy round him. An agent's plain list (opened
+ * chosen level with Tappy in the middle, the level shown as energy round him. An agent's plain list (opened
  * for "mode") is a simple Stage list.
  *
  * A `Sheet`, like every other picker, so it gets the Terminal header.
@@ -107,7 +107,7 @@ function ConfigPickerView({ visible, onClose, options, onSelect }: ConfigPickerP
       title={title}
       onClose={onClose}
       dismissLabel="Close picker"
-      pewMood={level ? levelMood(fraction) : undefined}
+      tappyMood={level ? levelMood(fraction) : undefined}
       // Switching model mid-sentence is not leaving the draft.
       keepKeyboard
     >

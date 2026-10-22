@@ -66,7 +66,7 @@ export interface NoticeOrigin {
  * narrow banner.
  */
 export function noticeTitle(origin: NoticeOrigin): string {
-  if (!origin.folder) return origin.agentName ?? "pew2";
+  if (!origin.folder) return origin.agentName ?? "tappy";
   return origin.agentName ? `${origin.folder} · ${origin.agentName}` : origin.folder;
 }
 

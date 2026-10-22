@@ -139,7 +139,7 @@ test("asks GitHub for this repository, identifying itself", async () => {
   expect(calls).toHaveLength(1);
   expect(calls[0]!.url).toBe(RELEASE_API_URL);
   // GitHub refuses a request without a User-Agent.
-  expect(calls[0]!.headers["User-Agent"]).toContain("pew2-daemon/");
+  expect(calls[0]!.headers["User-Agent"]).toContain("tappy-daemon/");
 });
 
 test("a tag with or without the v prefix reads the same", async () => {

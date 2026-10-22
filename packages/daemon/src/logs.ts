@@ -3,7 +3,7 @@
  *
  * Under launchd the daemon's stdout *is* a file, opened once by launchd and
  * appended to for the life of the process. Nothing ever truncates it, so a
- * machine that runs pew2 for months accumulates a log nobody reads until it is
+ * machine that runs tappy for months accumulates a log nobody reads until it is
  * the reason a disk is full.
  *
  * Rotation happens at startup and then on a timer, because a daemon that is
@@ -96,7 +96,7 @@ export async function rotateLog(
  * rotate one file while launchd wrote to another.
  */
 export function logDir(env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string {
-  return join(env.PEW2_HOME ?? join(home, ".pew2"), "logs");
+  return join(env.TAPPY_HOME ?? join(home, ".tappy"), "logs");
 }
 
 /**

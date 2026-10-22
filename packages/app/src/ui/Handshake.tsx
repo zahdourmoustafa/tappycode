@@ -1,7 +1,7 @@
 /**
- * The pairing "Handshake": this phone's Pew and the computer's Pew, joined by
+ * The pairing "Handshake": this phone's Tappy and the computer's Tappy, joined by
  * a dotted wire. Packets travel the wire while a pairing is checked; the wire
- * goes solid green when it lands, and the computer's Pew wakes or says oops.
+ * goes solid green when it lands, and the computer's Tappy wakes or says oops.
  */
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
@@ -18,13 +18,13 @@ import Animated, {
 import { theme } from "../theme";
 import { DashedRule } from "./stage/DashedRule";
 import { withAlpha } from "../motion";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { Led } from "./stage/Led";
 import { haptics } from "./haptics";
 
 export type HandshakePhase = "waiting" | "pairing" | "paired" | "failed";
 
-const PEW = 104;
+const TAPPY = 104;
 const PACKET = 6;
 
 function Packet({ width, offset }: { width: SharedValue<number>; offset: number }) {
@@ -53,7 +53,7 @@ export function Handshake({ phase }: Props) {
   return (
     <View style={styles.row}>
       <View style={styles.end}>
-        <Pew size={PEW} mood={paired ? "happy" : "idle"} interactive onPress={() => haptics.poke()} accessibilityLabel="This phone" style={styles.pew} />
+        <Tappy size={TAPPY} mood={paired ? "happy" : "idle"} interactive onPress={() => haptics.poke()} accessibilityLabel="This phone" style={styles.tappy} />
         <Led tone="dim">Phone</Led>
       </View>
 
@@ -79,12 +79,12 @@ export function Handshake({ phase }: Props) {
       </View>
 
       <View style={styles.end}>
-        <Pew
-          size={PEW}
+        <Tappy
+          size={TAPPY}
           mood={paired ? "happy" : failed ? "oops" : "sleepy"}
           color={paired ? theme.color.success : failed ? theme.color.danger : theme.color.textFaint}
           accessibilityLabel="Your computer"
-          style={styles.pew}
+          style={styles.tappy}
         />
         <Led tone="dim">Computer</Led>
       </View>
@@ -94,10 +94,10 @@ export function Handshake({ phase }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", marginTop: theme.space(4) },
-  end: { alignItems: "center", width: PEW },
+  end: { alignItems: "center", width: TAPPY },
   // The globe fills ~60% of its box, so its box already leaves air under it;
   // the label sits just below that with a little more.
-  pew: { marginBottom: theme.space(1) },
+  tappy: { marginBottom: theme.space(1) },
   wire: { flex: 1, height: PACKET, justifyContent: "center", marginBottom: theme.space(4) },
   lineSolid: {
     height: 2,

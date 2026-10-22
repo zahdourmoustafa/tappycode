@@ -44,10 +44,10 @@ function sha256(text: string): string {
   return createHash("sha256").update(Buffer.from(text)).digest("hex");
 }
 
-/** A scratch install directory holding a stand-in for the pew2 binary. */
+/** A scratch install directory holding a stand-in for the tappy binary. */
 async function installDir() {
-  const dir = await mkdtemp(join(tmpdir(), "pew2-apply-"));
-  const target = join(dir, "pew2");
+  const dir = await mkdtemp(join(tmpdir(), "tappy-apply-"));
+  const target = join(dir, "tappy");
   await writeFile(target, OLD_BINARY);
   await chmod(target, 0o755);
   return { dir, target };
@@ -70,7 +70,7 @@ function releaseServing(
     if (href.endsWith(".sha256")) {
       if (options.checksumBody === "") return { ok: false, status: 404 } as Response;
       const digest = sha256(options.checksumFor ?? body ?? "");
-      const text = options.checksumBody ?? `${digest}  pew2-darwin-arm64\n`;
+      const text = options.checksumBody ?? `${digest}  tappy-darwin-arm64\n`;
       return {
         ok: true,
         status: 200,
@@ -122,7 +122,7 @@ test("a good checksum swaps the binary", async () => {
 });
 
 posixTest("the swapped binary is executable", async () => {
-  // A moment where pew2 exists and is not executable is a moment where a shell
+  // A moment where tappy exists and is not executable is a moment where a shell
   // finds it on PATH and cannot run it. Windows decides executability by file
   // extension rather than a mode bit, so there is nothing to assert there.
   const { target } = await installDir();
@@ -143,7 +143,7 @@ test("a bad checksum leaves the original untouched", async () => {
   expect(result).toMatchObject({ ok: false, reason: "checksum-mismatch" });
   expect(await readFile(target, "utf8")).toBe(OLD_BINARY);
   // And nothing half-written was left in a directory that is on PATH.
-  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["pew2"]);
+  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["tappy"]);
 });
 
 test("a failed download leaves the original untouched", async () => {
@@ -154,7 +154,7 @@ test("a failed download leaves the original untouched", async () => {
 
   expect(result).toMatchObject({ ok: false, reason: "download-failed" });
   expect(await readFile(target, "utf8")).toBe(OLD_BINARY);
-  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["pew2"]);
+  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["tappy"]);
 });
 
 test("a thrown network error is a result, not an exception", async () => {
@@ -226,7 +226,7 @@ test("a platform with no supervisor refuses, and downloads nothing", async () =>
 });
 
 test("a source checkout refuses, because execPath is bun itself", async () => {
-  // The gate that stops a background timer renaming a 60MB pew2 build over
+  // The gate that stops a background timer renaming a 60MB tappy build over
   // ~/.bun/bin/bun and taking every other project on the machine with it.
   const { target } = await installDir();
   const { fetchImpl, urls } = releaseServing(NEW_BINARY);
@@ -298,7 +298,7 @@ test("the staging file is created beside the target, never in the temp dir", asy
 
   expect(await readFile(target, "utf8")).toBe(NEW_BINARY);
   // Nothing left over once the rename has happened.
-  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["pew2"]);
+  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["tappy"]);
 });
 
 test("asset names match what the release workflow publishes", () => {
@@ -306,31 +306,31 @@ test("asset names match what the release workflow publishes", () => {
   // rename on either side is a 404 for every user on that platform. The full
   // three-platform matrix is asserted in the cross-platform block below; this
   // is the guard against an architecture nobody publishes for.
-  expect(assetName("darwin", "arm64")).toBe("pew2-darwin-arm64");
-  expect(assetName("darwin", "x64")).toBe("pew2-darwin-x64");
+  expect(assetName("darwin", "arm64")).toBe("tappy-darwin-arm64");
+  expect(assetName("darwin", "x64")).toBe("tappy-darwin-x64");
   expect(assetName("darwin", "ppc64")).toBeUndefined();
   expect(assetName("freebsd", "x64")).toBeUndefined();
 });
 
 test("a pinned version reads from its tag, and no version from latest", () => {
-  expect(assetUrl("pew2-darwin-arm64", "0.9.18")).toBe(
-    "https://github.com/KenKaiii/pew2/releases/download/v0.9.18/pew2-darwin-arm64",
+  expect(assetUrl("tappy-darwin-arm64", "0.9.18")).toBe(
+    "https://github.com/zahdourmoustafa/tappycode/releases/download/v0.9.18/tappy-darwin-arm64",
   );
   // A tag already carrying its v must not become vv0.9.18.
-  expect(assetUrl("pew2-darwin-arm64", "v0.9.18")).toContain("/download/v0.9.18/");
-  expect(assetUrl("pew2-darwin-arm64")).toBe(
-    "https://github.com/KenKaiii/pew2/releases/latest/download/pew2-darwin-arm64",
+  expect(assetUrl("tappy-darwin-arm64", "v0.9.18")).toContain("/download/v0.9.18/");
+  expect(assetUrl("tappy-darwin-arm64")).toBe(
+    "https://github.com/zahdourmoustafa/tappycode/releases/latest/download/tappy-darwin-arm64",
   );
 });
 
 test("a checksum file is read as sha256sum writes it", () => {
   const digest = "a".repeat(64);
-  expect(parseChecksum(`${digest}  pew2-darwin-arm64\n`)).toBe(digest);
-  expect(parseChecksum(`${digest.toUpperCase()}  pew2\n`)).toBe(digest);
+  expect(parseChecksum(`${digest}  tappy-darwin-arm64\n`)).toBe(digest);
+  expect(parseChecksum(`${digest.toUpperCase()}  tappy\n`)).toBe(digest);
   expect(parseChecksum("not a checksum")).toBeUndefined();
   expect(parseChecksum("")).toBeUndefined();
   // Too short to be sha256: a truncated file must not be compared loosely.
-  expect(parseChecksum(`${"a".repeat(63)}  pew2\n`)).toBeUndefined();
+  expect(parseChecksum(`${"a".repeat(63)}  tappy\n`)).toBeUndefined();
 });
 
 test("canSelfUpdate answers for the platform without touching the network", () => {
@@ -357,7 +357,7 @@ test("this build refuses to update itself, because it is a source checkout", asy
 
 // --- cross-platform -------------------------------------------------------
 //
-// pew2 ships binaries for macOS, Linux and Windows, so "does self-update work
+// tappy ships binaries for macOS, Linux and Windows, so "does self-update work
 // on all three" has to have a definite answer for each. It does, and it is not
 // the same answer: the swap is portable, the *exit* is not, because an exit is
 // only an update where something starts the process again.
@@ -365,16 +365,16 @@ test("this build refuses to update itself, because it is a source checkout", asy
 test("every published asset is named, for all three platforms", () => {
   // The exact matrix release.yml builds. A name missing here is a platform that
   // could never be told what its current binary is called.
-  expect(assetName("darwin", "arm64")).toBe("pew2-darwin-arm64");
-  expect(assetName("darwin", "x64")).toBe("pew2-darwin-x64");
-  expect(assetName("linux", "x64")).toBe("pew2-linux-x64");
-  expect(assetName("linux", "arm64")).toBe("pew2-linux-arm64");
+  expect(assetName("darwin", "arm64")).toBe("tappy-darwin-arm64");
+  expect(assetName("darwin", "x64")).toBe("tappy-darwin-x64");
+  expect(assetName("linux", "x64")).toBe("tappy-linux-x64");
+  expect(assetName("linux", "arm64")).toBe("tappy-linux-arm64");
   // The only asset with an extension, and x64 only.
-  expect(assetName("win32", "x64")).toBe("pew2-windows-x64.exe");
+  expect(assetName("win32", "x64")).toBe("tappy-windows-x64.exe");
   expect(assetName("win32", "arm64")).toBeUndefined();
 });
 
-test("every platform pew2 ships for has a supervisor backend", () => {
+test("every platform tappy ships for has a supervisor backend", () => {
   // Each is a different mechanism with the same guarantee — restart after a
   // *clean* exit, which is how the updater ends the daemon: launchd KeepAlive,
   // systemd Restart=always, and a repeating Scheduled Task with IgnoreNew.
@@ -428,15 +428,15 @@ test("windows parks the running binary aside, because it cannot be replaced in p
   expect(await readFile(target, "utf8")).toBe(NEW_BINARY);
   // The outgoing binary is still there under another name: it cannot be deleted
   // while the process running it is alive.
-  const parked = (await Array.fromAsync(new Bun.Glob("pew2.old-*").scan(dir)))[0];
+  const parked = (await Array.fromAsync(new Bun.Glob("tappy.old-*").scan(dir)))[0];
   expect(parked).toBeDefined();
   expect(await readFile(join(dir, parked!), "utf8")).toBe(OLD_BINARY);
 });
 
 test("a failed windows swap puts the original binary back", async () => {
-  // The one moment where `pew2` does not exist at all is between parking the
+  // The one moment where `tappy` does not exist at all is between parking the
   // old file and the new one landing. Failing there must not leave a machine
-  // with no daemon and a file called pew2.old-1760000000000.
+  // with no daemon and a file called tappy.old-1760000000000.
   const { dir, target } = await installDir();
   const { fetchImpl } = releaseServing(NEW_BINARY);
 
@@ -451,7 +451,7 @@ test("a failed windows swap puts the original binary back", async () => {
     renameImpl: (async (from: string, to: string) => {
       if (to === target && !from.endsWith(".old-marker")) {
         const { rename } = await import("node:fs/promises");
-        if (from.includes(".pew2-update-")) throw new Error("EPERM: access denied");
+        if (from.includes(".tappy-update-")) throw new Error("EPERM: access denied");
         return rename(from, to);
       }
       const { rename } = await import("node:fs/promises");
@@ -462,7 +462,7 @@ test("a failed windows swap puts the original binary back", async () => {
   expect(result).toMatchObject({ ok: false, reason: "install-failed" });
   // Restored, under its real name, with its real contents.
   expect(await readFile(target, "utf8")).toBe(OLD_BINARY);
-  expect(await Array.fromAsync(new Bun.Glob("pew2.old-*").scan(dir))).toEqual([]);
+  expect(await Array.fromAsync(new Bun.Glob("tappy.old-*").scan(dir))).toEqual([]);
 });
 
 test("linux swaps the binary in place, like macOS", async () => {
@@ -483,7 +483,7 @@ test("linux swaps the binary in place, like macOS", async () => {
   expect(result.ok).toBe(true);
   expect(await readFile(target, "utf8")).toBe(NEW_BINARY);
   // Nothing parked: only Windows cannot replace a running executable.
-  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["pew2"]);
+  expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["tappy"]);
 });
 
 test("a machine with no service installed refuses before downloading", async () => {
@@ -507,8 +507,8 @@ test("a machine with no service installed refuses before downloading", async () 
 });
 
 test("macOS with no launchd job installed refuses, and downloads nothing", async () => {
-  // The bug this closes: `pew2 serve` is a first-class command, and a fresh
-  // install has no plist until `pew2 setup` writes one — which is exactly why
+  // The bug this closes: `tappy serve` is a first-class command, and a fresh
+  // install has no plist until `tappy setup` writes one — which is exactly why
   // install.sh guards its own restart on the plist existing. Treating "darwin"
   // as "supervised" would swap the binary, exit when idle, and leave the user's
   // phone offline for good, which is strictly worse than being out of date.
@@ -524,7 +524,7 @@ test("macOS with no launchd job installed refuses, and downloads nothing", async
 
   expect(result).toMatchObject({ ok: false, reason: "unsupported-platform" });
   // And it says what to do about it, rather than blaming the operating system.
-  if (!result.ok) expect(result.detail).toContain("pew2 setup");
+  if (!result.ok) expect(result.detail).toContain("tappy setup");
   expect(urls).toEqual([]);
   expect(await readFile(target, "utf8")).toBe(OLD_BINARY);
 });
@@ -550,8 +550,8 @@ test("an update sweeps binaries parked by earlier updates", async () => {
   // one aside. Nothing collected them: one abandoned ~90MB executable per
   // update, accumulating next to a file that is on the user's PATH.
   const { dir, target } = await installDir();
-  await writeFile(join(dir, "pew2.old-1700000000000"), "two updates ago");
-  await writeFile(join(dir, "pew2.old-1800000000000"), "last update");
+  await writeFile(join(dir, "tappy.old-1700000000000"), "two updates ago");
+  await writeFile(join(dir, "tappy.old-1800000000000"), "last update");
   const { fetchImpl } = releaseServing(NEW_BINARY);
 
   const result = await applyUpdate({
@@ -564,7 +564,7 @@ test("an update sweeps binaries parked by earlier updates", async () => {
   });
 
   expect(result.ok).toBe(true);
-  const left = (await Array.fromAsync(new Bun.Glob("pew2.old-*").scan(dir))).sort();
+  const left = (await Array.fromAsync(new Bun.Glob("tappy.old-*").scan(dir))).sort();
   // Exactly one: the binary this update just parked, which belongs to the
   // process still running and cannot go until the next pass.
   expect(left).toHaveLength(1);
@@ -575,7 +575,7 @@ test("the sweep leaves other programs in the install directory alone", async () 
   // /usr/local/bin and its Windows equivalents hold other people's tools.
   const { dir, target } = await installDir();
   await writeFile(join(dir, "ripgrep.old-1700000000000"), "not ours");
-  await writeFile(join(dir, "pew2-helper"), "not ours either");
+  await writeFile(join(dir, "tappy-helper"), "not ours either");
   const { fetchImpl } = releaseServing(NEW_BINARY);
 
   await applyUpdate({
@@ -588,7 +588,7 @@ test("the sweep leaves other programs in the install directory alone", async () 
   });
 
   expect(await readFile(join(dir, "ripgrep.old-1700000000000"), "utf8")).toBe("not ours");
-  expect(await readFile(join(dir, "pew2-helper"), "utf8")).toBe("not ours either");
+  expect(await readFile(join(dir, "tappy-helper"), "utf8")).toBe("not ours either");
 });
 
 test("a parked entry that cannot be deleted does not fail the update", async () => {
@@ -599,7 +599,7 @@ test("a parked entry that cannot be deleted does not fail the update", async () 
   // fails `rm` without `recursive` on every platform — including Windows, where
   // this resilience is the whole point and where chmod would do nothing.
   const { dir, target } = await installDir();
-  const stubborn = join(dir, "pew2.old-1700000000000");
+  const stubborn = join(dir, "tappy.old-1700000000000");
   await mkdir(stubborn);
   const { fetchImpl } = releaseServing(NEW_BINARY);
 
@@ -633,6 +633,6 @@ test("macOS and linux park nothing, so there is nothing to sweep", async () => {
       fetchImpl,
     });
 
-    expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["pew2"]);
+    expect(await Array.fromAsync(new Bun.Glob("*").scan(dir))).toEqual(["tappy"]);
   }
 });

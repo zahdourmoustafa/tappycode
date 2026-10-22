@@ -1,7 +1,7 @@
 /**
  * Provider verification, as a function rather than a printer.
  *
- * `verify` is the only thing in pew2 that proves a provider actually works: it
+ * `verify` is the only thing in tappy that proves a provider actually works: it
  * spawns the process, completes the ACP handshake, sends a real prompt and
  * counts what came back. That makes it the pass/fail signal a coding agent
  * needs, so it has to be callable — and structured — rather than console output
@@ -49,7 +49,7 @@ export interface VerifyOptions {
  * hotel wifi.
  *
  * 150s stays under the handshake budget, so a timeout here still means the
- * agent is genuinely wedged rather than merely slower than pew2's patience.
+ * agent is genuinely wedged rather than merely slower than tappy's patience.
  * The wait is visible — setup names the agent it is checking — so the cost of
  * the higher ceiling is paid only by a machine that has something wrong with it.
  */
@@ -64,11 +64,11 @@ export async function verifyProvider(
   if (!isAvailable(provider)) {
     return { id, status: "skipped", detail: unavailableReason(provider) };
   }
-  if (provider.manifest.pew.transport !== "acp") {
+  if (provider.manifest.tappy.transport !== "acp") {
     return {
       id,
       status: "skipped",
-      detail: `Transport '${provider.manifest.pew.transport}' cannot be verified`,
+      detail: `Transport '${provider.manifest.tappy.transport}' cannot be verified`,
     };
   }
 
@@ -93,7 +93,7 @@ export async function verifyProvider(
     expire = setTimeout(
       () =>
         reject(
-          // Written for the person who ran `pew2 setup`, not for whoever wrote
+          // Written for the person who ran `tappy setup`, not for whoever wrote
           // the manifest: "check the adapter's flags" was an instruction only a
           // contributor could act on, on a screen aimed at everyone else.
           new Error(
@@ -118,7 +118,7 @@ export async function verifyProvider(
         handshakeTimeoutMs: timeoutMs,
         // A scratch directory, not the user's. Verification really starts each
         // agent and sends it a prompt, and agents write files where they are
-        // pointed — running `pew2 setup` inside a project left junk in it, which
+        // pointed — running `tappy setup` inside a project left junk in it, which
         // is a rude thing for a health check to do.
         cwd: options.cwd ?? scratchDir(),
         onUpdate: (payload) => updates.push(payload),
@@ -138,7 +138,7 @@ export async function verifyProvider(
       // for: the process started, spoke ACP, agreed a protocol version and
       // opened a session.
       //
-      // It used to send "Hello from pew2 verify" as well, which turned a health
+      // It used to send "Hello from tappy verify" as well, which turned a health
       // check into a real model call on the user's account for every installed
       // agent, every time they ran setup \u2014 billed, rate-limited, and leaving a
       // junk conversation in each agent's history that then showed up in the
@@ -168,7 +168,7 @@ export async function verifyProvider(
 let scratch: string | undefined;
 function scratchDir(): string {
   if (!scratch) {
-    scratch = mkdtempSync(join(tmpdir(), "pew2-verify-"));
+    scratch = mkdtempSync(join(tmpdir(), "tappy-verify-"));
   }
   return scratch;
 }
@@ -216,7 +216,7 @@ export function describe(error: unknown): string {
  * How many agents to start at once.
  *
  * Verification spawns each agent for real and waits on a network round trip, so
- * running them one at a time made `pew2 setup` take the sum of every agent's
+ * running them one at a time made `tappy setup` take the sum of every agent's
  * startup — forty seconds on a normal machine, which is long enough that people
  * assume it has hung.
  *

@@ -1,19 +1,19 @@
 /**
- * Pew's body: the dots, their springs, moods, touch and whole-body motion.
+ * Tappy's body: the dots, their springs, moods, touch and whole-body motion.
  *
  * Split out of `engine.ts`, which re-exports the public half; painting a frame
  * lives in `enginePaint.ts`. Same rules as the rest of the engine: pure,
- * Expo-free, and every function a `"worklet"` because `Pew.tsx` runs it on
+ * Expo-free, and every function a `"worklet"` because `Tappy.tsx` runs it on
  * the UI thread.
  */
-export type PewMood = "idle" | "thinking" | "working" | "talking" | "happy" | "sleepy" | "oops";
+export type TappyMood = "idle" | "thinking" | "working" | "talking" | "happy" | "sleepy" | "oops";
 
-export const PEW_MOODS: readonly PewMood[] = ["idle", "thinking", "working", "talking", "happy", "sleepy", "oops"];
+export const TAPPY_MOODS: readonly TappyMood[] = ["idle", "thinking", "working", "talking", "happy", "sleepy", "oops"];
 
 /** 0..255 per channel. */
 export type RGB = [number, number, number];
 
-export interface PewPalette {
+export interface TappyPalette {
   /** The brightest lit LED. */
   light: RGB;
   /** A lit LED. */
@@ -27,7 +27,7 @@ export interface PewPalette {
   off: RGB;
 }
 
-export interface PewPainter {
+export interface TappyPainter {
   dot(x: number, y: number, r: number, c: RGB, a: number): void;
   /** A soft additive halo of radius `r`. */
   glow(x: number, y: number, r: number, c: RGB, a: number): void;
@@ -41,8 +41,8 @@ export interface PewPainter {
   shadow(cx: number, cy: number, w: number, h: number, a: number): void;
 }
 
-/** Everything one Pew remembers between frames. Lives on the UI thread. */
-export interface PewBody {
+/** Everything one Tappy remembers between frames. Lives on the UI thread. */
+export interface TappyBody {
   S: number;
   n: number;
   home: Float32Array;
@@ -63,32 +63,32 @@ export interface PewBody {
   dragging: boolean;
   /** Until when a poke keeps it happy (seconds, same clock as `t`). */
   reactUntil: number;
-  mood: PewMood | "";
+  mood: TappyMood | "";
   since: number;
   /**
    * The mood it was showing before the current one, and the face blends out
    * of it over FACE_BLEND seconds: a poke's smile eases back to the resting
    * face, a working face eases into a happy one, rather than snapping.
    */
-  prevMood: PewMood | "";
+  prevMood: TappyMood | "";
   /** Last time it was advanced; also "now" for gestures. */
   last: number;
   lookX: number;
   lookY: number;
-  /** Sleeping style 0..9 (`PEW_SLEEP_STYLES`): how it dozes in the sleepy mood. */
+  /** Sleeping style 0..9 (`TAPPY_SLEEP_STYLES`): how it dozes in the sleepy mood. */
   sleep: number;
   /** The seed it was built from (-1 for none), so a host can tell when to rebuild. */
   seed: number;
-  /** Breathing phase (radians) and rate so two dozing Pews never move in sync. */
+  /** Breathing phase (radians) and rate so two dozing Tappies never move in sync. */
   sleepPh: number;
   sleepRate: number;
 }
 
 /** How many sleeping styles there are. */
-export const PEW_SLEEP_STYLES = 10;
+export const TAPPY_SLEEP_STYLES = 10;
 
-/** A stable 32-bit hash of a string (FNV-1a): seeds a Pew's sleeping style. */
-export function pewSleepSeed(key: string): number {
+/** A stable 32-bit hash of a string (FNV-1a): seeds a Tappy's sleeping style. */
+export function tappySleepSeed(key: string): number {
   "worklet";
   let h = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {
@@ -103,9 +103,9 @@ export function pewSleepSeed(key: string): number {
 }
 
 /** The sleeping style (0..9) for a key such as a provider id. */
-export function pewSleepStyle(key: string): number {
+export function tappySleepStyle(key: string): number {
   "worklet";
-  return pewSleepSeed(key) % PEW_SLEEP_STYLES;
+  return tappySleepSeed(key) % TAPPY_SLEEP_STYLES;
 }
 
 // ── constants ───────────────────────────────────────────────
@@ -116,7 +116,7 @@ export const SCALE = 0.29;
 const SPRING_K = 90;
 const SPRING_C = 11;
 const SEED = 1.6;
-export const PEW_AMBER: RGB = [242, 180, 90];
+export const TAPPY_AMBER: RGB = [242, 180, 90];
 
 // ── small maths ─────────────────────────────────────────────
 
@@ -147,8 +147,8 @@ export function hash(n: number): number {
 // bun tests run on the JS thread, where order doesn't matter, so the test
 // "no worklet calls a helper declared below it" guards this instead.
 
-/** Sleep time: the clock run at this Pew's own breathing rate and phase. */
-export function sleepClock(B: PewBody, t: number): number {
+/** Sleep time: the clock run at this Tappy's own breathing rate and phase. */
+export function sleepClock(B: TappyBody, t: number): number {
   "worklet";
   return t * B.sleepRate + B.sleepPh;
 }
@@ -178,14 +178,14 @@ function wrapAngle(a: number): number {
 
 // ── the body ────────────────────────────────────────────────
 
-/** How many dots a Pew of edge `S` is made of. */
-export function pewCount(S: number): number {
+/** How many dots a Tappy of edge `S` is made of. */
+export function tappyCount(S: number): number {
   "worklet";
   return S > 140 ? 1000 : S > 50 ? 420 : S > 28 ? 180 : 120;
 }
 
 /**
- * Rows of dots, like an LED globe: the pew2 icon wrapped round a ball.
+ * Rows of dots, like an LED globe: the tappy icon wrapped round a ball.
  * Alternate rows are offset half a dot so the grid reads as a weave.
  */
 export function gridPoints(target: number): Float32Array {
@@ -204,16 +204,16 @@ export function gridPoints(target: number): Float32Array {
 }
 
 /**
- * A new Pew. It starts as a speck at its centre and bursts out to its full
+ * A new Tappy. It starts as a speck at its centre and bursts out to its full
  * size on the first frames, which is its "coming alive" entrance.
  */
-export function makePewBody(S: number, seed?: number): PewBody {
+export function makeTappyBody(S: number, seed?: number): TappyBody {
   "worklet";
   const sd = Math.abs(Math.floor(seed ?? 0));
-  const sleep = sd % PEW_SLEEP_STYLES;
+  const sleep = sd % TAPPY_SLEEP_STYLES;
   // Style 0 with no seed keeps the original timing exactly.
-  const ph = seed === undefined ? 0 : hash(Math.floor(sd / PEW_SLEEP_STYLES) * 0.013 + sleep * 3.7);
-  const home = gridPoints(pewCount(S));
+  const ph = seed === undefined ? 0 : hash(Math.floor(sd / TAPPY_SLEEP_STYLES) * 0.013 + sleep * 3.7);
+  const home = gridPoints(tappyCount(S));
   const n = home.length / 3;
   const rnd = new Float32Array(n);
   const lat = new Float32Array(n);
@@ -260,15 +260,15 @@ export function makePewBody(S: number, seed?: number): PewBody {
 }
 
 export interface MoodState {
-  mood: PewMood;
+  mood: TappyMood;
   age: number;
   decay: number;
 }
 
 /** The mood it is actually showing: a poke makes it happy for a moment. */
-export function effectiveMood(B: PewBody, t: number, mood: PewMood): MoodState {
+export function effectiveMood(B: TappyBody, t: number, mood: TappyMood): MoodState {
   "worklet";
-  const shown: PewMood = t < B.reactUntil ? "happy" : mood;
+  const shown: TappyMood = t < B.reactUntil ? "happy" : mood;
   if (shown !== B.mood) {
     B.prevMood = B.mood;
     B.mood = shown;
@@ -279,7 +279,7 @@ export function effectiveMood(B: PewBody, t: number, mood: PewMood): MoodState {
 }
 
 /** Where point `i` wants to be, for this mood. */
-function target(o: Float32Array, i: number, B: PewBody, t: number, st: MoodState): void {
+function target(o: Float32Array, i: number, B: TappyBody, t: number, st: MoodState): void {
   "worklet";
   const h = B.home;
   const x = h[i * 3]!;
@@ -321,7 +321,7 @@ function target(o: Float32Array, i: number, B: PewBody, t: number, st: MoodState
 
 const TMP = new Float32Array(3);
 
-function step(B: PewBody, t: number, dt: number, st: MoodState): void {
+function step(B: TappyBody, t: number, dt: number, st: MoodState): void {
   "worklet";
   const p = B.p;
   const v = B.v;
@@ -355,7 +355,7 @@ function idleHop(t: number): number {
   return ph < 0.09 ? Math.sin((ph / 0.09) * Math.PI) : 0;
 }
 
-function turn(B: PewBody, t: number, dt: number, st: MoodState): void {
+function turn(B: TappyBody, t: number, dt: number, st: MoodState): void {
   "worklet";
   let yawT = 0;
   let pitchT: number;
@@ -399,7 +399,7 @@ function turn(B: PewBody, t: number, dt: number, st: MoodState): void {
  * One frame of life. `look` is where something interesting is, -1..1 on each
  * axis (a finger, the composer); without one it drifts and glances by itself.
  */
-export function advancePew(B: PewBody, t: number, dt: number, mood: PewMood, lookX?: number, lookY?: number): void {
+export function advanceTappy(B: TappyBody, t: number, dt: number, mood: TappyMood, lookX?: number, lookY?: number): void {
   "worklet";
   const step_ = clamp(dt, 0.001, 1 / 30);
   B.last = t;
@@ -414,7 +414,7 @@ export function advancePew(B: PewBody, t: number, dt: number, mood: PewMood, loo
 }
 
 /** Jump straight to the resting pose for `mood` (reduced motion, paused). */
-export function settlePew(B: PewBody, t: number, mood: PewMood, lookX = 0, lookY = 0): void {
+export function settleTappy(B: TappyBody, t: number, mood: TappyMood, lookX = 0, lookY = 0): void {
   "worklet";
   B.last = t;
   const st = effectiveMood(B, t, mood);
@@ -435,7 +435,7 @@ export function settlePew(B: PewBody, t: number, mood: PewMood, lookX = 0, lookY
 // ── touch ───────────────────────────────────────────────────
 
 /** A tap at (x, y) in the box: a ripple out from the finger, and a happy moment. */
-export function pokePew(B: PewBody, x: number, y: number): void {
+export function pokeTappy(B: TappyBody, x: number, y: number): void {
   "worklet";
   const R = B.S * SCALE;
   const reach = R * 0.6;
@@ -456,7 +456,7 @@ export function pokePew(B: PewBody, x: number, y: number): void {
 }
 
 /** A drag of (dx, dy) points taking `dt` seconds: spins it, with momentum. */
-export function dragPew(B: PewBody, dx: number, dy: number, dt: number): void {
+export function dragTappy(B: TappyBody, dx: number, dy: number, dt: number): void {
   "worklet";
   B.dragging = true;
   B.yawExtra += dx * 0.013;
@@ -465,7 +465,7 @@ export function dragPew(B: PewBody, dx: number, dy: number, dt: number): void {
 }
 
 /** The finger lifted: it keeps spinning and springs back upright. */
-export function releasePew(B: PewBody): void {
+export function releaseTappy(B: TappyBody): void {
   "worklet";
   B.dragging = false;
 }
@@ -480,7 +480,7 @@ export interface Motion {
   dx: number;
 }
 
-export function motion(mood: PewMood, t: number, age: number, S: number, B: PewBody): Motion {
+export function motion(mood: TappyMood, t: number, age: number, S: number, B: TappyBody): Motion {
   "worklet";
   let hop = 0;
   let sx = 1;

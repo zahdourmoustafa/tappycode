@@ -1,10 +1,10 @@
 /**
  * Regression tests for provider directory resolution.
  *
- * `pew2` is linked onto PATH, so it runs from wherever the user happens to be.
+ * `tappy` is linked onto PATH, so it runs from wherever the user happens to be.
  * These directories were once resolved against `process.cwd()`, which meant the
  * bundled manifests were found only when the CLI was invoked from inside the
- * checkout: `pew2 doctor` from anywhere else reported "No agents configured" on
+ * checkout: `tappy doctor` from anywhere else reported "No agents configured" on
  * a machine with four working agents.
  */
 import { test, expect, afterEach } from "bun:test";
@@ -30,7 +30,7 @@ afterEach(() => process.chdir(original));
  * against the wrong one makes an assertion pass for the wrong reason.
  */
 async function elsewhere(): Promise<string> {
-  process.chdir(await mkdtemp(join(tmpdir(), "pew2-cwd-")));
+  process.chdir(await mkdtemp(join(tmpdir(), "tappy-cwd-")));
   return process.cwd();
 }
 
@@ -56,7 +56,7 @@ test("defaultProvidersDir does not resolve inside the working directory", async 
 });
 
 test("providerDirs keeps user manifests ahead of bundled ones, from anywhere", async () => {
-  const env = { PEW2_HOME: "/tmp/pew2-test-home" } as NodeJS.ProcessEnv;
+  const env = { TAPPY_HOME: "/tmp/tappy-test-home" } as NodeJS.ProcessEnv;
   const fromRepo = providerDirs(env);
 
   await elsewhere();
@@ -69,7 +69,7 @@ test("providerDirs keeps user manifests ahead of bundled ones, from anywhere", a
 });
 
 test("userProvidersDir ignores the working directory too", async () => {
-  const env = { PEW2_HOME: "/tmp/pew2-test-home" } as NodeJS.ProcessEnv;
+  const env = { TAPPY_HOME: "/tmp/tappy-test-home" } as NodeJS.ProcessEnv;
   const before = userProvidersDir(env);
 
   const cwd = await elsewhere();

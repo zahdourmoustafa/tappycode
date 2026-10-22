@@ -17,7 +17,7 @@
  * `hapticsPolicy.ts`, and for the same reason — `bun test` cannot parse React
  * Native's Flow syntax.
  */
-import { asRecord, asString } from "@pew2/protocol";
+import { asRecord, asString } from "@tappy/protocol";
 
 export interface SlashCommand {
   name: string;

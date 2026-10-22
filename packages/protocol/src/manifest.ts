@@ -1,13 +1,13 @@
 /**
  * Provider manifest schema.
  *
- * A "provider" is any agent/app/CLI that can be surfaced in the pew2 mobile app.
+ * A "provider" is any agent/app/CLI that can be surfaced in the tappy mobile app.
  * Adding one = dropping a JSON file in `providers/`. Nothing else.
  *
  * The core fields are deliberately identical to the ACP Agent Registry manifest
  * (`<id>/agent.json`) so that any manifest published to
  * https://github.com/agentclientprotocol/registry can be copied here verbatim.
- * pew2-specific additions live under the `pew` key so they never collide.
+ * tappy-specific additions live under the `tappy` key so they never collide.
  *
  * Spec: https://agentclientprotocol.com/rfds/acp-agent-registry
  */
@@ -83,7 +83,7 @@ export const Distribution = z.discriminatedUnion("type", [
  */
 export const Transport = z.enum(["acp", "pty"]);
 
-const PewExtensions = z.object({
+const TappyExtensions = z.object({
   transport: Transport.default("acp"),
   /** Short label shown in the app's provider list. Defaults to `name`. */
   label: z.string().optional(),
@@ -115,7 +115,7 @@ const PewExtensions = z.object({
 });
 
 /** Strict so that a mistyped key is a loud error, never a silently ignored field. */
-const StrictPewExtensions = PewExtensions.strict();
+const StrictTappyExtensions = TappyExtensions.strict();
 
 export const ProviderManifest = z
   .object({
@@ -128,7 +128,7 @@ export const ProviderManifest = z
     repository: z.string().url().optional(),
     authors: z.array(z.string()).default([]),
     license: z.string().optional(),
-    pew: StrictPewExtensions.default({}),
+    tappy: StrictTappyExtensions.default({}),
   })
   .strict();
 

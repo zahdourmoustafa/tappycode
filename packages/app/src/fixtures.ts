@@ -6,7 +6,7 @@
  * installed and several real sessions run. This is clearly marked sample
  * content, not captured user data.
  *
- * Set EXPO_PUBLIC_PEW2_FIXTURES=0 to see the genuine empty state. Fixtures are
+ * Set EXPO_PUBLIC_TAPPY_FIXTURES=0 to see the genuine empty state. Fixtures are
  * seeded at init and real sessions are appended ahead of them, so a live
  * session is never overwritten. Their ids all carry FIXTURE_PREFIX and
  * `isFixtureSession` gates them out of anything that talks to the daemon.
@@ -21,7 +21,7 @@ declare const __DEV__: boolean;
 
 /** Enabled by default in development so the UI can be reviewed with content. */
 export const USE_FIXTURES =
-  __DEV__ && process.env.EXPO_PUBLIC_PEW2_FIXTURES !== "0";
+  __DEV__ && process.env.EXPO_PUBLIC_TAPPY_FIXTURES !== "0";
 
 /** Every fixture id starts with this so they can be told from real sessions. */
 export const FIXTURE_PREFIX = "fixture-";

@@ -1,5 +1,5 @@
 /**
- * Manual live check (not part of `npm test`): drives the real pew2 Daemon
+ * Manual live check (not part of `npm test`): drives the real tappy Daemon
  * against a real GG Coder ACP build, exercising the `_gg/*` extensions.
  *
  *   GG_CLI=/path/to/ggcoder/dist/cli.js bun run packages/daemon/src/testing/gg-live-check.ts
@@ -21,7 +21,7 @@ const provider: LoadedProvider = {
     id: "ggcoder",
     name: "GG Coder",
     description: "",
-    pew: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
+    tappy: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
   } as unknown as LoadedProvider["manifest"],
   source: "<live-check>",
   command: process.execPath.includes("bun") ? "node" : process.execPath,
@@ -30,9 +30,9 @@ const provider: LoadedProvider = {
   commandMissing: false,
 };
 
-const root = await mkdtemp(join(tmpdir(), "pew2-live-"));
-process.env.PEW2_HOME = join(root, "home");
-process.env.PEW2_WORKSPACE = root;
+const root = await mkdtemp(join(tmpdir(), "tappy-live-"));
+process.env.TAPPY_HOME = join(root, "home");
+process.env.TAPPY_WORKSPACE = root;
 
 const sent: any[] = [];
 const daemon = new Daemon({ id: "live", name: "live" });

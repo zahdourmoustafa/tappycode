@@ -13,8 +13,8 @@
 #
 set -euo pipefail
 
-SIM="${PEW2_SIM:-A76FCF1B-9ABD-4205-B180-DCE721E12143}"
-OUT="${PEW2_SHOTS:-$HOME/Desktop/pew2-screenshots}"
+SIM="${TAPPY_SIM:-A76FCF1B-9ABD-4205-B180-DCE721E12143}"
+OUT="${TAPPY_SHOTS:-$HOME/Desktop/tappy-screenshots}"
 BIG="$OUT/6.9-inch"
 SMALL="$OUT/6.5-inch"
 

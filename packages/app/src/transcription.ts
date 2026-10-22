@@ -68,7 +68,7 @@ export function dictationMessage(code: string): string {
   switch (code) {
     case "not-allowed":
     case "service-not-allowed":
-      return "Microphone or speech access is off for pew2. Turn it on in Settings to dictate.";
+      return "Microphone or speech access is off for tappy. Turn it on in Settings to dictate.";
     case "no-speech":
       return "Didn't catch that.";
     case "audio-capture":

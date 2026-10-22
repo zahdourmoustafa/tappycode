@@ -1,6 +1,6 @@
 /**
  * Agent picker, "Carousel": a full-screen overlay paging through every agent,
- * each a big Pew over a wash of its colour. Snapping clicks (detent); the
+ * each a big Tappy over a wash of its colour. Snapping clicks (detent); the
  * primary button selects the agent and closes.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,8 +19,8 @@ import {
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "../theme";
-import { Pew } from "../pew/Pew";
-import { pewInk } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { tappyInk } from "../tappy/palette";
 import { haptics } from "./haptics";
 import { Led } from "./stage/Led";
 import { DotGrid } from "./stage/DotGrid";
@@ -42,14 +42,14 @@ export interface AgentCarouselProps {
   currentId?: string;
   onSelect: (id: string) => void;
   onClose: () => void;
-  /** Opened by a tap on Pew, which was smiling: its Pew arrives smiling and settles. */
+  /** Opened by a tap on Tappy, which was smiling: its Tappy arrives smiling and settles. */
   arriveSmiling?: boolean;
 }
 
-/** How long the arriving smile holds before Pew settles back to its usual mood. */
+/** How long the arriving smile holds before Tappy settles back to its usual mood. */
 const SMILE_HOLD_MS = 1100;
 
-const PEW = 200;
+const TAPPY = 200;
 
 export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmiling = false }: AgentCarouselProps) {
   const [smiling, setSmiling] = useState(arriveSmiling);
@@ -65,7 +65,7 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
   const start = Math.max(0, agents.findIndex((a) => a.id === currentId));
   const [page, setPage] = useState(start);
   const agent = agents[page];
-  const ink = pewInk(agent?.color);
+  const ink = tappyInk(agent?.color);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -129,7 +129,7 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
     [page, settledPage],
   );
 
-  // The page under the finger, live while dragging, so Pew recolours as you
+  // The page under the finger, live while dragging, so Tappy recolours as you
   // swipe rather than after the scroll has settled.
   const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -150,8 +150,8 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
   const isCurrent = agent?.id === currentId;
 
   return (
-    // Fades in over home rather than cutting to it, so the smiling Pew reads as
-    // the same Pew carrying on.
+    // Fades in over home rather than cutting to it, so the smiling Tappy reads as
+    // the same Tappy carrying on.
     <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(220)} style={[StyleSheet.absoluteFill, styles.root]}>
       <DotGrid />
       <View style={[styles.top, { paddingTop: insets.top + theme.space(2) }]}>
@@ -168,11 +168,11 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
           <DotGlyph name="close" size={20} color={theme.color.text} />
         </Pressable>
       </View>
-      {/* ONE Pew, fixed in the middle: swiping recolours and renames it rather
-          than sliding in a fresh Pew per agent (which all arrived in the same
+      {/* ONE Tappy, fixed in the middle: swiping recolours and renames it rather
+          than sliding in a fresh Tappy per agent (which all arrived in the same
           rest pose, so the carousel felt static). It keeps whatever it was
           doing; only its colour morphs, and its glow cross-fades. The pages
-          underneath carry just the text, and swipes pass through Pew. */}
+          underneath carry just the text, and swipes pass through Tappy. */}
       <View style={styles.listWrap}>
       <FlatList
         ref={list}
@@ -193,12 +193,12 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
         style={styles.pages}
         renderItem={({ item }) => (
           <View style={[styles.page, { width }]}>
-            <View style={styles.pewSpot} />
+            <View style={styles.tappySpot} />
             <View style={styles.label}>
               <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
                 {item.name}
               </Text>
-              <Led color={pewInk(item.color)} tone={item.available === false ? "dim" : "agent"}>
+              <Led color={tappyInk(item.color)} tone={item.available === false ? "dim" : "agent"}>
                 {item.id === currentId ? "Current" : item.available === false ? "Not set up" : "Ready"}
               </Led>
             </View>
@@ -206,9 +206,9 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
         )}
       />
       <View style={[StyleSheet.absoluteFill, styles.page]} pointerEvents="none">
-        <View style={styles.pewSpot}>
-          <AgentGlow color={ink} size={PEW * 1.9} />
-          <Pew size={PEW} mood={smiling ? "happy" : agent?.available === false ? "sleepy" : "idle"} color={agent?.color} />
+        <View style={styles.tappySpot}>
+          <AgentGlow color={ink} size={TAPPY * 1.9} />
+          <Tappy size={TAPPY} mood={smiling ? "happy" : agent?.available === false ? "sleepy" : "idle"} color={agent?.color} />
         </View>
         <View style={styles.label} />
       </View>
@@ -257,12 +257,12 @@ export function AgentCarousel({ agents, currentId, onSelect, onClose, arriveSmil
 
 const styles = StyleSheet.create({
   root: { backgroundColor: theme.color.bg, zIndex: 50 },
-  pewSpot: { width: PEW, height: PEW, alignItems: "center", justifyContent: "center" },
+  tappySpot: { width: TAPPY, height: TAPPY, alignItems: "center", justifyContent: "center" },
   mirror: { transform: [{ scaleX: -1 }] },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: theme.gutter },
   listWrap: { flex: 1 },
   pages: { flex: 1 },
-  // Fixed height, so the text pages and the Pew overlay lay out identically.
+  // Fixed height, so the text pages and the Tappy overlay lay out identically.
   label: { height: 96, alignSelf: "stretch", alignItems: "center", justifyContent: "flex-start", gap: theme.space(2) },
   page: { alignItems: "center", justifyContent: "center", paddingHorizontal: theme.gutter, gap: theme.space(2) },
   name: { color: theme.color.text, fontFamily: theme.display.regular, fontSize: 34, alignSelf: "stretch", textAlign: "center" },

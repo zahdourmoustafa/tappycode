@@ -35,7 +35,7 @@ function ApprovalSheetView({ permission, onAnswer }: ApprovalSheetProps) {
   // is the lit button; other allows are secondary and refusals are danger.
   const primaryId = options.find((o) => !isDenyApprovalOption(o))?.optionId;
   return (
-    <Sheet visible={permission !== undefined} label="Permission" labelTone="attention" pewMood="talking" title="Approval needed">
+    <Sheet visible={permission !== undefined} label="Permission" labelTone="attention" tappyMood="talking" title="Approval needed">
       <View style={styles.body} accessibilityLiveRegion="assertive">
         <Text style={styles.request}>{shown?.title ?? ""}</Text>
         <View style={styles.buttons}>

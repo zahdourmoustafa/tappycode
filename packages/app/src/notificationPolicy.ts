@@ -1,7 +1,7 @@
 /**
  * When a finished turn is worth a notification, and what it should say.
  *
- * pew2's whole premise is that the agent keeps working while the phone is in a
+ * tappy's whole premise is that the agent keeps working while the phone is in a
  * pocket or on another conversation. A banner is therefore not decoration: it
  * is the only way to learn that a five-minute turn in another project has
  * landed. This module decides that, and nothing else — no Expo imports, so the
@@ -44,14 +44,14 @@ export interface Notice {
 
 // Imported, not restated. The daemon composes the same banner when it pushes a
 // turn the app was asleep for, and it cannot import from the app package — so
-// the wording lives in `@pew2/protocol`, which both sides can reach. A copy on
+// the wording lives in `@tappy/protocol`, which both sides can reach. A copy on
 // each side would mean the same turn read differently depending on whether the
 // app happened to still be awake, which is invisible until someone notices the
 // wording changed for no reason.
 //
 // Metro resolves this: `metro.config.js` maps the package's `.js`-suffixed TS
 // imports back, which is how `useDaemon.ts` imports the same package.
-import { noticeBody, noticeTitle, summarise } from "@pew2/protocol";
+import { noticeBody, noticeTitle, summarise } from "@tappy/protocol";
 
 // Re-exported because callers and tests reach for it here, alongside the rule
 // that uses it.

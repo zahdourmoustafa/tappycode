@@ -18,7 +18,7 @@ import { theme } from "../theme";
 import { haptics } from "./haptics";
 import { Led } from "./stage/Led";
 import { dashedOutline } from "./stage/DashedRule";
-import { KEN_COLOR } from "../pew/palette";
+import { KEN_COLOR } from "../tappy/palette";
 import { EASE_OUT } from "./motion/ease";
 import { SPRING } from "../motion";
 import type { PendingAttachment } from "../attachments";

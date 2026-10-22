@@ -1,6 +1,6 @@
 # Contributing
 
-pew2 runs coding agents on someone's real machine, with their real files, and a
+tappy runs coding agents on someone's real machine, with their real files, and a
 phone anywhere in the world can talk to it. That is the whole reason the bar here
 is where it is — not ceremony, consequence.
 
@@ -83,7 +83,7 @@ Cap how many conversations may hold an agent at once
 
 ## Versions
 
-Exactly one number ships: the `pew2` binary's, in `packages/daemon/package.json`,
+Exactly one number ships: the `tappy` binary's, in `packages/daemon/package.json`,
 tagged `vX.Y.Z`. The release workflow builds from that tag and publishes a
 `.sha256` beside every binary — the installer now refuses a download without one,
 so a release that skips them installs nowhere.
@@ -105,5 +105,5 @@ code change, the manifest schema is probably the thing to fix.
 ## Security
 
 Do not open an issue for a vulnerability. `SECURITY.md` explains private
-reporting, and describes what pew2 does and does not defend against — read the
+reporting, and describes what tappy does and does not defend against — read the
 threat model before reporting something it deliberately does not cover.

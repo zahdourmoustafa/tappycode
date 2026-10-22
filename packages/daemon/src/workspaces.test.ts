@@ -24,7 +24,7 @@ import { discoverRepos, listDirectory, resolveBrowsePath, suggestionRoots } from
  * tempt someone to "fix" it by relaxing the containment check.
  */
 async function fixture() {
-  const home = await realpath(await mkdtemp(join(tmpdir(), "pew2-ws-")));
+  const home = await realpath(await mkdtemp(join(tmpdir(), "tappy-ws-")));
   const repo = async (path: string) => {
     await mkdir(join(home, path), { recursive: true });
     await mkdir(join(home, path, ".git"), { recursive: true });
@@ -162,7 +162,7 @@ test("the scan does not follow a symlink out of the allowlist", async () => {
   // traversed, and repositories from anywhere on the machine reported to the
   // phone as suggestions.
   const { home, roots } = await fixture();
-  const elsewhere = await realpath(await mkdtemp(join(tmpdir(), "pew2-outside-")));
+  const elsewhere = await realpath(await mkdtemp(join(tmpdir(), "tappy-outside-")));
   await mkdir(join(elsewhere, "private-repo", ".git"), { recursive: true });
   await symlink(elsewhere, join(home, "linked"));
 
@@ -255,7 +255,7 @@ test("suggestions come only from the folders the user added, never the whole hom
   expect(roots.join(" ")).not.toContain("sk_live");
 });
 
-test("with no GG Coder list, pew2's own folders are the whole answer", async () => {
+test("with no GG Coder list, tappy's own folders are the whole answer", async () => {
   const dir = await mkdtemp(join(tmpdir(), "suggest-none-"));
   await mkdir(join(dir, "one"));
   expect(await suggestionRoots([join(dir, "one")], join(dir, "missing.json"))).toEqual([resolve(join(dir, "one"))]);

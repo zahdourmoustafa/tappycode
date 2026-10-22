@@ -26,7 +26,7 @@ import { launchSpec } from "../acp/connect.js";
 const WINDOWS = process.platform === "win32";
 
 async function bin(): Promise<string> {
-  return await mkdtemp(join(tmpdir(), "pew2-path-"));
+  return await mkdtemp(join(tmpdir(), "tappy-path-"));
 }
 
 test("an executable on PATH is found, with its full path", async () => {
@@ -88,12 +88,12 @@ test("launchSpec passes POSIX commands through untouched", () => {
 /**
  * Windows, simulated.
  *
- * `PEW2_FAKE_PLATFORM` exists for these: the CI matrix is Linux-only, so
- * without it the rules that decide whether pew2 works at all on Windows are the
+ * `TAPPY_FAKE_PLATFORM` exists for these: the CI matrix is Linux-only, so
+ * without it the rules that decide whether tappy works at all on Windows are the
  * one part of the codebase that nothing ever runs.
  */
 const win = (dir: string, extra: NodeJS.ProcessEnv = {}) => ({
-  PEW2_FAKE_PLATFORM: "win32",
+  TAPPY_FAKE_PLATFORM: "win32",
   PATH: dir,
   ...extra,
 });
@@ -193,7 +193,7 @@ test("windows: a program path containing spaces survives cmd's quote stripping",
   // the common case, not an edge one. Passing the parts as ordinary argv looks
   // correct and is not: `/s` strips the first and last quote of everything
   // after `/c`, which unquotes the program path and splits it at the space.
-  const root = await mkdtemp(join(tmpdir(), "pew2 path "));
+  const root = await mkdtemp(join(tmpdir(), "tappy path "));
   await npmShim(root, "npx");
 
   const spec = launchSpec("npx", ["--acp"], win(root));

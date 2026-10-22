@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "pew2",
-    "slug": "pew2",
+    "name": "Tappy Code",
+    "slug": "tappy",
     "version": "1.0.0",
-    "//scheme": "Claims the `pew2://` URL scheme so this app has a stable identity to be opened by. Nothing routes an incoming link yet — pairing is camera-only, and the link it carries is a `ws://` URL, not this scheme — so today this only makes the app addressable rather than adding a way in. That ordering is deliberate: a link that paired on arrival would let any app that can open a URL point this phone at someone else's daemon, so the handler needs a confirmation step designed before it exists, and the scheme has to be registered in a build before any of that can ship.",
-    "scheme": "pew2",
+    "//scheme": "Claims the `tappy://` URL scheme so this app has a stable identity to be opened by. Nothing routes an incoming link yet — pairing is camera-only, and the link it carries is a `ws://` URL, not this scheme — so today this only makes the app addressable rather than adding a way in. That ordering is deliberate: a link that paired on arrival would let any app that can open a URL point this phone at someone else's daemon, so the handler needs a confirmation step designed before it exists, and the scheme has to be registered in a build before any of that can ship.",
+    "scheme": "tappy",
     "//runtimeVersion": "Which native binary an over-the-air update may load. `appVersion` ties it to the version above, so an update built against changed native code can never be handed to a build that cannot run it — the failure being a launch loop on a phone with no way back. Actually publishing updates needs `updates.url` from `eas init`, which requires an account this repository does not carry; until then this ships the client without a source.",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -15,15 +15,15 @@
     "ios": {
       "//supportsTablet": "False for 1.0 because nothing here is built for a tablet: the layout is portrait-only phone chrome, no code branches on an iPad idiom, and no iPad screenshots exist \u2014 App Store Connect requires a 13-inch set the moment this is true, and review then tests the stretched phone UI on hardware it was never laid out for. Turning it on is a layout pass plus its own screenshot set, not a flag.",
       "supportsTablet": false,
-      "//": "Reverse-DNS of the GitHub org that hosts this, not a domain: `pew2.dev` is not registered, and an identifier built from a domain someone else can buy is a claim that can be contested after the app is on a store \u2014 at which point it cannot be changed without shipping a new app. Fork this and you must change it: an identifier is unique per store, and a fork keeping this one cannot be submitted alongside the original.",
-      "bundleIdentifier": "io.github.kenkaiii.pew2",
-      "//infoPlist": "Ships verbatim into Info.plist, so no comment keys inside it — Apple reads what is written there. `ITSAppUsesNonExemptEncryption: false` answers the export-compliance question at build time instead of halting every upload to ask it. The answer is honest: this app's own cryptography is the pairing seal in @pew2/protocol (XChaCha20-Poly1305 and HKDF-SHA256 from @noble) over TLS, both exempt under the standard 'uses only encryption exempt from EAR' category. Adding a non-exempt algorithm of our own means revisiting this line, not merely the answer in the console.",
+      "//": "Reverse-DNS of tappycode.com, the domain chosen for the brand. Register that domain before the first store submission: an identifier built from a domain someone else can buy is a claim that can be contested after the app is on a store \u2014 at which point it cannot be changed without shipping a new app. The Android `package` below must stay identical.",
+      "bundleIdentifier": "com.tappycode.app",
+      "//infoPlist": "Ships verbatim into Info.plist, so no comment keys inside it — Apple reads what is written there. `ITSAppUsesNonExemptEncryption: false` answers the export-compliance question at build time instead of halting every upload to ask it. The answer is honest: this app's own cryptography is the pairing seal in @tappy/protocol (XChaCha20-Poly1305 and HKDF-SHA256 from @noble) over TLS, both exempt under the standard 'uses only encryption exempt from EAR' category. Adding a non-exempt algorithm of our own means revisiting this line, not merely the answer in the console.",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "io.github.kenkaiii.pew2",
+      "package": "com.tappycode.app",
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0C",
         "foregroundImage": "./assets/android-icon-foreground.png",

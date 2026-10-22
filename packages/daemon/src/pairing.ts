@@ -18,7 +18,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { networkInterfaces } from "node:os";
 import { dirname, join } from "node:path";
-import { e2e } from "@pew2/protocol";
+import { e2e } from "@tappy/protocol";
 import { userProvidersDir } from "./providers/registry.js";
 import { isRealClaim } from "./device-claim.js";
 
@@ -59,15 +59,38 @@ export interface Pairing {
  * The shortest secret a pairing may be built from.
  *
  * A minted pairing is 32 bytes of real entropy and never comes near this floor.
- * It exists for `PEW2_TOKEN`, where a human types the value — and where the
+ * It exists for `TAPPY_TOKEN`, where a human types the value — and where the
  * derivation is a single HKDF pass with no salt and no stretching, so the key
- * inherits exactly the entropy of what it is given. `PEW2_TOKEN=pew2-staging`
+ * inherits exactly the entropy of what it is given. `TAPPY_TOKEN=tappy-staging`
  * is a root key someone can brute-force offline against the public room id, and
  * from there read and write every message on that pairing.
  */
 export const MIN_TOKEN_LENGTH = 32;
 
-/** `~/.pew2/pairing.json`, or `$PEW2_HOME/pairing.json` when overridden. */
+/**
+ * The relay a brand-new machine pairs through, so a first phone works from any
+ * network without anyone having deployed a relay of their own.
+ *
+ * Safe to share between everyone because the relay is untrusted by design: it
+ * routes sealed frames between a room id derived one-way from the pairing and
+ * never sees the key. Applied only when a pairing is first minted — a machine
+ * that chose a relay, or `tappy relay off`, keeps that choice.
+ */
+export const DEFAULT_RELAY = "wss://tappy-relay.moustafa-e00.workers.dev";
+
+/**
+ * The relay a fresh pairing starts with. `TAPPY_DEFAULT_RELAY` overrides it,
+ * and an empty value means none — which the test run sets, so no test daemon
+ * ever dials a real relay. Read from the process too, because callers that
+ * pass an environment of their own (tests, mostly) build it from scratch.
+ */
+export function defaultRelay(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const override = env.TAPPY_DEFAULT_RELAY ?? process.env.TAPPY_DEFAULT_RELAY;
+  if (override !== undefined) return override || undefined;
+  return DEFAULT_RELAY;
+}
+
+/** `~/.tappy/pairing.json`, or `$TAPPY_HOME/pairing.json` when overridden. */
 export function pairingPath(env: NodeJS.ProcessEnv = process.env): string {
   return join(dirname(userProvidersDir(env)), "pairing.json");
 }
@@ -88,7 +111,7 @@ export function generatePairing(): { token: string; key: string } {
 /**
  * Derive a pairing deterministically from an explicit token.
  *
- * `PEW2_TOKEN` exists so a test or a container can run without touching a real
+ * `TAPPY_TOKEN` exists so a test or a container can run without touching a real
  * home directory. Hashing it into a key keeps that path working end to end
  * rather than leaving those runs unencrypted — which would mean the tests
  * exercised a different protocol than production uses.
@@ -100,7 +123,7 @@ export function generatePairing(): { token: string; key: string } {
 export function pairingFromToken(token: string): { token: string; key: string } {
   if (token.length < MIN_TOKEN_LENGTH) {
     throw new Error(
-      `PEW2_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters: it is the only ` +
+      `TAPPY_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters: it is the only ` +
         `entropy behind this pairing's encryption key, so a short one can be ` +
         `brute-forced offline against the room id the relay already knows. ` +
         `Generate one with: openssl rand -hex 32`,
@@ -120,19 +143,24 @@ export function pairingFromToken(token: string): { token: string; key: string } 
 export async function loadPairing(env: NodeJS.ProcessEnv = process.env): Promise<Pairing> {
   // An explicit token wins and is never written to disk — this is what lets a
   // test, or a container, run without touching a real home directory.
-  if (env.PEW2_TOKEN) {
+  if (env.TAPPY_TOKEN) {
     // Derived, not stored: the same input always yields the same pairing, so a
-    // fixed PEW2_TOKEN keeps working across restarts exactly as it did before.
+    // fixed TAPPY_TOKEN keeps working across restarts exactly as it did before.
     // Throws on a short one — loudly, at startup, rather than running with an
     // encryption key that can be guessed.
-    const derived = pairingFromToken(env.PEW2_TOKEN);
-    return { ...derived, createdAt: new Date(0).toISOString(), relay: env.PEW2_RELAY };
+    const derived = pairingFromToken(env.TAPPY_TOKEN);
+    return { ...derived, createdAt: new Date(0).toISOString(), relay: env.TAPPY_RELAY };
   }
 
   const path = pairingPath(env);
   let storedRelay: string | undefined;
+  // Whether a pairing file existed at all. Only a machine with none is new
+  // enough to be given the default relay; one whose file merely held an old
+  // token keeps the relay setting it had, including none.
+  let existed = false;
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as Partial<Pairing>;
+    existed = true;
     // A pairing without a key predates encryption. Treated as absent rather
     // than reused, because carrying it forward would mean a daemon that still
     // accepts unencrypted connections — the downgrade this change exists to
@@ -154,7 +182,7 @@ export async function loadPairing(env: NodeJS.ProcessEnv = process.env): Promise
           : {}),
         // The environment wins, so a relay can be pointed elsewhere for one run
         // without rewriting stored configuration.
-        relay: env.PEW2_RELAY ?? parsed.relay,
+        relay: env.TAPPY_RELAY ?? parsed.relay,
       };
     }
     // A short or malformed token is worse than none: it would be accepted by
@@ -171,7 +199,7 @@ export async function loadPairing(env: NodeJS.ProcessEnv = process.env): Promise
     {
       ...generatePairing(),
       createdAt: new Date().toISOString(),
-      relay: env.PEW2_RELAY ?? storedRelay,
+      relay: env.TAPPY_RELAY ?? (existed ? storedRelay : defaultRelay(env)),
     },
     env,
   );
@@ -185,7 +213,7 @@ export async function rotatePairing(env: NodeJS.ProcessEnv = process.env): Promi
       ...generatePairing(),
       createdAt: new Date().toISOString(),
       // Rotating a token must not silently drop remote access.
-      relay: env.PEW2_RELAY ?? existing?.relay,
+      relay: env.TAPPY_RELAY ?? existing?.relay,
     },
     env,
   );
@@ -198,7 +226,7 @@ export async function rotatePairing(env: NodeJS.ProcessEnv = process.env): Promi
  * in-memory claim would quietly reopen the pairing every time the daemon
  * relaunched, which is exactly when nobody is watching.
  *
- * Does nothing under `PEW2_TOKEN`: that pairing is derived, never stored, and
+ * Does nothing under `TAPPY_TOKEN`: that pairing is derived, never stored, and
  * writing a claim beside it would create a file `loadPairing` then ignores.
  * Tests and containers re-claim on each run, which is what they want anyway.
  */
@@ -206,7 +234,7 @@ export async function claimPairing(
   deviceId: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<void> {
-  if (env.PEW2_TOKEN) return;
+  if (env.TAPPY_TOKEN) return;
   const existing = await loadPairing(env);
   // Re-reading first means a claim never resurrects a token that was rotated
   // out from under this process.
@@ -264,7 +292,11 @@ export function lanAddresses(): string[] {
 
       // Prefer the interface most likely to be the one the phone shares: real
       // Wi-Fi/Ethernet over the virtual bridges Docker and VMs leave behind.
-      const rank = /^(en|eth|wl)/.test(name) ? 0 : /^(bridge|docker|veth|utun|tun|tap)/.test(name) ? 2 : 1;
+      const rank = /^(en|eth|wl)/.test(name)
+        ? 0
+        : /^(bridge|docker|veth|utun|tun|tap)/.test(name)
+          ? 2
+          : 1;
       found.push({ address: entry.address, rank });
     }
   }

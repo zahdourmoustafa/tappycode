@@ -61,14 +61,14 @@ test("the unit backs off at the same rate as the launchd plist", () => {
 });
 
 test("the unit installs into the user's own systemd, never root's", () => {
-  // pew2 spawns coding agents as the person using it — their HOME, their keys.
+  // tappy spawns coding agents as the person using it — their HOME, their keys.
   // A system unit would run every agent as root.
   // Built with `join` rather than written out, because these tests also run on
   // the Windows CI runner, where `join` yields backslashes. The path itself is
   // only ever *used* on Linux; what is under test is the layout — a user unit,
   // not a system one.
   expect(unitPath("/home/ada")).toBe(
-    join("/home/ada", ".config", "systemd", "user", "dev.pew2.daemon.service"),
+    join("/home/ada", ".config", "systemd", "user", "dev.tappy.daemon.service"),
   );
   expect(buildUnit()).toContain("WantedBy=default.target");
 });
@@ -85,7 +85,7 @@ test("environment values are quoted, so a PATH with a space survives", () => {
 test("a percent sign is escaped, because systemd expands it", () => {
   // `%` is systemd's specifier prefix: unescaped, `%h` becomes the home
   // directory rather than the two characters that were meant.
-  const unit = buildUnit({ env: { PEW2_RELAY: "wss://relay/%h%i" } });
+  const unit = buildUnit({ env: { TAPPY_RELAY: "wss://relay/%h%i" } });
 
   expect(unit).toContain("wss://relay/%%h%%i");
 });
@@ -108,7 +108,7 @@ test("installing enables lingering, or says how to", async () => {
   // Without lingering, systemd tears down the user manager at logout and the
   // daemon dies with it — on a machine whose whole purpose is to be reachable
   // while nobody is sitting at it.
-  const home = await mkdtemp(join(tmpdir(), "pew2-systemd-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-systemd-"));
   const rec = recorder({ "loginctl enable-linger": { code: 1, stdout: "denied" } });
 
   const status = await installSystemdUnit({ home }, rec);
@@ -120,14 +120,14 @@ test("installing enables lingering, or says how to", async () => {
     "--user",
     "enable",
     "--now",
-    "dev.pew2.daemon.service",
+    "dev.tappy.daemon.service",
   ]);
   // A refused linger is reported rather than silently accepted.
   if (status.state === "running") expect(status.detail).toContain("enable-linger");
 });
 
 test("a unit that was never written reads as not-installed", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-systemd-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-systemd-"));
   const rec = recorder();
 
   const status = await systemdStatus(home, rec);
@@ -138,7 +138,7 @@ test("a unit that was never written reads as not-installed", async () => {
 });
 
 test("systemd status reads the machine-readable form, not prose", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-systemd-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-systemd-"));
   const rec = recorder({
     "systemctl --user": { code: 0, stdout: "ActiveState=active\nMainPID=4321\nExecMainStatus=0\n" },
   });
@@ -195,15 +195,15 @@ test("a path with a space is quoted in the task's command line", async () => {
 test("environment and log redirection are carried, since a task has neither", () => {
   const xml = buildTaskXml({ port: 9001, experimental: true });
 
-  expect(xml).toContain('set &quot;PEW2_PORT=9001&quot;');
-  expect(xml).toContain('set &quot;PEW2_EXPERIMENTAL=1&quot;');
+  expect(xml).toContain('set &quot;TAPPY_PORT=9001&quot;');
+  expect(xml).toContain('set &quot;TAPPY_EXPERIMENTAL=1&quot;');
   expect(xml).toContain("daemon.log");
 });
 
 test("installing registers the task and starts it without waiting for a logon", async () => {
-  // A logon trigger does not fire until the next sign-in, so `pew2 setup` would
+  // A logon trigger does not fire until the next sign-in, so `tappy setup` would
   // otherwise report success on a daemon that does not exist yet.
-  const home = await mkdtemp(join(tmpdir(), "pew2-task-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-task-"));
   const rec = recorder({
     "schtasks /query": { code: 0, stdout: "Status:  Running\nLast Result: 0\n" },
   });
@@ -216,7 +216,7 @@ test("installing registers the task and starts it without waiting for a logon", 
 });
 
 test("the task file is written as Unicode, which schtasks requires", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-task-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-task-"));
   await installScheduledTask({ home }, recorder());
 
   // A plain UTF-8 file is rejected with a bare "The task XML is malformed".
@@ -226,7 +226,7 @@ test("the task file is written as Unicode, which schtasks requires", async () =>
 });
 
 test("a task that was never created reads as not-installed", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-task-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-task-"));
   const rec = recorder();
 
   const status = await scheduledTaskStatus(home, rec);
@@ -238,7 +238,7 @@ test("a task that was never created reads as not-installed", async () => {
 test("an unrecognised status is reported as installed, never as running", async () => {
   // Task Scheduler localises its output; guessing "running" from a string we
   // cannot read would tell the updater it is safe to exit when it is not.
-  const home = await mkdtemp(join(tmpdir(), "pew2-task-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-task-"));
   await installScheduledTask({ home }, recorder());
   const rec = recorder({ "schtasks /query": { code: 0, stdout: "Status: En cours\n" } });
 
@@ -253,12 +253,12 @@ test("each platform is asked about its own service file", () => {
   // matches.
   expect(supervisorPath("darwin", "/home/ada")).toContain(join("Library", "LaunchAgents"));
   expect(supervisorPath("linux", "/home/ada")).toContain(join(".config", "systemd", "user"));
-  expect(supervisorPath("win32", "/home/ada")).toContain(".pew2");
+  expect(supervisorPath("win32", "/home/ada")).toContain(".tappy");
   expect(supervisorPath("freebsd", "/home/ada")).toBeUndefined();
 });
 
 test("an empty home has no supervisor on any platform", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-empty-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-empty-"));
 
   for (const platform of ["darwin", "linux", "win32", "freebsd"] as const) {
     expect(supervisorInstalled(platform, home)).toBe(false);
@@ -266,7 +266,7 @@ test("an empty home has no supervisor on any platform", async () => {
 });
 
 test("a written unit makes linux report a supervisor", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-supervised-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-supervised-"));
   await installSystemdUnit({ home }, recorder());
 
   expect(supervisorInstalled("linux", home)).toBe(true);
@@ -287,7 +287,7 @@ test("idle is never a reason to stop or skip the daemon", () => {
 
 test("the task can be started on demand, which install relies on", () => {
   // A logon trigger alone would not fire until the next sign-in, and install
-  // runs `schtasks /run` immediately so `pew2 setup` does not report success on
+  // runs `schtasks /run` immediately so `tappy setup` does not report success on
   // a daemon that does not exist yet.
   expect(buildTaskXml()).toContain("<AllowStartOnDemand>true</AllowStartOnDemand>");
 });

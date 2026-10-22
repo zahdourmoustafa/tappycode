@@ -1,13 +1,13 @@
 /**
- * A GG Goals crew: one scrollable row of worker chips (small Pew + LED name).
+ * A GG Goals crew: one scrollable row of worker chips (small Tappy + LED name).
  * Tapping a chip selects it and shows a one-line tip: role · activity · time.
  */
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
 import { withAlpha } from "../motion";
-import { Pew } from "../pew/Pew";
-import { roleColor, workerMood } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { roleColor, workerMood } from "../tappy/palette";
 import { elapsedLabel, workerElapsed, type GoalWorker } from "../ggState";
 import { Led } from "./stage/Led";
 import { PressScale } from "./stage/PressScale";
@@ -87,8 +87,8 @@ export function CrewRow({ workers: all, onPressWorker }: CrewRowProps) {
                   on ? { backgroundColor: withAlpha(color, 0.1) } : null,
                 ]}
               >
-                <View style={styles.pew}>
-                  <Pew size={28} mood={workerMood(w.state)} color={color} paused={!live} />
+                <View style={styles.tappy}>
+                  <Tappy size={28} mood={workerMood(w.state)} color={color} paused={!live} />
                 </View>
                 <Led color={color} unlit={!live} style={styles.name}>
                   {w.name}
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     paddingRight: theme.space(3),
     gap: theme.space(1),
   },
-  pew: { width: 24, height: 24, alignItems: "center", justifyContent: "center", overflow: "visible" },
+  tappy: { width: 24, height: 24, alignItems: "center", justifyContent: "center", overflow: "visible" },
   name: { maxWidth: 140 },
   tip: { color: theme.color.textDim, fontSize: 12, marginTop: theme.space(2), paddingHorizontal: theme.gutter },
 });

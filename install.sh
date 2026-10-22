@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# pew2 installer for macOS and Linux.
+# tappy installer for macOS and Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/KenKaiii/pew2/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/zahdourmoustafa/tappycode/main/install.sh | sh
 #
 # Downloads one self-contained binary. No Node, no Bun, no git clone. The
 # runtime is compiled into the executable, which is the whole point: someone who
@@ -12,16 +12,16 @@
 # shell is a real trust ask, and the only honest answer is a script you can read
 # in a minute.
 #
-# The layout is the same look `pew2 setup` and `pew2 doctor` use (style B): a
+# The layout is the same look `tappy setup` and `tappy doctor` use (style B): a
 # dot-matrix mark opens each section, its title is set in spaced capitals, and
 # the lines under it hang two spaces in. Every line is at the same indent.
 
 set -eu
 
-REPO="KenKaiii/pew2"
+REPO="zahdourmoustafa/tappycode"
 # ~/.local/bin rather than /usr/local/bin: no sudo, and it is on PATH by default
-# on most systems. PEW2_INSTALL_DIR overrides for anyone who wants elsewhere.
-INSTALL_DIR="${PEW2_INSTALL_DIR:-$HOME/.local/bin}"
+# on most systems. TAPPY_INSTALL_DIR overrides for anyone who wants elsewhere.
+INSTALL_DIR="${TAPPY_INSTALL_DIR:-$HOME/.local/bin}"
 
 # Colour and box drawing only when writing to a terminal. Piped into a file or a
 # CI log, escape codes are noise and the glyphs are mojibake.
@@ -52,7 +52,7 @@ die() {
 }
 
 # The title, set the way the CLI sets its own: letters spaced, in capitals.
-printf '\n%s%s%s  %sP E W 2%s\n' "$ACCENT" "$OPEN" "$R" "$B" "$R"
+printf '\n%s%s%s  %sT A P P Y%s\n' "$ACCENT" "$OPEN" "$R" "$B" "$R"
 printf '   %sYOUR CODING AGENTS, ON YOUR PHONE%s\n' "$D" "$R"
 
 # --- which build ------------------------------------------------------------
@@ -72,8 +72,11 @@ case "$arch" in
   *) die "No build for $arch." "Open an issue and say what machine this is." ;;
 esac
 
-asset="pew2-${os_name}-${arch_name}"
-url="https://github.com/${REPO}/releases/latest/download/${asset}"
+asset="tappy-${os_name}-${arch_name}"
+# Where releases are published. Overridable so a build can be installed exactly
+# as a user would install it — same checksum, same steps — before it is public.
+base="${TAPPY_DOWNLOAD_BASE:-https://github.com/${REPO}/releases/latest/download}"
+url="${base}/${asset}"
 
 # --- download ---------------------------------------------------------------
 
@@ -87,22 +90,22 @@ trap 'rm -rf "$tmp"' EXIT INT TERM
 # silent wait reads as a hang. `--progress-bar` is curl's own meter: it writes
 # to stderr, redraws in place, and costs nothing.
 if command -v curl >/dev/null 2>&1; then
-  curl --fail --location --progress-bar --output "$tmp/pew2" "$url" \
+  curl --fail --location --progress-bar --output "$tmp/tappy" "$url" \
     || die "Download failed." "Check your connection, or grab it from github.com/${REPO}/releases"
-  curl -fsSL "$url.sha256" -o "$tmp/pew2.sha256" \
+  curl -fsSL "$url.sha256" -o "$tmp/tappy.sha256" \
     || die "Could not fetch the checksum for that download." "Every release publishes one, so this is a broken release or something sitting between you and GitHub. Not installing it."
 elif command -v wget >/dev/null 2>&1; then
-  wget --show-progress -qO "$tmp/pew2" "$url" \
+  wget --show-progress -qO "$tmp/tappy" "$url" \
     || die "Download failed." "Check your connection, or grab it from github.com/${REPO}/releases"
-  wget -qO "$tmp/pew2.sha256" "$url.sha256" \
+  wget -qO "$tmp/tappy.sha256" "$url.sha256" \
     || die "Could not fetch the checksum for that download." "Every release publishes one, so this is a broken release or something sitting between you and GitHub. Not installing it."
 else
   die "Need curl or wget." "Install one and run this again."
 fi
 
 # A truncated download produces a file that exists and cannot run, which fails
-# later in a way that looks like a bug in pew2 rather than a bad transfer.
-[ -s "$tmp/pew2" ] || die "The download came out empty." "Try again."
+# later in a way that looks like a bug in tappy rather than a bad transfer.
+[ -s "$tmp/tappy" ] || die "The download came out empty." "Try again."
 
 # --- verify -----------------------------------------------------------------
 
@@ -111,16 +114,16 @@ fi
 # condition this check exists to catch. Skipping the check when the file was
 # absent meant whoever served the binary could turn the check off by serving one
 # file less.
-[ -s "$tmp/pew2.sha256" ] || die "That download came without a checksum." "Not installing it. Report it at github.com/${REPO}/issues"
+[ -s "$tmp/tappy.sha256" ] || die "That download came without a checksum." "Not installing it. Report it at github.com/${REPO}/issues"
 
-expected=$(awk '{print $1}' "$tmp/pew2.sha256")
+expected=$(awk '{print $1}' "$tmp/tappy.sha256")
 actual=""
 if command -v sha256sum >/dev/null 2>&1; then
-  actual=$(sha256sum "$tmp/pew2" | awk '{print $1}')
+  actual=$(sha256sum "$tmp/tappy" | awk '{print $1}')
 elif command -v shasum >/dev/null 2>&1; then
-  actual=$(shasum -a 256 "$tmp/pew2" | awk '{print $1}')
+  actual=$(shasum -a 256 "$tmp/tappy" | awk '{print $1}')
 elif command -v openssl >/dev/null 2>&1; then
-  actual=$(openssl dgst -sha256 "$tmp/pew2" | awk '{print $NF}')
+  actual=$(openssl dgst -sha256 "$tmp/tappy" | awk '{print $NF}')
 fi
 
 # Three ways to compute it, because a machine with none of them is rare and a
@@ -132,17 +135,17 @@ ok "Checksum verified"
 # --- install ----------------------------------------------------------------
 
 mkdir -p "$INSTALL_DIR"
-chmod +x "$tmp/pew2"
-mv "$tmp/pew2" "$INSTALL_DIR/pew2" \
-  || die "Could not write to $INSTALL_DIR." "Set PEW2_INSTALL_DIR to somewhere you can write."
+chmod +x "$tmp/tappy"
+mv "$tmp/tappy" "$INSTALL_DIR/tappy" \
+  || die "Could not write to $INSTALL_DIR." "Set TAPPY_INSTALL_DIR to somewhere you can write."
 
-ok "Installed to ${D}${INSTALL_DIR}/pew2${R}"
+ok "Installed to ${D}${INSTALL_DIR}/tappy${R}"
 
 # macOS quarantines anything downloaded, and the first run dies with a Gatekeeper
 # dialog that says nothing useful. Stripping the flag turns that into a working
 # command; the binary is still unsigned, which the README says plainly.
 if [ "$os_name" = "darwin" ] && command -v xattr >/dev/null 2>&1; then
-  xattr -d com.apple.quarantine "$INSTALL_DIR/pew2" 2>/dev/null || true
+  xattr -d com.apple.quarantine "$INSTALL_DIR/tappy" 2>/dev/null || true
 fi
 
 # --- restart the daemon -----------------------------------------------------
@@ -156,14 +159,14 @@ fi
 # shipped this way was invisible until the machine happened to reboot.
 #
 # Only when a service is already installed. A first install has no daemon to
-# restart, and `pew2 setup` is what starts one.
-if [ -f "$HOME/Library/LaunchAgents/dev.pew2.daemon.plist" ]; then
+# restart, and `tappy setup` is what starts one.
+if [ -f "$HOME/Library/LaunchAgents/dev.tappy.daemon.plist" ]; then
   # Failure here is not fatal: the binary is installed and correct either way,
-  # and `pew2 setup` reports an unreachable daemon with the command to fix it.
-  if "$INSTALL_DIR/pew2" service restart >/dev/null 2>&1; then
+  # and `tappy setup` reports an unreachable daemon with the command to fix it.
+  if "$INSTALL_DIR/tappy" service restart >/dev/null 2>&1; then
     ok "Daemon restarted on the new version"
   else
-    line "${D}Run ${B}pew2 service restart${R}${D} to finish updating the daemon.${R}"
+    line "${D}Run ${B}tappy service restart${R}${D} to finish updating the daemon.${R}"
   fi
 fi
 
@@ -173,6 +176,17 @@ case ":$PATH:" in
   *":$INSTALL_DIR:"*) on_path=1 ;;
   *) on_path=0 ;;
 esac
+
+# Pairing is about to run, and on these shells it puts `tappy` on PATH itself
+# (beside the agents' launchers). Asking the person to edit their PATH first
+# would be homework standing between them and the code to scan.
+will_pair=0
+if [ -z "${TAPPY_NO_PAIR:-}" ] && [ -t 1 ] && (: </dev/tty) 2>/dev/null; then
+  will_pair=1
+  case "${SHELL:-}" in
+    */zsh|*/bash|*/fish) on_path=1 ;;
+  esac
+fi
 
 if [ "$on_path" = "0" ]; then
   case "${SHELL:-}" in
@@ -189,7 +203,18 @@ if [ "$on_path" = "0" ]; then
   line "${D}then open a new terminal.${R}"
 fi
 
+# --- connect the phone -------------------------------------------------------
+
+# Straight into pairing, so installing is the only command anyone runs: it
+# starts tappy in the background, sets up the terminal, and shows the code the
+# phone scans. Under `curl | sh` the script itself is stdin, so the keyboard is
+# taken from the terminal directly — and only when there is one to take.
+if [ "$will_pair" = "1" ]; then
+  step "Connect your phone"
+  exec "$INSTALL_DIR/tappy" pair </dev/tty
+fi
+
 # --- done -------------------------------------------------------------------
 
-printf '\n%s%s%s  %sRun %spew2 setup%s to finish.%s\n\n' \
+printf '\n%s%s%s  %sRun %stappy pair%s to connect your phone.%s\n\n' \
   "$ACCENT" "$END" "$R" "$D" "$B" "$R$D" "$R"

@@ -152,7 +152,7 @@ const ggProvider: LoadedProvider = {
     id: "ggcoder",
     name: "GG Coder",
     description: "",
-    pew: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
+    tappy: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
   } as unknown as LoadedProvider["manifest"],
   source: "<test>",
   command: "bun",
@@ -180,11 +180,11 @@ function setEnv(key: string, value: string | undefined) {
 }
 
 async function ggDaemon({ old = false } = {}) {
-  const root = await mkdtemp(join(tmpdir(), "pew2-gg-"));
-  setEnv("PEW2_HOME", join(root, "home"));
-  setEnv("PEW2_WORKSPACE", root);
-  setEnv("PEW2_TEST_GOALS_ROOT", join(root, "goals"));
-  setEnv("PEW2_TEST_GG_OLD", old ? "1" : undefined);
+  const root = await mkdtemp(join(tmpdir(), "tappy-gg-"));
+  setEnv("TAPPY_HOME", join(root, "home"));
+  setEnv("TAPPY_WORKSPACE", root);
+  setEnv("TAPPY_TEST_GOALS_ROOT", join(root, "goals"));
+  setEnv("TAPPY_TEST_GG_OLD", old ? "1" : undefined);
   const { daemon, sent } = daemonWithCollector();
   (daemon as any).providers = [ggProvider];
   openDaemons.push(daemon);
@@ -281,7 +281,7 @@ test("goals: list, create, open with a kickoff turn, act, delete", async () => {
   await send({ t: "goals", requestId: "r1" });
   expect(sent.find((m) => m.t === "goals" && m.requestId === "r1")).toMatchObject({ goals: [] });
 
-  await send({ t: "goal.create", requestId: "r2", name: "Ship it", goal: "Ship pew2", context: ["/tmp"] });
+  await send({ t: "goal.create", requestId: "r2", name: "Ship it", goal: "Ship tappy", context: ["/tmp"] });
   const created = sent.find((m) => m.t === "goal.result" && m.requestId === "r2");
   expect(created).toMatchObject({ ok: true, goal: { name: "Ship it", status: "briefing" } });
   const path = created.goal.path as string;

@@ -1,7 +1,7 @@
-# 📱 pew2
+# 📱 tappy
 
 <p align="center">
-  <img src="docs/icon.png" alt="pew2" width="160">
+  <img src="docs/icon.png" alt="tappy" width="160">
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KenKaiii/pew2/releases/latest"><img src="https://img.shields.io/github/v/release/KenKaiii/pew2?style=for-the-badge&label=CLI&color=d97757" alt="Latest release"></a>
+  <a href="https://github.com/zahdourmoustafa/tappycode/releases/latest"><img src="https://img.shields.io/github/v/release/zahdourmoustafa/tappycode?style=for-the-badge&label=CLI&color=d97757" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=for-the-badge" alt="AGPL-3.0 License"></a>
   <a href="https://youtube.com/@kenkaidoesai"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"></a>
   <a href="https://skool.com/kenkai"><img src="https://img.shields.io/badge/Skool-Community-7C3AED?style=for-the-badge" alt="Skool"></a>
@@ -18,7 +18,7 @@
 ---
 
 Claude Code, Codex, Gemini and about ten others already run on your computer.
-They just can't leave the room. pew2 puts them in your pocket.
+They just can't leave the room. tappy puts them in your pocket.
 
 Your computer keeps doing the work. Your phone becomes the way you talk to it.
 Kick something off from the couch, check on it from the train, approve a file
@@ -36,7 +36,7 @@ Two things: the app on your phone, and a small program on your computer.
 ### 1. The app
 
 Coming to TestFlight. Android APK builds are in
-[Releases](https://github.com/KenKaiii/pew2/releases/latest).
+[Releases](https://github.com/zahdourmoustafa/tappycode/releases/latest).
 
 ### 2. The computer bit
 
@@ -45,19 +45,19 @@ Open Terminal (macOS) or PowerShell (Windows) and paste one line.
 **macOS and Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KenKaiii/pew2/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/zahdourmoustafa/tappycode/main/install.sh | sh
 ```
 
 **Windows**
 
 ```powershell
-irm https://raw.githubusercontent.com/KenKaiii/pew2/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/zahdourmoustafa/tappycode/main/install.ps1 | iex
 ```
 
 Then:
 
 ```bash
-pew2 setup
+tappy setup
 ```
 
 That looks at your computer, finds the coding agents you already have, gets
@@ -78,7 +78,7 @@ else is identical.
 
 ## 🤖 Which agents work
 
-pew2 does not include an AI. It drives the agents already installed on your
+tappy does not include an AI. It drives the agents already installed on your
 machine, so you keep your own subscription, your own keys, your own limits.
 
 | Agent | Get it | Notes |
@@ -96,14 +96,14 @@ machine, so you keep your own subscription, your own keys, your own limits.
 | **Hermes** | `pip install 'hermes-agent[acp]'` | Nous Research |
 | **OpenClaw** | `npm i -g openclaw` | Needs a Gateway running |
 
-Do not have any of them? `pew2 setup` tells you what is missing and where to get
+Do not have any of them? `tappy setup` tells you what is missing and where to get
 it. You only need one.
 
 Anything that speaks [ACP](https://agentclientprotocol.com) works, and adding one
 is a single JSON file. There are 40-odd more in the public registry:
 
 ```bash
-pew2 registry sync
+tappy registry sync
 ```
 
 ---
@@ -149,7 +149,7 @@ and get on with your life.
 
 ## 🔒 About your data
 
-**Your machine, your agents, your files.** pew2 runs no AI and has no server that
+**Your machine, your agents, your files.** tappy runs no AI and has no server that
 sees your work.
 
 **Traffic is end-to-end encrypted.** The phone and your computer share a key that
@@ -162,14 +162,14 @@ signup. The free tier is plenty.
 
 ```bash
 npm run relay:deploy
-pew2 relay wss://your-worker.workers.dev
+tappy relay wss://your-worker.workers.dev
 ```
 
 Straight about the limits: your pairing key never expires, which is what lets
 your phone reconnect after a reboot without scanning anything. It admits one
 device — the first to use it — so a code caught in a screenshot or a video is
 worthless once your phone has paired. Until then it is a bearer secret: anyone
-holding it can drive the agents on your machine. Run `pew2 pair --rotate` if a
+holding it can drive the agents on your machine. Run `tappy pair --rotate` if a
 code ends up somewhere it should not be, and rotate rather than re-scan when it
 leaked before you first used it. Full detail in [SECURITY.md](SECURITY.md).
 
@@ -178,11 +178,11 @@ leaked before you first used it. Full detail in [SECURITY.md](SECURITY.md).
 ## 🛠 Everyday commands
 
 ```bash
-pew2 setup             # find agents, start the service, show the QR
-pew2 pair              # pair another phone (unpairs the current one)
-pew2 doctor            # what is broken, and how to fix it
-pew2 providers list    # what is installed and what is missing
-pew2 registry sync     # add every agent in the public ACP registry
+tappy setup             # find agents, start the service, show the QR
+tappy pair              # pair another phone (unpairs the current one)
+tappy doctor            # what is broken, and how to fix it
+tappy providers list    # what is installed and what is missing
+tappy registry sync     # add every agent in the public ACP registry
 ```
 
 ---
@@ -209,10 +209,10 @@ manifest and no code.
 Everything above is the shipped path. If you want to hack on it:
 
 ```bash
-git clone https://github.com/KenKaiii/pew2.git
-cd pew2
+git clone https://github.com/zahdourmoustafa/tappycode.git
+cd tappy
 bun install
-cd packages/daemon && bun link     # puts `pew2` on your PATH
+cd packages/daemon && bun link     # puts `tappy` on your PATH
 ```
 
 Then the app:
@@ -238,10 +238,10 @@ first because nobody's Expo account is committed here. Put what it gives you in
 
 **On iOS signing:** you do not need the $99 Apple Developer Program to run this
 on your own phone. The free tier gives you a **7-day** signature and caps you at
-3 sideloaded apps. That is Apple policy, not a pew2 thing.
+3 sideloaded apps. That is Apple policy, not a tappy thing.
 [AltStore](https://altstore.io) or [SideStore](https://sidestore.io) re-sign in
 the background on a schedule, which normally needs a computer awake on your
-network at the right moment. pew2 already requires exactly that.
+network at the right moment. tappy already requires exactly that.
 
 **Android needs no developer account, ever.** A signed APK installs once and
 keeps working.

@@ -8,7 +8,7 @@
  * open socket to carry an explanation, and trying is the only way to know.
  */
 import { test, expect } from "bun:test";
-import { SecureChannel, e2e } from "@pew2/protocol";
+import { SecureChannel, e2e } from "@tappy/protocol";
 import { verifyPairing, UNREACHABLE_MESSAGE } from "./verifyPairing";
 import type { Pairing } from "./pairingLink";
 
@@ -115,7 +115,7 @@ test("silence fails on a timer instead of waiting forever", async () => {
 });
 
 test("a refusal the daemon explained is shown in its own words", async () => {
-  // The single-device gate names the fix — `pew2 pair --rotate` — and only the
+  // The single-device gate names the fix — `tappy pair --rotate` — and only the
   // user can tell a stolen link from their own reinstalled phone. Replacing
   // that with a generic failure would throw away the one useful sentence.
   const { result, socket } = attempt({ timeoutMs: 5000 });

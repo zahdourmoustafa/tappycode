@@ -99,10 +99,10 @@ test("an echoed attachment is a desktop path, never a device one", () => {
   // optimistic turn, whose copy is local to that handset.
   expect(
     imagesFromAttachments([
-      { name: "shot.png", mimeType: "image/png", uri: "/tmp/pew2-attachments/s/0-shot.png" },
+      { name: "shot.png", mimeType: "image/png", uri: "/tmp/tappy-attachments/s/0-shot.png" },
     ]),
   ).toEqual([
-    { src: "/tmp/pew2-attachments/s/0-shot.png", mimeType: "image/png", alt: "shot.png" },
+    { src: "/tmp/tappy-attachments/s/0-shot.png", mimeType: "image/png", alt: "shot.png" },
   ]);
 });
 

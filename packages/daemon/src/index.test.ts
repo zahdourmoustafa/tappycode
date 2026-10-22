@@ -72,15 +72,15 @@ test("a selector chosen before any session exists is kept for the next one", asy
   // session only exists once the first prompt is sent — so this path is the
   // difference between the choice sticking and being silently dropped.
   const { daemon } = daemonWithCollector();
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-prefs-early-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-prefs-early-"));
   try {
     await daemon.rememberConfigOption("claude-code", "__acp_mode", "plan");
 
     expect(await readConfigPrefs("claude-code")).toEqual({ __acp_mode: "plan" });
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -100,8 +100,8 @@ test("a remembered selector is restored, and only where it applies", async () =>
     },
   } as unknown as AcpSessionHandle;
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-prefs-restore-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-prefs-restore-"));
   try {
     await writeConfigPref("test", "__acp_model", "opus");
     // Already this session's value: re-sending it is a round trip for nothing.
@@ -114,8 +114,8 @@ test("a remembered selector is restored, and only where it applies", async () =>
 
     expect(applied).toEqual([["__acp_model", "opus"]]);
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -167,8 +167,8 @@ test("reopening a conversation restores the model it was last held at", async ()
     },
   } as unknown as AcpSessionHandle;
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-prefs-session-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-prefs-session-"));
   try {
     // The provider-wide preference is deliberately something else: a resumed
     // conversation must not be rewritten to match whatever the phone last
@@ -181,8 +181,8 @@ test("reopening a conversation restores the model it was last held at", async ()
     expect(applied).toEqual([["__acp_model", "sonnet"]]);
     expect(restored).toEqual({ __acp_model: "sonnet" });
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -204,16 +204,16 @@ test("a conversation never configured here keeps the agent's own settings", asyn
     },
   } as unknown as AcpSessionHandle;
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-prefs-untouched-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-prefs-untouched-"));
   try {
     await writeConfigPref("test", "__acp_model", "haiku");
 
     expect(await (daemon as any).applySessionPrefs(session, "test", "agent-2")).toEqual({});
     expect(applied).toEqual([]);
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -228,8 +228,8 @@ test("a selector set on a session is remembered against that conversation", asyn
     setConfigOption: async () => [],
   } as unknown as AcpSessionHandle;
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-prefs-set-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-prefs-set-"));
   try {
     await daemon.setConfigOption("live", "__acp_model", "sonnet");
     // Written in the background, deliberately: the reply must not wait on disk.
@@ -240,8 +240,8 @@ test("a selector set on a session is remembered against that conversation", asyn
     expect(await readConfigPrefs("test")).toEqual({ __acp_model: "sonnet" });
     expect(await readSessionPrefs("test", "agent-3")).toEqual({ __acp_model: "sonnet" });
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -488,8 +488,8 @@ test("a model chosen in a conversation moves what the next one will open with", 
     setConfigOption: async () => opus,
   } as unknown as AcpSessionHandle;
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-provider-config-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-provider-config-"));
   try {
     await daemon.setConfigOption("live-model", "__acp_model", "opus");
 
@@ -500,8 +500,8 @@ test("a model chosen in a conversation moves what the next one will open with", 
     expect(announced.providerId).toBe("test");
     expect(announced.configOptions[0].currentValue).toBe("opus");
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -533,8 +533,8 @@ test("capabilities are answered at the values in force now, not the ones probed"
     }),
   );
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-capabilities-prefs-"));
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-capabilities-prefs-"));
   try {
     const first = await daemon.capabilitiesFor("test");
     expect(first.configOptions[0]?.currentValue).toBe("sonnet");
@@ -551,8 +551,8 @@ test("capabilities are answered at the values in force now, not the ones probed"
 
     expect((await daemon.capabilitiesFor("test")).configOptions[0]?.currentValue).toBe("opus");
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -569,9 +569,9 @@ test("a selector the agent changes by itself reaches the app", async () => {
   const effort = [{ id: "effort", name: "Effort", type: "select", currentValue: "high" }];
 
   // Redirected like every other prefs test: the assertion below is about what
-  // was written, so it must not read — or risk writing — the real `~/.pew2`.
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = await mkdtemp(join(tmpdir(), "pew2-live-config-"));
+  // was written, so it must not read — or risk writing — the real `~/.tappy`.
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = await mkdtemp(join(tmpdir(), "tappy-live-config-"));
   try {
     // Not yet announced: a client drops events for a session it has never been
     // told about, so this would be shouted into the void.
@@ -592,8 +592,8 @@ test("a selector the agent changes by itself reaches the app", async () => {
     // replayed over whatever it was since changed to at the desk.
     expect(await readSessionPrefs("test", "agent-live")).toEqual({});
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -621,7 +621,7 @@ test("a prompt's attachments are written to disk and echoed as paths", async () 
   expect(echo.attachments).toHaveLength(1);
   expect(echo.attachments[0]).toMatchObject({ name: "shot.png", mimeType: "image/png" });
   // A real path on this machine, which `image.fetch` can then serve.
-  expect(echo.attachments[0].uri).toContain("pew2-attachments");
+  expect(echo.attachments[0].uri).toContain("tappy-attachments");
   expect(await Bun.file(echo.attachments[0].uri).text()).toBe("PNG");
 
   // The agent is handed the stored form, not the raw wire payload.
@@ -664,7 +664,7 @@ test("a prompt over the attachment limits is refused before anything is echoed",
 test("an agent that is not installed is never announced to the phone", () => {
   // A dimmed row for an agent that is not on the machine is furniture that can
   // never become useful: you cannot install a CLI from a phone. It also made the
-  // phone disagree with `pew2 setup`, whose picker will not let these be chosen
+  // phone disagree with `tappy setup`, whose picker will not let these be chosen
   // — so the app offered agents the user was never given a choice about.
   //
   // An agent that is installed but still needs a key is a different case and is
@@ -672,17 +672,17 @@ test("an agent that is not installed is never announced to the phone", () => {
   const { daemon, sent } = daemonWithCollector();
   (daemon as any).providers = [
     {
-      manifest: { id: "here", name: "Here", pew: { transport: "acp" } },
+      manifest: { id: "here", name: "Here", tappy: { transport: "acp" } },
       commandMissing: false,
       missingEnv: [],
     },
     {
-      manifest: { id: "needs-key", name: "Needs Key", pew: { transport: "acp" } },
+      manifest: { id: "needs-key", name: "Needs Key", tappy: { transport: "acp" } },
       commandMissing: false,
       missingEnv: ["SOME_KEY"],
     },
     {
-      manifest: { id: "absent", name: "Absent", pew: { transport: "acp" } },
+      manifest: { id: "absent", name: "Absent", tappy: { transport: "acp" } },
       commandMissing: true,
       missingEnv: [],
     },

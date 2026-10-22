@@ -11,7 +11,7 @@ import {
 const stored = (over: Partial<StoredAttachment> = {}): StoredAttachment => ({
   name: "shot.png",
   mimeType: "image/png",
-  path: "/tmp/pew2-attachments/s1/0-shot.png",
+  path: "/tmp/tappy-attachments/s1/0-shot.png",
   size: 12,
   data: Buffer.from("not really a png").toString("base64"),
   ...over,
@@ -21,7 +21,7 @@ const text = (body: string, over: Partial<StoredAttachment> = {}): StoredAttachm
   stored({
     name: "notes.txt",
     mimeType: "text/plain",
-    path: "/tmp/pew2-attachments/s1/0-notes.txt",
+    path: "/tmp/tappy-attachments/s1/0-notes.txt",
     data: Buffer.from(body).toString("base64"),
     size: Buffer.byteLength(body),
     ...over,
@@ -112,7 +112,7 @@ describe("linked attachments are named in the text", () => {
     expect(blocks[0]).toMatchObject({ type: "text" });
     const prose = (blocks[0] as { text: string }).text;
     expect(prose).toContain("log.txt");
-    expect(prose).toContain("/tmp/pew2-attachments/s1/0-notes.txt");
+    expect(prose).toContain("/tmp/tappy-attachments/s1/0-notes.txt");
     // The user's own words survive, and stay readable as theirs.
     expect(prose).toContain("summarise this");
   });

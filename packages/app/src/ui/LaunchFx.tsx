@@ -5,7 +5,7 @@
  * opening never wait on React: the owner sets `charge` with a timing, the
  * blast starts on the UI thread the instant the charge completes (`burst`
  * goes from -1 to 0 and this ticker advances it), and `reveal`/`fade` are
- * timings too. A frame is recorded into a Skia picture, as `Pew` does, at
+ * timings too. A frame is recorded into a Skia picture, as `Tappy` does, at
  * most 60 times a second.
  */
 import { useCallback, useMemo } from "react";
@@ -14,7 +14,7 @@ import { Canvas, Picture, Skia, BlurStyle, type SkCanvas, type SkPicture } from 
 import { beginFrame, blankPicture, endFrame } from "./skiaFrame";
 import { useFrameCallback, useSharedValue, type FrameInfo, type SharedValue } from "react-native-reanimated";
 import { paintLaunch, type FxPainter, type FxPalette, type FxRGB, type FxScene } from "../launchFx";
-import { pewPalette } from "../pew/palette";
+import { tappyPalette } from "../tappy/palette";
 import { theme } from "../theme";
 
 export interface LaunchFxValues {
@@ -40,7 +40,7 @@ interface FxTools {
   blurs: Record<number, ReturnType<typeof Skia.MaskFilter.MakeBlur>>;
 }
 
-/** Paints and filters made once per UI runtime (see `pewTools` in Pew.tsx). */
+/** Paints and filters made once per UI runtime (see `tappyTools` in Tappy.tsx). */
 function fxTools(): FxTools {
   "worklet";
   const g = globalThis as unknown as { __launchFxTools?: FxTools };
@@ -145,7 +145,7 @@ function Ticker({ scene, palette, values, picture }: { scene: FxScene; palette: 
 /** Full-screen, touch-through. Mount it only while the launch step is up. */
 export function LaunchFx({ scene, color, values }: { scene: FxScene; color: string; values: LaunchFxValues }) {
   const palette = useMemo<FxPalette>(() => {
-    const pal = pewPalette(color);
+    const pal = tappyPalette(color);
     return { bg: hexRgb(theme.color.bg), base: pal.base, light: pal.light, off: hexRgb(theme.stage.dash) };
   }, [color]);
   const picture = useSharedValue<SkPicture>(blankPicture());

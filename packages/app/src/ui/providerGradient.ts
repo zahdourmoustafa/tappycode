@@ -5,7 +5,7 @@
  * drawer read as a row of near-identical chips. Here the pill *is* the colour,
  * so an agent is recognised before its name is read.
  *
- * The fill is derived from the manifest's own `pew.color`, so adding a provider
+ * The fill is derived from the manifest's own `tappy.color`, so adding a provider
  * stays a matter of dropping in a JSON file. The brand supplies the hue; this
  * module supplies the vividness, taking each hue to full chroma in a narrow
  * bright band. That band is the register of `rgb(161,255,20)` — the colour is

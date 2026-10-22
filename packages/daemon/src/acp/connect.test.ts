@@ -145,8 +145,8 @@ posixTest("a spawned agent is its own process group, and close() ends the group"
   //
   // Redirected because connecting records the child in the daemon's own state
   // directory, and a test must not write to the one a live daemon is reading.
-  const previousHome = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = mkdtempSync(join(tmpdir(), "pew2-connect-"));
+  const previousHome = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = mkdtempSync(join(tmpdir(), "tappy-connect-"));
 
   try {
     const handle = await connectProvider({
@@ -169,7 +169,7 @@ posixTest("a spawned agent is its own process group, and close() ends the group"
     handle.close();
     await exited;
   } finally {
-    if (previousHome === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = previousHome;
+    if (previousHome === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = previousHome;
   }
 });

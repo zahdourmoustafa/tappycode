@@ -1,5 +1,5 @@
 /**
- * `pew2 pair` — the one screen a new user sees before anything works.
+ * `tappy pair` — the one screen a new user sees before anything works.
  *
  * It does three things the old version did not, in ascending order of how much
  * support time they save:
@@ -19,7 +19,7 @@
  * it is printed, and `--no-wait` or Ctrl-C leaves it that way.
  */
 import { hostname } from "node:os";
-import { SecureChannel, e2e, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, wire } from "@tappy/protocol";
 import { daemonPort, daemonUrl } from "./doctor.js";
 import { lanAddresses, loadPairing, pairingUrl, qrCode, rotatePairing } from "../pairing.js";
 import { CLI_DEVICE_PREFIX, isRealClaim } from "../device-claim.js";
@@ -35,6 +35,8 @@ import {
   unicodeOk,
 } from "./ui.js";
 import { rail } from "./rail.js";
+import { installShellHook } from "../terminals/shell-hook.js";
+import { installService, isSupported } from "./service.js";
 import {
   closingLines,
   hintLine,
@@ -65,6 +67,39 @@ export async function checkRelay(origin: string, fetchImpl: Probe = fetch): Prom
     // these are one fact — the relay cannot be reached from here.
     return false;
   }
+}
+
+/**
+ * The daemon, started if it is not running — so `tappy pair` is the only
+ * command a new machine needs. Installing the service is what starts it, at
+ * login from then on; it is idempotent and only ever done when nothing answers,
+ * so an already-running daemon is never restarted under a paired phone.
+ */
+export async function ensureDaemon(
+  options: {
+    check?: () => Promise<boolean>;
+    install?: () => Promise<{ state: string }>;
+    supported?: boolean;
+    waitMs?: number;
+    onStarting?: () => void;
+  } = {},
+): Promise<boolean> {
+  const check = options.check ?? (() => checkDaemon());
+  if (await check()) return true;
+  if (!(options.supported ?? isSupported())) return false;
+  options.onStarting?.();
+  const status = await (options.install ?? (() => installService({ env: process.env })))().catch(
+    () => undefined,
+  );
+  if (!status || (status.state !== "running" && status.state !== "installed")) return false;
+  // The supervisor reports "running" as soon as the process exists; the health
+  // endpoint answers a moment later, once the server has bound its port.
+  const until = Date.now() + (options.waitMs ?? 15_000);
+  while (Date.now() < until) {
+    if (await check()) return true;
+    await Bun.sleep(300);
+  }
+  return false;
 }
 
 async function checkDaemon(fetchImpl: Probe = fetch): Promise<boolean> {
@@ -103,7 +138,7 @@ export interface WaitResult {
  * The socket has to authenticate like any other client. Broadcasts are sealed
  * per client and skip anyone unproven, so the version of this that stayed
  * deliberately silent stopped seeing `device.joined` the day both transports
- * were encrypted \u2014 and `pew2 pair` sat on "waiting for your phone" while the
+ * were encrypted \u2014 and `tappy pair` sat on "waiting for your phone" while the
  * phone was already connected and working.
  *
  * Deliberately silent about failure. Not being able to watch is not a pairing
@@ -174,8 +209,7 @@ export function waitForDevice(options: {
       if (typeof event.data !== "string") return;
       try {
         const raw: unknown = JSON.parse(event.data);
-        const opened =
-          (raw as { t?: string }).t === "e" && channel ? channel.open(raw) : raw;
+        const opened = (raw as { t?: string }).t === "e" && channel ? channel.open(raw) : raw;
         if (!opened) return;
         const message = opened as { t?: string; deviceId?: string };
         if (message.t !== "device.joined") return;
@@ -205,7 +239,7 @@ export function waitForDevice(options: {
  * `device.joined` it exists to wait for — but proving used to make it a device
  * like any other, and it took the pairing it was printing. The phone that then
  * scanned the QR was refused as the second device and told to run
- * `pew2 pair --rotate`, which minted a new code and claimed that one too: the
+ * `tappy pair --rotate`, which minted a new code and claimed that one too: the
  * command whose only job is letting you in was locking you out.
  */
 export function cliDeviceId(): string {
@@ -223,7 +257,7 @@ export function deviceLabel(deviceId: string): string {
 /**
  * Whether printing a code should also re-mint it, and what that supersedes.
  *
- * Always, now. Someone typing `pew2 pair` is asking to pair a phone, and the
+ * Always, now. Someone typing `tappy pair` is asking to pair a phone, and the
  * only code that can serve that is a fresh one — so the command mints one rather
  * than judging whether they need it.
  *
@@ -280,11 +314,24 @@ export async function cmdPair(flags: Set<string>): Promise<number> {
   // Both probes are independent and both are slow enough to notice. Running
   // them together keeps the QR on screen in well under a second.
   const [daemonRunning, relayHealthy] = await Promise.all([
-    checkDaemon(),
+    ensureDaemon({
+      onStarting: options.json
+        ? undefined
+        : () => console.log(`  ${styler(colorLevel()).dim("Starting tappy in the background…")}`),
+    }),
     pairing.relay ? checkRelay(pairing.relay) : Promise.resolve(null),
   ]);
 
   const reach = reachOf(relayHealthy, Boolean(pairing.relay), addresses);
+
+  // The only other setup there is: the shell hook that lets the phone type into
+  // a `claude`, `codex` or `ggcoder` started the ordinary way. Done here so
+  // pairing stays the one command anyone runs. Idempotent, and never allowed to
+  // fail a pairing — the phone works without it, it just cannot type.
+  const hook = await installShellHook().catch((error: unknown) => {
+    console.error(`Could not set up terminal typing: ${(error as Error).message}`);
+    return undefined;
+  });
 
   if (options.json) {
     // Unchanged contract: an agent driving setup reads this, and the token is
@@ -308,6 +355,10 @@ export async function cmdPair(flags: Set<string>): Promise<number> {
           // The phone this call disconnected, when re-minting took the pairing
           // from one. An agent driving setup needs to be able to say so.
           supersededDevice: supersededDevice ?? null,
+          // The shell startup file the terminal hook lives in (on Windows,
+          // the user PATH's registry value), or null for a shell it is not
+          // written for yet.
+          terminalHook: hook?.file ?? null,
         },
         null,
         2,
@@ -340,6 +391,18 @@ export async function cmdPair(flags: Set<string>): Promise<number> {
 
   const qr = await qrCode(url, 4);
   for (const line of renderPair(view, qr, render)) console.log(line);
+  if (hook?.changed) {
+    // Windows hands a changed PATH only to programs started afterwards, and
+    // Windows Terminal keeps the one it started with until the app itself is
+    // closed — a new tab is not enough there.
+    const how =
+      process.platform === "win32"
+        ? "Close and reopen Windows Terminal (or open a new PowerShell window)"
+        : "Open a new terminal tab";
+    console.log(
+      `  ${style.dim(`Terminal typing is on. ${how}, then run claude, codex or ggcoder as usual.`)}`,
+    );
+  }
 
   if (!options.wait || !daemonRunning) {
     // Closes the rail. Without an outro, `--no-wait` and every piped run ended

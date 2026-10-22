@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pew2's sound effects, synthesised from scratch (no samples, nothing licensed).
+tappy's sound effects, synthesised from scratch (no samples, nothing licensed).
 
     python3 packages/app/scripts/make-sounds.py
 
@@ -248,7 +248,7 @@ def level_down(i: int) -> np.ndarray:
 # --- Everyday ----------------------------------------------------------------
 
 def send() -> np.ndarray:
-    """A message leaves: a soft 'pew'."""
+    """A message leaves: a soft 'tappy'."""
     dur = 0.16
     t = t_axis(dur)
     f = 420 + 1700 * np.exp(-t * 30)

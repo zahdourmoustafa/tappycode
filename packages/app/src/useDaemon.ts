@@ -15,7 +15,7 @@
 import { GOALS_PROVIDER_ID } from "./goalsAgent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RestoreTarget } from "./restoreState";
-import { SecureChannel, envelopeHeader } from "@pew2/protocol";
+import { SecureChannel, envelopeHeader } from "@tappy/protocol";
 import { USE_FIXTURES, sampleSessions } from "./fixtures";
 import { agentSessionKey } from "./agentHistory";
 import type { OutboxEntry } from "./outbox";
@@ -95,6 +95,10 @@ export function useDaemon(
     projects: {},
     projectPath: {},
     workspaceNonce: 0,
+    terminals: [],
+    terminalsKnown: false,
+    terminalTranscripts: {},
+    terminalLive: {},
   });
 
   // Not in State: this is a cache keyed by provider, not part of the session.

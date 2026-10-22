@@ -18,7 +18,7 @@ import type { Project } from "../projects";
 import type { WorkspaceBrowse } from "../useDaemon";
 
 const PROJECTS: Project[] = [
-  { path: "/Users/k/gg-projects/pew2", name: "pew2", sessions: 24 },
+  { path: "/Users/k/gg-projects/tappy", name: "tappy", sessions: 24 },
   { path: "/Users/k/gg-projects/kencode-search", name: "kencode-search", sessions: 7 },
   { path: "/Users/k/work/acme-storefront", name: "acme-storefront", sessions: 3 },
   { path: "/Users/k/work/notes", name: "notes", sessions: 1 },
@@ -30,7 +30,7 @@ const PROJECTS: Project[] = [
 const DISK: Record<string, WorkspaceBrowse> = {
   "": {
     entries: [
-      { path: "/Users/k/gg-projects/pew2", name: "pew2", repo: true },
+      { path: "/Users/k/gg-projects/tappy", name: "tappy", repo: true },
       { path: "/Users/k/work/acme-storefront", name: "acme-storefront", repo: true },
       { path: "/Users/k/work/infra", name: "infra", repo: true },
     ],
@@ -88,8 +88,8 @@ export default function NewChatSheetHarness() {
 
       <NewChatSheet
         visible={visible}
-        currentFolder={cold ? undefined : "pew2"}
-        currentCwd={cold ? undefined : "/Users/k/gg-projects/pew2"}
+        currentFolder={cold ? undefined : "tappy"}
+        currentCwd={cold ? undefined : "/Users/k/gg-projects/tappy"}
         projects={cold ? [] : PROJECTS}
         onStart={(cwd) => {
           setStarted(cwd ?? "the agent's last project");

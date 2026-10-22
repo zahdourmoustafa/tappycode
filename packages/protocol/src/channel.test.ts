@@ -325,7 +325,7 @@ test("a peer that reconnects is not mistaken for a replay", () => {
   // phone builds a fresh channel per socket — so its counters restart at zero
   // on every reconnect. Without forgetting the last connection, the daemon
   // rejected that first frame as a replay and never recovered: the app sat on
-  // "getting the list of agents" and `pew2 pair` waited for a phone that had
+  // "getting the list of agents" and `tappy pair` waited for a phone that had
   // already arrived. A daemon restart was the only cure.
   const key = new Uint8Array(32).fill(7);
   const daemon = new SecureChannel(key, "daemon");

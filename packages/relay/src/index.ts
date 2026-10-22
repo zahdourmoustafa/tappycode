@@ -1,5 +1,5 @@
 /**
- * pew2 relay — a Cloudflare Worker + Durable Object.
+ * tappy relay — a Cloudflare Worker + Durable Object.
  *
  * One Durable Object per pairing (one user's machines + devices). The DO is the
  * meeting point: the daemon dials out from behind the user's NAT, the phone
@@ -21,10 +21,21 @@ import {
   isPairingToken,
   MIN_PAIRING_TOKEN_LENGTH,
 } from "./admission.js";
+import { FcmSender, readPushFrame, readServiceAccount } from "./fcm.js";
 
 interface Env {
   PAIRING: DurableObjectNamespace<PairingRoom>;
+  /**
+   * The Firebase service-account key file, whole, as a Worker secret
+   * (`wrangler secret put FCM_SERVICE_ACCOUNT`). Absent means this relay sends
+   * no notifications, and everything else works as before.
+   */
+  FCM_SERVICE_ACCOUNT?: string;
 }
+
+/** Notifications one pairing may send per window: generous for agents, useless for spam. */
+const PUSH_LIMIT = 60;
+const PUSH_WINDOW_MS = 10 * 60_000;
 
 interface Attachment {
   role: "daemon" | "app";
@@ -89,7 +100,12 @@ const SEEN_WRITE_INTERVAL_MS = 20_000;
  */
 const SWEEP_INTERVAL_MS = 5 * 60_000;
 
-export class PairingRoom extends DurableObject {
+export class PairingRoom extends DurableObject<Env> {
+  /** Built on first use, so a relay with no key never parses one. */
+  private fcm?: FcmSender | null;
+  /** When each push in the current window was sent. In memory: lost on hibernation, which only forgives. */
+  private pushTimes: number[] = [];
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     // Set here because the constructor is what runs when a hibernated object is
@@ -191,6 +207,14 @@ export class PairingRoom extends DurableObject {
     const from = ws.deserializeAttachment() as Attachment | null;
     if (!from) return;
 
+    // A notification for the relay to send, rather than a frame to pass on.
+    // Only from this room's daemon: a phone has nothing to notify. The socket
+    // is the credential — the daemon reached it with the pairing token.
+    if (message.t === "push") {
+      if (from.role === "daemon") await this.push(message);
+      return;
+    }
+
     // This frame is proof the far end is alive, which matters for a peer whose
     // keepalive the runtime does not recognise. Throttled, so the room does not
     // pay a storage write per message.
@@ -224,6 +248,21 @@ export class PairingRoom extends DurableObject {
     for (const peer of this.peers(from.role === "daemon" ? "app" : "daemon")) {
       peer.send(forwarded);
     }
+  }
+
+  /** Hand a daemon's notification to Firebase, within this pairing's limit. */
+  private async push(raw: unknown): Promise<void> {
+    const frame = readPushFrame(raw);
+    if (!frame) return;
+    const now = Date.now();
+    this.pushTimes = this.pushTimes.filter((at) => now - at < PUSH_WINDOW_MS);
+    if (this.pushTimes.length >= PUSH_LIMIT) return;
+    this.pushTimes.push(now);
+    if (this.fcm === undefined) {
+      const key = readServiceAccount(this.env.FCM_SERVICE_ACCOUNT);
+      this.fcm = key ? new FcmSender(key) : null;
+    }
+    await this.fcm?.send(frame);
   }
 
   async webSocketClose(_ws: WebSocket, _code: number, _reason: string) {
@@ -320,7 +359,7 @@ export default {
       const token = url.searchParams.get("pairing");
       // Checked before the token names a Durable Object, because naming one is
       // what brings it into existence — so a value that could never have come
-      // from `pew2` must not get that far.
+      // from `tappy` must not get that far.
       if (!isPairingToken(token)) {
         return new Response(
           `pairing token must be at least ${MIN_PAIRING_TOKEN_LENGTH} hex characters`,

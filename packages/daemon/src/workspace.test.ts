@@ -4,13 +4,13 @@ import { folderName, resolveWorkspace } from "./workspace.js";
 const env = {} as NodeJS.ProcessEnv;
 
 test("an explicit request always wins", () => {
-  expect(resolveWorkspace("/tmp/project", { PEW2_WORKSPACE: "/env" }, "/", "/home/u")).toBe(
+  expect(resolveWorkspace("/tmp/project", { TAPPY_WORKSPACE: "/env" }, "/", "/home/u")).toBe(
     "/tmp/project",
   );
 });
 
-test("PEW2_WORKSPACE overrides the daemon cwd", () => {
-  expect(resolveWorkspace(undefined, { PEW2_WORKSPACE: "/srv/work" }, "/repo", "/home/u")).toBe(
+test("TAPPY_WORKSPACE overrides the daemon cwd", () => {
+  expect(resolveWorkspace(undefined, { TAPPY_WORKSPACE: "/srv/work" }, "/repo", "/home/u")).toBe(
     "/srv/work",
   );
 });
@@ -31,9 +31,9 @@ test("an ordinary daemon cwd is kept", () => {
 });
 
 test("names a project by its last path segment, for the finished-turn banner", () => {
-  expect(folderName("/Users/kenkai/gg-projects/pew2")).toBe("pew2");
+  expect(folderName("/Users/kenkai/gg-projects/tappy")).toBe("tappy");
   // A trailing slash must not produce an empty name.
-  expect(folderName("/Users/kenkai/gg-projects/pew2/")).toBe("pew2");
+  expect(folderName("/Users/kenkai/gg-projects/tappy/")).toBe("tappy");
 });
 
 test("no path means no project name, rather than a slash", () => {

@@ -1,7 +1,7 @@
 /**
  * Keeping a running daemon in step with the pairing on disk.
  *
- * `pew2 pair --rotate` mints a new token and writes it to `pairing.json`. The
+ * `tappy pair --rotate` mints a new token and writes it to `pairing.json`. The
  * daemon that is already running knows nothing about it, and the relay room id
  * is derived from that token — so the daemon keeps listening in the old room
  * while the freshly paired phone joins the new one. Neither can see the other.
@@ -46,7 +46,7 @@ export function applyPairing(
   previous: { token: string; key?: string },
   targets: PairingTargets,
 ): boolean {
-  // A relay change alone still counts: `pew2 relay <url>` rewrites the same
+  // A relay change alone still counts: `tappy relay <url>` rewrites the same
   // file, and the daemon should follow that too.
   if (next.token === previous.token && next.key === previous.key) return false;
 

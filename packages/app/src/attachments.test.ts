@@ -112,11 +112,11 @@ describe("formatSize", () => {
 });
 
 test("the limits match the protocol's, which the daemon enforces", async () => {
-  // Duplicated rather than imported: Metro cannot resolve @pew2/protocol's
+  // Duplicated rather than imported: Metro cannot resolve @tappy/protocol's
   // `.js`-suffixed TS imports, so importing it there breaks the bundle. This
   // test is what keeps the two copies honest — drift would show as the phone
   // cheerfully uploading files the daemon then refuses.
-  const { wire } = await import("@pew2/protocol");
+  const { wire } = await import("@tappy/protocol");
   expect(MAX_ATTACHMENTS).toBe(wire.MAX_ATTACHMENTS);
   expect(MAX_ATTACHMENT_BYTES).toBe(wire.MAX_ATTACHMENT_BYTES);
   expect(MAX_ATTACHMENTS_TOTAL_BYTES).toBe(wire.MAX_ATTACHMENTS_TOTAL_BYTES);

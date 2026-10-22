@@ -40,11 +40,11 @@ export function colorLevel(
 
 /**
  * Unicode is assumed everywhere except the Windows console, which historically
- * renders box drawing and braille as replacement boxes. `PEW2_ASCII=1` forces
+ * renders box drawing and braille as replacement boxes. `TAPPY_ASCII=1` forces
  * the fallback, so the degraded path is testable and escapable.
  */
 export function unicodeOk(env: NodeJS.ProcessEnv = process.env): boolean {
-  if (env.PEW2_ASCII === "1") return false;
+  if (env.TAPPY_ASCII === "1") return false;
   if (process.platform !== "win32") return true;
   return env.WT_SESSION !== undefined || env.TERM_PROGRAM === "vscode";
 }
@@ -127,7 +127,7 @@ export interface Glyphs {
 
 /**
  * An LED heading: each letter spaced, words separated by three spaces, in capitals.
- * `PEW2 DOCTOR` becomes `P E W 2   D O C T O R`.
+ * `TAPPY DOCTOR` becomes `T A P P Y   D O C T O R`.
  */
 export function spaced(text: string): string {
   return text

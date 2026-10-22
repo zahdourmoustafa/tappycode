@@ -45,7 +45,7 @@ packages/app/store/
 
 # Notes the agents write for themselves.
 #
-# pew2 hands every agent a working directory, and an agent is free to keep state
+# tappy hands every agent a working directory, and an agent is free to keep state
 # there — this one turned up at the repo root the first time an agent was booted
 # from it. Those files belong to whoever ran the agent, not to this repo.
 memories.json

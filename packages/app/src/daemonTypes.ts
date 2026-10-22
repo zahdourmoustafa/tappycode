@@ -74,7 +74,7 @@ export interface Turn {
 
 /**
  * A session-level selector advertised by the connected agent: model, thinking
- * level, or mode. pew2 hardcodes no model names — each app reports its own.
+ * level, or mode. tappy hardcodes no model names — each app reports its own.
  * https://agentclientprotocol.com/protocol/v1/session-config-options
  */
 export interface ConfigOption {

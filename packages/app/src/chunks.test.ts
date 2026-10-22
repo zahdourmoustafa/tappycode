@@ -164,8 +164,8 @@ test("a user message carries the files that were attached to it", () => {
     kind: "user_message",
     text: "look at this",
     attachments: [
-      { name: "shot.png", mimeType: "image/png", uri: "/tmp/pew2-attachments/s1/0-shot.png" },
-      { name: "notes.txt", mimeType: "text/plain", uri: "/tmp/pew2-attachments/s1/1-notes.txt" },
+      { name: "shot.png", mimeType: "image/png", uri: "/tmp/tappy-attachments/s1/0-shot.png" },
+      { name: "notes.txt", mimeType: "text/plain", uri: "/tmp/tappy-attachments/s1/1-notes.txt" },
     ],
   });
 
@@ -175,7 +175,7 @@ test("a user message carries the files that were attached to it", () => {
     // Only the picture: a text file is not something to paint into the thread.
     images: [
       {
-        src: "/tmp/pew2-attachments/s1/0-shot.png",
+        src: "/tmp/tappy-attachments/s1/0-shot.png",
         mimeType: "image/png",
         alt: "shot.png",
       },

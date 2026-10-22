@@ -13,7 +13,7 @@ const join = __join;
 import type { StoredAttachment } from "../attachments.js";
 import type { AgentProject } from "../projects.js";
 import { SESSION_HISTORY_LIMIT } from "../session-history.js";
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 
 export interface ActiveSession {
   handle?: AcpSessionHandle;
@@ -151,7 +151,7 @@ export function goalsProviderFrom(gg: LoadedProvider): LoadedProvider {
       id: GG_GOALS_ID,
       name: "GG Goals",
       description: "Long-running goals: GG Goals plans, runs workers and checks in.",
-      pew: { ...gg.manifest.pew, color: "#8b7cf6", requiresWorkspace: false },
+      tappy: { ...gg.manifest.tappy, color: "#8b7cf6", requiresWorkspace: false },
     },
   };
 }

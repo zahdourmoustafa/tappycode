@@ -1,5 +1,5 @@
 /**
- * Replace this machine's `pew2` binary with a newly published one.
+ * Replace this machine's `tappy` binary with a newly published one.
  *
  * Step two of self-update: download, verify, swap. It still does not restart
  * anything — the running process keeps executing the old inode until something
@@ -31,8 +31,8 @@
  * with a new file, an old process, and no way to close the gap except by hand.
  *
  * **Compiled builds only.** `process.execPath` is the running executable, which
- * for a released install is `pew2` — but under `bun run packages/daemon/src/
- * server.ts` it is the developer's **`bun` binary**. Renaming a 60MB pew2 build
+ * for a released install is `tappy` — but under `bun run packages/daemon/src/
+ * server.ts` it is the developer's **`bun` binary**. Renaming a 60MB tappy build
  * over `~/.bun/bin/bun` would replace the runtime every other project on that
  * machine depends on, from a background timer, with no prompt. `isCompiled()`
  * is the same check `service.ts` uses to decide what to put in the plist, and
@@ -51,7 +51,7 @@ import { isCompiled, supervisorInstalled as serviceInstalled } from "../cli/serv
 import { CURRENT_VERSION } from "./check.js";
 
 /** Where releases are published. `install.sh` resolves the same repository. */
-const REPO = "KenKaiii/pew2";
+const REPO = "zahdourmoustafa/tappycode";
 
 /**
  * How long to wait on a download before giving up.
@@ -137,18 +137,18 @@ export interface ApplyOptions {
  */
 export function assetName(platform: string, arch: string): string | undefined {
   if (platform === "darwin") {
-    if (arch === "arm64") return "pew2-darwin-arm64";
-    if (arch === "x64") return "pew2-darwin-x64";
+    if (arch === "arm64") return "tappy-darwin-arm64";
+    if (arch === "x64") return "tappy-darwin-x64";
     return undefined;
   }
   if (platform === "linux") {
-    if (arch === "arm64") return "pew2-linux-arm64";
-    if (arch === "x64") return "pew2-linux-x64";
+    if (arch === "arm64") return "tappy-linux-arm64";
+    if (arch === "x64") return "tappy-linux-x64";
     return undefined;
   }
   if (platform === "win32") {
     // One Windows build, x64 only, and the only asset with an extension.
-    return arch === "x64" ? "pew2-windows-x64.exe" : undefined;
+    return arch === "x64" ? "tappy-windows-x64.exe" : undefined;
   }
   return undefined;
 }
@@ -178,8 +178,8 @@ export function hasSupervisor(platform: string): boolean {
  * Whether a supervisor is actually installed on *this* machine.
  *
  * The platform is not enough, and assuming it was is a way to take a user's
- * daemon offline for good. `pew2 serve` is a first-class command: someone can
- * run the daemon in a terminal, or from a fresh install where `pew2 setup` has
+ * daemon offline for good. `tappy serve` is a first-class command: someone can
+ * run the daemon in a terminal, or from a fresh install where `tappy setup` has
  * never registered a service — which is exactly why `install.sh` guards its own
  * restart on the plist existing. On such a machine an exit-to-update is simply
  * an exit, and the phone stays offline until a human notices.
@@ -215,7 +215,7 @@ export function parseChecksum(body: string): string | undefined {
 /**
  * Delete binaries parked by *earlier* Windows updates.
  *
- * `pew2.exe` cannot be unlinked while it is running, so each update renames the
+ * `tappy.exe` cannot be unlinked while it is running, so each update renames the
  * outgoing binary aside rather than deleting it. Nothing ever collected those,
  * which meant one abandoned ~90MB executable per update, accumulating beside a
  * file that is on the user's PATH.
@@ -290,10 +290,10 @@ export async function applyUpdate(options: ApplyOptions = {}): Promise<ApplyResu
       ok: false,
       reason: "unsupported-platform",
       // Two different situations, and telling them apart is the difference
-      // between "your OS cannot do this" and "run `pew2 setup` and it will".
+      // between "your OS cannot do this" and "run `tappy setup` and it will".
       detail: hasSupervisor(platform)
-        ? `No pew2 service is installed, so nothing would restart the daemon ` +
-          `after it exits. Run \`pew2 setup\` to install one.`
+        ? `No tappy service is installed, so nothing would restart the daemon ` +
+          `after it exits. Run \`tappy setup\` to install one.`
         : `${platform} has no supervisor to restart the daemon after it exits, ` +
           `so a swapped binary would never take effect.`,
     };
@@ -335,7 +335,7 @@ export async function applyUpdate(options: ApplyOptions = {}): Promise<ApplyResu
     };
   }
 
-  const userAgent = `pew2-daemon/${currentVersion}`;
+  const userAgent = `tappy-daemon/${currentVersion}`;
   const binaryUrl = assetUrl(asset, version);
 
   const checksumBody = await download(fetchImpl, `${binaryUrl}.sha256`, userAgent, timeoutMs);
@@ -377,8 +377,8 @@ export async function applyUpdate(options: ApplyOptions = {}): Promise<ApplyResu
   // of the way first. Cleaned up on success, restored on failure.
   let parked: string | undefined;
   try {
-    const stagingDir = await mkdtemp(join(installDir, ".pew2-update-"));
-    staging = join(stagingDir, "pew2");
+    const stagingDir = await mkdtemp(join(installDir, ".tappy-update-"));
+    staging = join(stagingDir, "tappy");
     await writeFile(staging, bytes);
     // Before the rename, not after: a moment where the binary exists but is not
     // executable is a moment where a shell finds it and cannot run it.
@@ -393,7 +393,7 @@ export async function applyUpdate(options: ApplyOptions = {}): Promise<ApplyResu
       // process that is still running, and Windows refuses to unlink a running
       // image. The ones left by earlier updates belong to processes that have
       // since exited, so this is the moment they can actually go — without it
-      // every update leaves another ~90MB binary beside pew2.exe for ever.
+      // every update leaves another ~90MB binary beside tappy.exe for ever.
       await sweepParkedBinaries(targetPath);
       parked = `${targetPath}.old-${Date.now()}`;
       await renameImpl(targetPath, parked);
@@ -408,9 +408,9 @@ export async function applyUpdate(options: ApplyOptions = {}): Promise<ApplyResu
       await rm(dirname(staging), { recursive: true, force: true }).catch(() => {});
     }
     // The window between parking the old binary and the new one landing is the
-    // only moment where `pew2` does not exist at all. If the second rename
+    // only moment where `tappy` does not exist at all. If the second rename
     // failed, put it back — an aborted update must leave a working command, not
-    // a machine with no daemon and a file named `pew2.old-1760000000000`.
+    // a machine with no daemon and a file named `tappy.old-1760000000000`.
     if (parked) {
       await rename(parked, targetPath).catch(() => {});
     }

@@ -1,5 +1,5 @@
 /**
- * Draws the pew2 app icon.
+ * Draws the tappy app icon.
  *
  * The icon is generated rather than drawn by hand because it is the same shape
  * as the rest of the brand and that relationship should be enforced, not

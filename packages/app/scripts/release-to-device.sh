@@ -59,7 +59,7 @@ fi
 # The profiles Xcode has already downloaded are the ones it can actually sign
 # against, so a profile for this bundle is the strongest evidence available, and
 # any profile is the fallback.
-BUNDLE_ID="io.github.kenkaiii.pew2"
+BUNDLE_ID="com.tappycode.app"
 PROFILES="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 
 team_of() {
@@ -96,8 +96,8 @@ if [ ! -d ios ]; then
 fi
 
 xcodebuild \
-  -workspace ios/pew2.xcworkspace \
-  -scheme pew2 \
+  -workspace ios/tappy.xcworkspace \
+  -scheme tappy \
   -configuration Release \
   -destination "id=$UDID" \
   -allowProvisioningUpdates \
@@ -107,20 +107,20 @@ xcodebuild \
   build
 
 # Newest first: DerivedData accumulates a directory per project path, and an
-# older one still holding a stale `pew2.app` would otherwise be installed in
+# older one still holding a stale `tappy.app` would otherwise be installed in
 # place of the build that just succeeded — which looks exactly like a fix that
 # did not work.
-APP=$(find ~/Library/Developer/Xcode/DerivedData/pew2-*/Build/Products/Release-iphoneos \
-  -maxdepth 1 -name "pew2.app" -exec stat -f "%m %N" {} + 2>/dev/null \
+APP=$(find ~/Library/Developer/Xcode/DerivedData/tappy-*/Build/Products/Release-iphoneos \
+  -maxdepth 1 -name "tappy.app" -exec stat -f "%m %N" {} + 2>/dev/null \
   | sort -rn | head -1 | cut -d' ' -f2- || true)
 
 if [ -z "$APP" ]; then
-  echo "Build reported success but produced no pew2.app." >&2
+  echo "Build reported success but produced no tappy.app." >&2
   exit 1
 fi
 
 xcrun devicectl device install app --device "$UDID" "$APP"
-xcrun devicectl device process launch --device "$UDID" io.github.kenkaiii.pew2
+xcrun devicectl device process launch --device "$UDID" com.tappycode.app
 
 echo
 echo "Release build running on device. This is what TestFlight ships."

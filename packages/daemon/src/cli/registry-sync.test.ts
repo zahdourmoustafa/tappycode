@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { bundledEntries, fetchRegistry, syncRegistry } from "./registry-sync.js";
 
 async function tempDir(): Promise<string> {
-  return mkdtemp(join(tmpdir(), "pew2-sync-"));
+  return mkdtemp(join(tmpdir(), "tappy-sync-"));
 }
 
 const doc = {
@@ -76,14 +76,14 @@ test("a locally edited manifest is never silently overwritten", async () => {
   // The user adds an API key requirement to a synced manifest.
   const path = join(targetDir, "kimi.json");
   const edited = JSON.parse(await readFile(path, "utf8"));
-  edited.pew.env = [{ name: "MOONSHOT_API_KEY", required: true }];
+  edited.tappy.env = [{ name: "MOONSHOT_API_KEY", required: true }];
   await writeFile(path, JSON.stringify(edited, null, 2));
 
   const result = await syncRegistry({ raw: doc, targetDir, bundled: [], platform: "darwin-aarch64" });
   expect(result.conflicts).toEqual(["kimi"]);
   expect(result.written).toEqual([]);
   // Still theirs.
-  expect(JSON.parse(await readFile(path, "utf8")).pew.env).toHaveLength(1);
+  expect(JSON.parse(await readFile(path, "utf8")).tappy.env).toHaveLength(1);
 
   // --force is the explicit way to say otherwise.
   const forced = await syncRegistry({
@@ -94,7 +94,7 @@ test("a locally edited manifest is never silently overwritten", async () => {
     force: true,
   });
   expect(forced.written).toEqual(["kimi"]);
-  expect(JSON.parse(await readFile(path, "utf8")).pew.env).toEqual([]);
+  expect(JSON.parse(await readFile(path, "utf8")).tappy.env).toEqual([]);
 });
 
 test("an agent we already ship is skipped even when the registry renames it", async () => {

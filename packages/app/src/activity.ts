@@ -15,7 +15,7 @@
  * count is what the agent reported, and tokens are shown *only* when the agent
  * sent a usage figure of its own.
  */
-import { asRecord } from "@pew2/protocol";
+import { asRecord } from "@tappy/protocol";
 import { readChunk } from "./chunks";
 
 /** ACP tool kinds. `other` is the documented default. */

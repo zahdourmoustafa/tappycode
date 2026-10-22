@@ -6,7 +6,7 @@
  * side effects that must not run inside an updater happen first; the state
  * transition itself is `reduceMessage` (`daemonReducer.ts`).
  */
-import type { SecureChannel } from "@pew2/protocol";
+import type { SecureChannel } from "@tappy/protocol";
 import { matchesRestore, type RestoreTarget } from "./restoreState";
 import { pendingSessionKey } from "./pendingSession";
 import { remapSession } from "./outbox";

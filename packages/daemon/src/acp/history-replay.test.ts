@@ -15,10 +15,10 @@ afterEach(async () => {
 });
 
 test("a previous replay cache cannot hide newer messages when reopening", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-cached-replay-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-cached-replay-"));
   roots.push(root);
-  const previousHome = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = root;
+  const previousHome = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = root;
   const daemon = new Daemon({ id: "test", name: "test" }, true);
   try {
     await writeTranscript("echo", "echo_history_1", [
@@ -35,8 +35,8 @@ test("a previous replay cache cannot hide newer messages when reopening", async 
     ]);
   } finally {
     daemon.closeAll();
-    if (previousHome === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = previousHome;
+    if (previousHome === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = previousHome;
   }
 }, 20_000);
 
@@ -52,7 +52,7 @@ test("stored image references remain displayable without fetching them during re
 });
 
 test("reopening GG Coder history retains a screenshot returned by a tool", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-history-replay-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-history-replay-"));
   roots.push(root);
   const cwd = "/project";
   await mkdir(path.join(root, "project"));
@@ -75,7 +75,7 @@ test("reopening GG Coder history retains a screenshot returned by a tool", async
 });
 
 test("Claude tool-result screenshots return as agent images, not user prompts", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-claude-replay-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-claude-replay-"));
   roots.push(root);
   await mkdir(path.join(root, "-project"));
   await writeFile(path.join(root, "-project", "session.jsonl"), JSON.stringify({
@@ -90,7 +90,7 @@ test("Claude tool-result screenshots return as agent images, not user prompts", 
 });
 
 test("GG Coder restore keeps thought text separate from the answer", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-thought-replay-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-thought-replay-"));
   roots.push(root);
   await mkdir(path.join(root, "project"));
   await writeFile(path.join(root, "project", "fixture_abcdefgh.jsonl"), [
@@ -108,7 +108,7 @@ test("GG Coder restore keeps thought text separate from the answer", async () =>
 });
 
 test("Claude restore retains visible thoughts but not redacted thinking or metadata", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-claude-thought-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-claude-thought-"));
   roots.push(root);
   await mkdir(path.join(root, "-project"));
   const message = { role: "assistant", content: [

@@ -30,10 +30,10 @@ import { verifyPairing } from "../verifyPairing";
 import { Handshake, type HandshakePhase } from "./Handshake";
 import { Led } from "./stage/Led";
 import { StageButton } from "./stage/StageButton";
-import { pewInk } from "../pew/palette";
+import { tappyInk } from "../tappy/palette";
 
-/** pew2's own coral: nobody has picked an agent yet. */
-const PEW_CORAL = pewInk();
+/** tappy's own coral: nobody has picked an agent yet. */
+const TAPPY_CORAL = tappyInk();
 
 interface Props {
   onPaired: (pairing: Pairing) => void;
@@ -162,8 +162,9 @@ export function PairingScreen({ onPaired, onBack, notice }: Props) {
           {error ?? scanError}
         </Text>
       ) : null}
-      <Text style={styles.body} numberOfLines={2}>
-        Run <Text style={styles.commandText} selectable>pew2 setup</Text> on your computer, then scan its code.
+      <Text style={styles.body} numberOfLines={3}>
+        Scan the QR code your computer shows at the end of setup. Lost it? Run{" "}
+        <Text style={styles.commandText} selectable>tappy pair</Text> for a new one.
       </Text>
 
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -171,9 +172,9 @@ export function PairingScreen({ onPaired, onBack, notice }: Props) {
       {canScan ? (
         <>
           <StageButton
-            color={PEW_CORAL}
+            color={TAPPY_CORAL}
             label="Scan the QR code"
-            icon={<Ionicons name="qr-code-outline" size={18} color={PEW_CORAL} />}
+            icon={<Ionicons name="qr-code-outline" size={18} color={TAPPY_CORAL} />}
             onPress={() => {
               setScanError(null);
               setScanning(true);

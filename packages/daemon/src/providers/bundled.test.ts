@@ -40,12 +40,12 @@ test("the embedded manifests are byte-identical to the files", async () => {
 
 test("a directory that does not exist still leaves the built-in agents", async () => {
   // What a compiled binary on a fresh machine does: nothing in
-  // `~/.pew2/providers`, no checkout anywhere. It must still know its agents.
+  // `~/.tappy/providers`, no checkout anywhere. It must still know its agents.
   //
   // Naming directories is opt-out of the built-ins, so this asks for them back
   // explicitly — which is exactly what the production callers do.
   const { providers, errors } = await loadProviders(
-    ["/nonexistent/pew2/providers"],
+    ["/nonexistent/tappy/providers"],
     {} as NodeJS.ProcessEnv,
     { bundled: true },
   );
@@ -58,7 +58,7 @@ test("a directory that does not exist still leaves the built-in agents", async (
 test("naming a directory means that directory and nothing else", () => {
   // The isolation every other test in this repo depends on: pointing at a
   // sandbox must not silently mix in thirteen real agents.
-  return loadProviders(["/nonexistent/pew2/providers"], {} as NodeJS.ProcessEnv).then((r) => {
+  return loadProviders(["/nonexistent/tappy/providers"], {} as NodeJS.ProcessEnv).then((r) => {
     expect(r.providers).toEqual([]);
   });
 });

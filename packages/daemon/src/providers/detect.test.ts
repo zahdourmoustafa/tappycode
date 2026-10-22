@@ -12,12 +12,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CATALOG, detectProviders } from "./detect.js";
 import { isAvailable, loadProviders, unavailableReason } from "./registry.js";
-import { ProviderManifest } from "@pew2/protocol";
+import { ProviderManifest } from "@tappy/protocol";
 import { fakeExecutable } from "../testing/platform.js";
 
 /** An isolated machine: an empty PATH, and nowhere any manifest already lives. */
 async function sandbox() {
-  const root = await mkdtemp(join(tmpdir(), "pew2-detect-"));
+  const root = await mkdtemp(join(tmpdir(), "tappy-detect-"));
   const bin = join(root, "bin");
   const providers = join(root, "providers");
   await mkdir(bin, { recursive: true });
@@ -143,7 +143,7 @@ test("every catalog manifest is valid", () => {
 test("the catalog and the bundled manifests describe the same agent", async () => {
   // Every catalog entry that also ships as a file in providers/ states the same
   // facts twice, in two languages. Detection writes the catalog copy into
-  // ~/.pew2/providers, where it *shadows* the bundled file — so if the two drift,
+  // ~/.tappy/providers, where it *shadows* the bundled file — so if the two drift,
   // installing an agent silently changes how it launches, and only for the
   // people who ran detect. Pin the fields that decide that.
   const bundledDir = join(import.meta.dir, "..", "..", "..", "..", "providers");
@@ -161,7 +161,7 @@ test("the catalog and the bundled manifests describe the same agent", async () =
   // Compared after parsing, so both sides have the schema's defaults applied
   // and an omitted field cannot read as a difference.
   const required = (m: ProviderManifest) =>
-    m.pew.env
+    m.tappy.env
       .filter((v) => v.required)
       .map((v) => v.name)
       .sort();
@@ -171,8 +171,8 @@ test("the catalog and the bundled manifests describe the same agent", async () =
     const catalog = ProviderManifest.parse(entry.manifest);
 
     expect(catalog.distribution).toEqual(file.distribution);
-    expect(catalog.pew.transport).toBe(file.pew.transport);
-    expect(catalog.pew.color).toBe(file.pew.color);
+    expect(catalog.tappy.transport).toBe(file.tappy.transport);
+    expect(catalog.tappy.color).toBe(file.tappy.color);
     // Required env is what gates availability, so a disagreement here is the
     // difference between an agent that runs and one the app refuses to start.
     expect(required(catalog)).toEqual(required(file));
@@ -203,7 +203,7 @@ test("every provider colour is legible on the app's dark surface", () => {
   };
 
   for (const entry of CATALOG) {
-    const color = ProviderManifest.parse(entry.manifest).pew.color ?? "";
+    const color = ProviderManifest.parse(entry.manifest).tappy.color ?? "";
     // Also asserts a colour is set at all: an unstyled agent is a bug here, not
     // a default worth inheriting.
     expect(color).toMatch(/^#[0-9a-f]{6}$/);

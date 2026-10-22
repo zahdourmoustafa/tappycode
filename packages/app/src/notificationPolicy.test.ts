@@ -3,7 +3,7 @@ import { duplicatePush, finishedNotice, summarise } from "./notificationPolicy";
 
 const base = {
   sessionId: "s1",
-  folder: "pew2",
+  folder: "tappy",
   agentName: "Claude Code",
   foreground: true,
 };
@@ -15,7 +15,7 @@ describe("finishedNotice", () => {
 
   it("announces a session finishing while another is open", () => {
     const notice = finishedNotice({ ...base, activeSessionId: "other" });
-    expect(notice?.title).toBe("pew2 · Claude Code");
+    expect(notice?.title).toBe("tappy · Claude Code");
     expect(notice?.sessionId).toBe("s1");
   });
 
@@ -27,7 +27,7 @@ describe("finishedNotice", () => {
 
   it("names the project even when the agent is unknown", () => {
     const notice = finishedNotice({ ...base, agentName: undefined, foreground: false });
-    expect(notice?.title).toBe("pew2");
+    expect(notice?.title).toBe("tappy");
   });
 
   it("falls back to a body when the turn produced no message", () => {
@@ -138,16 +138,16 @@ describe("duplicatePush", () => {
 });
 
 test("a pushed turn and a locally announced one are worded identically", async () => {
-  // The wording lives in `@pew2/protocol` so the daemon can compose the same
+  // The wording lives in `@tappy/protocol` so the daemon can compose the same
   // banner for a turn the app slept through. This pins the arrangement: if
   // `finishedNotice` ever grows its own copy of the formatting, the same turn
   // would read one way when the app is awake and another when it is asleep, and
   // nothing else would catch it.
-  const protocol = await import("@pew2/protocol");
+  const protocol = await import("@tappy/protocol");
 
   const turn = {
     sessionId: "s1",
-    folder: "pew2",
+    folder: "tappy",
     agentName: "Claude Code",
     lastText: "## Done\n\nRenamed the handler.",
     foreground: false,
@@ -168,7 +168,7 @@ test("a pushed turn and a locally announced one are worded identically", async (
   expect(finishedNotice({ ...turn, lastText: "x".repeat(400) })?.body.length).toBe(140);
 
   // Title fallbacks, which differ per missing field.
-  expect(finishedNotice({ ...turn, agentName: undefined })?.title).toBe("pew2");
+  expect(finishedNotice({ ...turn, agentName: undefined })?.title).toBe("tappy");
   expect(finishedNotice({ ...turn, folder: undefined })?.title).toBe("Claude Code");
-  expect(finishedNotice({ ...turn, folder: undefined, agentName: undefined })?.title).toBe("pew2");
+  expect(finishedNotice({ ...turn, folder: undefined, agentName: undefined })?.title).toBe("tappy");
 });

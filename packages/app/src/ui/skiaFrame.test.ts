@@ -21,7 +21,7 @@ const sources = files(SRC).map((path) => ({ path: relative(SRC, path), text: rea
 const painters = sources.filter((s) => s.text.includes("useFrameCallback") && s.text.includes("@shopify/react-native-skia"));
 
 test("there are painters to check", () => {
-  expect(painters.map((p) => p.path).sort()).toEqual(["pew/Pew.tsx", "ui/LaunchFx.tsx", "ui/ThinkingDial.tsx"]);
+  expect(painters.map((p) => p.path).sort()).toEqual(["tappy/Tappy.tsx", "ui/LaunchFx.tsx", "ui/ThinkingDial.tsx"]);
 });
 
 test("a painter starts from the shared blank picture, never one of its own", () => {

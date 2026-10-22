@@ -27,10 +27,10 @@ describe("workspaceStatus", () => {
   test("a directory outside any repo is not an error", async () => {
     // An agent opened on a scratch folder is normal; the bar simply omits the
     // change count rather than the request failing.
-    const scratch = mkdtempSync(join(tmpdir(), "pew2-git-"));
+    const scratch = mkdtempSync(join(tmpdir(), "tappy-git-"));
     const status = await workspaceStatus(scratch);
     expect(status.repo).toBe(false);
     expect(status.uncommitted).toBe(0);
-    expect(status.folder.startsWith("pew2-git-")).toBe(true);
+    expect(status.folder.startsWith("tappy-git-")).toBe(true);
   });
 });

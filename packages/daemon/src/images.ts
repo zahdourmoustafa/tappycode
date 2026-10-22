@@ -107,8 +107,8 @@ function isInside(path: string, root: string): boolean {
  */
 export function allowedImageRoots(cwd: string, env: NodeJS.ProcessEnv = process.env): string[] {
   const roots = [resolve(cwd), resolve(tmpdir())];
-  if (env.PEW2_IMAGE_ROOTS) {
-    for (const extra of env.PEW2_IMAGE_ROOTS.split(":")) {
+  if (env.TAPPY_IMAGE_ROOTS) {
+    for (const extra of env.TAPPY_IMAGE_ROOTS.split(":")) {
       if (extra.trim()) roots.push(resolve(extra.trim()));
     }
   }

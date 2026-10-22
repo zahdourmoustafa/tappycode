@@ -1,7 +1,7 @@
 /**
  * The sidebar drawer: the Switchboard.
  *
- * A rail of Pews down the left, one per agent (the chosen one awake with a lit
+ * A rail of Tappies down the left, one per agent (the chosen one awake with a lit
  * bar, the rest dozing), and the chosen agent's world on the right: its name,
  * the connection on one LED line, project tabs, then its latest chats.
  *
@@ -25,8 +25,8 @@ import { projectTabItems, sessionsInProject, type Project } from "../projects";
 import type { Provider, Status } from "../useDaemon";
 import { lastActiveLabel, sortGoals, type GoalSummary } from "../ggState";
 import { goalDrawerRow } from "../goalsAgent";
-import { Pew } from "../pew/Pew";
-import { pewInk } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { tappyInk } from "../tappy/palette";
 import { Led } from "./stage/Led";
 import { Pixel } from "./stage/Pixel";
 import { DashedRule, dashedOutline } from "./stage/DashedRule";
@@ -73,7 +73,7 @@ interface SidebarProps {
   /** Close the drawer (it covers the whole screen, so it needs its own way out). */
   onClose?: () => void;
   /**
-   * A newer pew2 the paired computer has not got, when there is one.
+   * A newer tappy the paired computer has not got, when there is one.
    *
    * Absent for the ordinary case, including a machine that updates itself — by
    * the time anyone could read a notice about it, it has already happened.
@@ -111,7 +111,7 @@ export interface SidebarGoals {
 const STAGGERED_ROWS = 10;
 const ROW_STAGGER_MS = 40;
 const RAIL_WIDTH = 64;
-const RAIL_PEW = 48;
+const RAIL_TAPPY = 48;
 const RAIL_BUTTON = 52;
 /** The right column's own left rail: every heading, tab and row starts here. */
 const COLUMN_PAD = theme.space(4);
@@ -297,12 +297,12 @@ function GoalsSection({ goals, activeSessionId, reduceMotion, paused }: { goals:
   );
 }
 
-/** One agent on the rail: its Pew, a tinted tile when chosen (no edge bar: the user wants no coloured left edges anywhere), a status pixel. */
+/** One agent on the rail: its Tappy, a tinted tile when chosen (no edge bar: the user wants no coloured left edges anywhere), a status pixel. */
 const RailAgent = memo(function RailAgent({
   provider, selected, mark, index, paused, reduceMotion, onPress,
 }: { provider: Provider; selected: boolean; mark: Mark; index: number; paused: boolean; reduceMotion: boolean; onPress: (id: string) => void }) {
   const enabled = provider.available;
-  const ink = pewInk(provider.color);
+  const ink = tappyInk(provider.color);
   const [revealing] = useState(() => !paused);
   const spoken = mark === "attention" ? "needs you" : mark === "live" ? "working" : mark === "unread" ? "new reply" : undefined;
   return (
@@ -319,7 +319,7 @@ const RailAgent = memo(function RailAgent({
         }}
         style={({ pressed }) => [styles.railButton, selected && { backgroundColor: withAlpha(ink, 0.13) }, !enabled && styles.unavailable, pressed && styles.pressed]}
       >
-        <Pew size={RAIL_PEW} color={provider.color} mood={!enabled ? "sleepy" : selected ? "idle" : "sleepy"} sleepKey={provider.id} sleepStyle={RAIL_SLEEP[index % RAIL_SLEEP.length]} paused={paused || !enabled} />
+        <Tappy size={RAIL_TAPPY} color={provider.color} mood={!enabled ? "sleepy" : selected ? "idle" : "sleepy"} sleepKey={provider.id} sleepStyle={RAIL_SLEEP[index % RAIL_SLEEP.length]} paused={paused || !enabled} />
         {mark && <View style={styles.railBadge}><Pixel kind={mark} color={mark === "attention" ? undefined : ink} paused={paused} /></View>}
       </Pressable>
     </Dissolve>
@@ -379,7 +379,7 @@ function SidebarView({
   const orderedProviders = useMemo(() => orderProvidersByRecency(providers, sessions), [providers, sessions]);
   const activeProvider = orderedProviders.find((p) => p.id === activeProviderId);
 
-  // One status per agent for its rail Pew: needs you > working > unread.
+  // One status per agent for its rail Tappy: needs you > working > unread.
   const marks = useMemo(() => {
     const out = new Map<string, Mark>();
     const rank = { attention: 3, live: 2, unread: 1 } as const;
@@ -443,7 +443,7 @@ function SidebarView({
           </ScrollView>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Connection details for ${machineLabel}${update ? (update.automatic ? ", updating pew2" : ", update available") : ""}`}
+            accessibilityLabel={`Connection details for ${machineLabel}${update ? (update.automatic ? ", updating tappy" : ", update available") : ""}`}
             hitSlop={touchSlop(theme.space(1))}
             onPress={() => {
               haptics.tap();
@@ -459,7 +459,7 @@ function SidebarView({
         <View style={styles.main}>
           <View style={styles.head}>
             <View style={styles.headTop}>
-              <Text style={[styles.agentName, { color: pewInk(activeProvider?.color) }]} numberOfLines={1}>
+              <Text style={[styles.agentName, { color: tappyInk(activeProvider?.color) }]} numberOfLines={1}>
                 {activeProvider?.name ?? "Agents"}
               </Text>
               {/* Full width now, so nothing of the conversation is left to tap:

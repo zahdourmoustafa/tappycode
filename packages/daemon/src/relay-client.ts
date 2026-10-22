@@ -1,5 +1,5 @@
 /**
- * Outbound connection to the relay. This is what makes pew2 work from anywhere.
+ * Outbound connection to the relay. This is what makes tappy work from anywhere.
  *
  * The daemon *dials out*, so the user's machine needs no public address, no port
  * forwarding and no hole in their firewall — the same reason a laptop can reach
@@ -13,7 +13,7 @@
  * than no remote access at all.
  */
 import { handleMessage } from "./handler.js";
-import { SecureChannel, e2e, envelopeHeader, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, envelopeHeader, wire } from "@tappy/protocol";
 import type { Daemon } from "./index.js";
 
 export interface RelayClientOptions {
@@ -39,7 +39,7 @@ export interface RelayClientOptions {
    * Without this the two transports are one-way mirrors: a phone acting over
    * the relay is invisible to a client on the LAN, even though the daemon
    * owning one log is the entire reason both can watch the same session. It is
-   * also what lets `pew2 pair` confirm a phone that arrived from a mobile
+   * also what lets `tappy pair` confirm a phone that arrived from a mobile
    * network rather than the local Wi-Fi.
    */
   onBroadcast?: (message: unknown) => void;
@@ -102,7 +102,7 @@ export class RelayClient {
   /**
    * Point this client at a new pairing and reconnect into its room.
    *
-   * `pew2 pair --rotate` mints a new token and writes it to disk, but a daemon
+   * `tappy pair --rotate` mints a new token and writes it to disk, but a daemon
    * that is already running holds the old one — and the relay room is derived
    * from it. Without this the daemon sits in a room the freshly paired phone
    * will never join: the phone shows "connecting" forever, re-pairing makes it
@@ -157,6 +157,21 @@ export class RelayClient {
     } catch {
       // A send failing means the socket is already gone; `close` will fire and
       // reconnection will take over.
+    }
+  }
+
+  /**
+   * A frame for the relay itself rather than the phone: sent in the clear,
+   * because the relay has to read it to act on it. Only `push` uses this — the
+   * relay holds the key that signs it. False when offline.
+   */
+  sendToRelay(frame: { t: "push" }): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false;
+    try {
+      this.socket.send(JSON.stringify(frame));
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -250,7 +265,7 @@ export class RelayClient {
         // A `hello` is a new socket, and the peer's counters restart at zero
         // with it, so the window this channel remembers from the last connection
         // has to be cleared or that first frame reads as a replay — which
-        // stranded the app on "getting the list of agents" and left `pew2 pair`
+        // stranded the app on "getting the list of agents" and left `tappy pair`
         // waiting for a phone that had already arrived.
         //
         // The proof comes first, and the clearing is only reachable through it.
@@ -301,7 +316,7 @@ export class RelayClient {
         // Caught, like the call in `onopen`. This one was missed when that was
         // fixed, and it is the worse of the two: it runs the moment a phone
         // arrives, so a transient scan failure took the daemon down at exactly
-        // the moment someone was watching `pew2 pair` for confirmation.
+        // the moment someone was watching `tappy pair` for confirmation.
         void this.options.daemon.refreshProviders().catch(() => {
           // The phone is joined either way; the next refresh carries the list.
         });
@@ -317,8 +332,8 @@ export class RelayClient {
         // Not mirrored to `onBroadcast` — it is addressed to the client that
         // asked, and replaying it to the desktop's own listeners would re-run
         // events they have already seen.
-        for (const catchUp of this.options.daemon.catchUp(wire.readCursors(hello.cursors))) {
-          this.send(catchUp);
+        for (const frame of this.options.daemon.greet(wire.readCursors(hello.cursors))) {
+          this.send(frame);
         }
         return;
       }

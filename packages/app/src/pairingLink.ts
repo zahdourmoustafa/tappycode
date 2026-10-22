@@ -71,7 +71,7 @@ export function parsePairing(input: string, deviceId = "phone"): ParseResult {
   const relayToken = url.searchParams.get("pairing");
   const token = url.searchParams.get("token") ?? relayToken;
   if (!token) {
-    return { ok: false, error: "No token in that link. Run `pew2 pair` again." };
+    return { ok: false, error: "No token in that link. Run `tappy pair` again." };
   }
   if (token.length < MIN_TOKEN_LENGTH) {
     // The daemon would reject this anyway; failing here explains why.
@@ -83,7 +83,7 @@ export function parsePairing(input: string, deviceId = "phone"): ParseResult {
   // as a comment — either way the connection could only fail later, opaquely.
   const key = new URLSearchParams(url.hash.replace(/^#/, "")).get("k");
   if (!key) {
-    return { ok: false, error: "That link has no encryption key. Update pew2 and run `pew2 pair`." };
+    return { ok: false, error: "That link has no encryption key. Update tappy and run `tappy pair`." };
   }
   const keyHex = hexFromBase64Url(key);
   if (!keyHex) {
@@ -101,7 +101,7 @@ export function parsePairing(input: string, deviceId = "phone"): ParseResult {
     // The relay answers 400 without this, which surfaces as a socket that just
     // never opens and no explanation anywhere.
     //
-    // Always overwritten, never kept. `pew2 pair` bakes a literal `deviceId=phone`
+    // Always overwritten, never kept. `tappy pair` bakes a literal `deviceId=phone`
     // into the printed link purely so that URL is valid on its own — and honouring
     // it would make every phone that ever scanned a QR call itself "phone". The
     // daemon admits one device per pairing and tells them apart by this id, so a

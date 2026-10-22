@@ -22,7 +22,7 @@ export const EASE = {
 } as const satisfies Record<string, Bezier>;
 
 /**
- * Springs, one vocabulary app-wide. pew2 settles rather than bounces: every
+ * Springs, one vocabulary app-wide. tappy settles rather than bounces: every
  * spring here is near critically damped (dampingRatio ≥ 0.9), so a thing
  * arrives, eases in and stops, with no overshoot and no wobble. Bouncy
  * springs (low damping, high stiffness) read as gooey and were removed.
@@ -100,7 +100,7 @@ export function dissolvePlan(kind: DissolveKind, reduceMotion: boolean, delay = 
  * is newer than anything already seen. Recycled cells, replays and scrolling
  * back through history never re-run an entrance.
  *
- * Ids here are ordinal positions (a turn's index in the thread), because pew2
+ * Ids here are ordinal positions (a turn's index in the thread), because tappy
  * turn keys are strings; `settle` marks a range as already on screen.
  */
 export interface EntranceLifetime {

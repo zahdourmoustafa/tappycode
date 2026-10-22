@@ -17,7 +17,7 @@
     "Google"
   ],
   "license": "Apache-2.0",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#4285f4",
     "env": [

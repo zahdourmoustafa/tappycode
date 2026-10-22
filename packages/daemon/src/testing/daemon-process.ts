@@ -15,10 +15,10 @@
  *
  * Isolated from the developer's machine on every axis that could leak:
  * `HOME` is a fresh temp directory, so stored preferences, workspaces and logs
- * belong to the test rather than to whoever ran it; `PEW2_TOKEN` derives the
- * pairing rather than minting and storing one; `PEW2_PORT=0` lets the OS pick a
+ * belong to the test rather than to whoever ran it; `TAPPY_TOKEN` derives the
+ * pairing rather than minting and storing one; `TAPPY_PORT=0` lets the OS pick a
  * free port, so parallel runs cannot collide on a hardcoded one; and every
- * other `PEW2_*` variable is dropped, because a developer with `PEW2_RELAY` set
+ * other `TAPPY_*` variable is dropped, because a developer with `TAPPY_RELAY` set
  * would otherwise have their tests dial a real relay.
  */
 import { mkdtemp, rm } from "node:fs/promises";
@@ -44,7 +44,7 @@ export interface RunningDaemon {
   /**
    * The LAN connection token, which is also the relay room id.
    *
-   * Derived from the key, not the `PEW2_TOKEN` secret that seeded it — the
+   * Derived from the key, not the `TAPPY_TOKEN` secret that seeded it — the
    * daemon checks this value on the query string, and connecting with the
    * secret instead is refused with a 401 before the socket is ever upgraded.
    */
@@ -84,7 +84,7 @@ export interface DaemonOptions {
  * A secret long enough to satisfy `pairingFromToken`, which refuses a short one
  * rather than deriving a guessable key from it.
  */
-const DEFAULT_SECRET = "pew2-test-pairing-secret-0123456789abcdef";
+const DEFAULT_SECRET = "tappy-test-pairing-secret-0123456789abcdef";
 
 /**
  * Spawn a daemon and wait until it is listening.
@@ -97,22 +97,22 @@ const DEFAULT_SECRET = "pew2-test-pairing-secret-0123456789abcdef";
 export async function startDaemon(options: DaemonOptions = {}): Promise<RunningDaemon> {
   const secret = options.secret ?? DEFAULT_SECRET;
   const { token, key } = pairingFromToken(secret);
-  const home = await mkdtemp(join(tmpdir(), "pew2-e2e-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-e2e-"));
 
-  // Rebuilt rather than spread over: a developer's `PEW2_RELAY` would make the
-  // test daemon dial a real relay, and `PEW2_EXPERIMENTAL` unset would hide the
+  // Rebuilt rather than spread over: a developer's `TAPPY_RELAY` would make the
+  // test daemon dial a real relay, and `TAPPY_EXPERIMENTAL` unset would hide the
   // echo agent every scenario here depends on.
   const env: Record<string, string> = {};
   for (const [name, value] of Object.entries(process.env)) {
-    if (value !== undefined && !name.startsWith("PEW2_")) env[name] = value;
+    if (value !== undefined && !name.startsWith("TAPPY_")) env[name] = value;
   }
   Object.assign(env, {
     HOME: home,
-    PEW2_PORT: "0",
-    PEW2_TOKEN: secret,
+    TAPPY_PORT: "0",
+    TAPPY_TOKEN: secret,
     // Surfaces the echo agent, which is the only provider that can run with no
     // API key and no network.
-    PEW2_EXPERIMENTAL: "1",
+    TAPPY_EXPERIMENTAL: "1",
     ...options.env,
   });
 
@@ -166,7 +166,7 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<RunningD
       };
 
       const check = () => {
-        const match = output.match(/pew2 daemon listening on port (\d+)/);
+        const match = output.match(/tappy daemon listening on port (\d+)/);
         if (match) {
           finish();
           resolvePort(Number(match[1]));

@@ -36,25 +36,25 @@ export interface StoredPairing {
  * and an absent token is not a problem — starting the daemon mints it.
  */
 async function readPairing(env: NodeJS.ProcessEnv): Promise<StoredPairing | undefined> {
-  if (env.PEW2_TOKEN) {
+  if (env.TAPPY_TOKEN) {
     try {
-      return { ...pairingFromToken(env.PEW2_TOKEN), relay: env.PEW2_RELAY };
+      return { ...pairingFromToken(env.TAPPY_TOKEN), relay: env.TAPPY_RELAY };
     } catch {
-      // A `PEW2_TOKEN` below the entropy floor. `doctor` is the command someone
+      // A `TAPPY_TOKEN` below the entropy floor. `doctor` is the command someone
       // runs *because* something is wrong, so it reports that as a problem
       // rather than throwing the same error the daemon already refused to start
       // with — a diagnosis that crashes tells them less than the failure did.
-      return env.PEW2_RELAY ? { relay: env.PEW2_RELAY } : undefined;
+      return env.TAPPY_RELAY ? { relay: env.TAPPY_RELAY } : undefined;
     }
   }
   try {
     const parsed = JSON.parse(await readFile(pairingPath(env), "utf8")) as StoredPairing;
     return {
       token: typeof parsed.token === "string" ? parsed.token : undefined,
-      relay: env.PEW2_RELAY ?? (typeof parsed.relay === "string" ? parsed.relay : undefined),
+      relay: env.TAPPY_RELAY ?? (typeof parsed.relay === "string" ? parsed.relay : undefined),
     };
   } catch {
-    return env.PEW2_RELAY ? { relay: env.PEW2_RELAY } : undefined;
+    return env.TAPPY_RELAY ? { relay: env.TAPPY_RELAY } : undefined;
   }
 }
 
@@ -106,11 +106,11 @@ export interface DoctorReport {
  *
  * The hardcoded `bun run packages/daemon/src/server.ts` is only true inside a
  * source checkout. Someone who ran the curl installer has no such directory,
- * and being handed a path that does not exist reads as pew2 not knowing what it
+ * and being handed a path that does not exist reads as tappy not knowing what it
  * shipped — on the screen whose entire job is telling them what to do next.
  */
 function daemonStartCommand(): string {
-  return isCompiled() ? "pew2 serve" : "PEW2_EXPERIMENTAL=1 bun run packages/daemon/src/server.ts";
+  return isCompiled() ? "tappy serve" : "TAPPY_EXPERIMENTAL=1 bun run packages/daemon/src/server.ts";
 }
 
 export interface DoctorOptions {
@@ -134,7 +134,7 @@ export interface DoctorOptions {
 }
 
 export function daemonPort(env: NodeJS.ProcessEnv = process.env): number {
-  return Number(env.PEW2_PORT ?? 8787);
+  return Number(env.TAPPY_PORT ?? 8787);
 }
 
 export function daemonUrl(env: NodeJS.ProcessEnv = process.env): string {
@@ -180,7 +180,7 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
       id: "no-providers",
       severity: "error",
       detail: "No agents configured.",
-      fix: "pew2 detect",
+      fix: "tappy detect",
     });
   }
 
@@ -188,11 +188,11 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
     if (isAvailable(provider)) continue;
 
     // An agent that is not on this machine is not a problem, and this is the
-    // one place that decides it. pew2 ships thirteen manifests and nobody
+    // one place that decides it. tappy ships thirteen manifests and nobody
     // installs thirteen agents, so treating absence as a finding meant a normal
     // laptop reported eight warnings and advised deleting the manifests that
     // make those agents installable later. The catalogue of what you could add
-    // is `pew2 providers list`; this command is only about what is broken.
+    // is `tappy providers list`; this command is only about what is broken.
     if (provider.commandMissing) continue;
 
     problems.push({
@@ -215,8 +215,8 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
     // A service that launchd holds *installed* while nothing answers is not the
     // same problem as no daemon at all: it is one that starts and dies, and
     // launchd's `KeepAlive` hides the loop by restarting it for ever. That is
-    // the state every binary install was in — the plist named `pew2 run
-    // /$bunfs/server.ts`, pew2 printed its help and exited 1, and doctor said
+    // the state every binary install was in — the plist named `tappy run
+    // /$bunfs/server.ts`, tappy printed its help and exited 1, and doctor said
     // only "nothing serving", which reads as "not started yet".
     const crashLooping = service.state === "installed" && service.lastExitCode !== 0;
     problems.push({
@@ -228,25 +228,25 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
       // Reinstalling rewrites the plist, which is exactly what repairs a bad
       // one. The old fix named a path inside a source checkout — advice nobody
       // who installed a binary could follow.
-      fix: crashLooping ? "pew2 service install" : daemonStartCommand(),
+      fix: crashLooping ? "tappy service install" : daemonStartCommand(),
     });
   }
 
   // Starting the daemon mints a token, so an unreachable daemon already implies
   // this and repeating it would give an agent two fixes for one cause.
   if (reachable && !(await (options.pairing ?? readPairing)(env))?.token) {
-    // `PEW2_TOKEN` wins over anything on disk, so when it is set and unusable,
-    // "run pew2 pair" is advice that cannot work — the minted token would be
+    // `TAPPY_TOKEN` wins over anything on disk, so when it is set and unusable,
+    // "run tappy pair" is advice that cannot work — the minted token would be
     // ignored in favour of the env var that caused this.
     const weakEnvToken =
-      env.PEW2_TOKEN !== undefined && env.PEW2_TOKEN.length < MIN_TOKEN_LENGTH;
+      env.TAPPY_TOKEN !== undefined && env.TAPPY_TOKEN.length < MIN_TOKEN_LENGTH;
     problems.push({
       id: "not-paired",
       severity: "error",
       detail: weakEnvToken
-        ? `PEW2_TOKEN is ${env.PEW2_TOKEN?.length} characters; it is the encryption key's only entropy and must be at least ${MIN_TOKEN_LENGTH}.`
+        ? `TAPPY_TOKEN is ${env.TAPPY_TOKEN?.length} characters; it is the encryption key's only entropy and must be at least ${MIN_TOKEN_LENGTH}.`
         : "No pairing token.",
-      fix: weakEnvToken ? "export PEW2_TOKEN=$(openssl rand -hex 32)" : "pew2 pair",
+      fix: weakEnvToken ? "export TAPPY_TOKEN=$(openssl rand -hex 32)" : "tappy pair",
     });
   }
 
@@ -258,7 +258,7 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
       id: "not-autostarted",
       severity: "warning",
       detail: "Daemon will not restart after a reboot.",
-      fix: "pew2 service install",
+      fix: "tappy service install",
     });
   }
 
@@ -275,7 +275,7 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
       id: "no-lan-address",
       severity: "error",
       detail: "No network address and no relay. Nothing can reach this machine.",
-      fix: "Connect to Wi-Fi, or run: pew2 relay <url>",
+      fix: "Connect to Wi-Fi, or run: tappy relay <url>",
     });
   }
 
@@ -284,7 +284,7 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
       id: "local-only",
       severity: "warning",
       detail: "No relay. Works on the same network only.",
-      fix: "pew2 relay wss://your-relay.workers.dev",
+      fix: "tappy relay wss://your-relay.workers.dev",
     });
   }
 

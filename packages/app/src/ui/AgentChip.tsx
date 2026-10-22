@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
 import { agentChipColors } from "../agentChipColors";
 import { Glass } from "./Glass";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { haptics } from "./haptics";
 import type { Provider } from "../useDaemon";
 
@@ -25,10 +25,10 @@ function AgentChipView({ provider, selected, onPress }: AgentChipProps) {
       onPress={() => { haptics.select(); onPress(provider.id); }}
       style={[styles.body, { backgroundColor: colors.background }]}
     >
-      {/* Each agent's own Pew, in its brand colour. Picking an agent wakes it;
+      {/* Each agent's own Tappy, in its brand colour. Picking an agent wakes it;
           the others doze and breathe, and an unavailable one lies still. */}
       <View style={!enabled && styles.unavailable}>
-        <Pew size={28} style={styles.pew} color={provider.color} mood={selected ? "idle" : "sleepy"} paused={!enabled} />
+        <Tappy size={28} style={styles.tappy} color={provider.color} mood={selected ? "idle" : "sleepy"} paused={!enabled} />
       </View>
       <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>{provider.name}</Text>
     </Pressable>
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   body: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: theme.size.touch, paddingHorizontal: theme.space(4), paddingVertical: theme.space(1), gap: theme.space(2) },
   unavailable: { opacity: 0.4 },
   // The globe fills the middle of its box; the rest is room to bounce.
-  pew: { margin: -theme.space(1) },
+  tappy: { margin: -theme.space(1) },
   label: { fontSize: theme.font.small, fontWeight: "700", lineHeight: theme.font.small + 4, maxWidth: 160 },
 });
 export const AgentChip = memo(AgentChipView, (before, after) =>

@@ -15,7 +15,7 @@
  * process is only survivable where something restarts it. Checked, not assumed:
  *
  * - **macOS — yes.** `cli/service.ts` installs `~/Library/LaunchAgents/
- *   dev.pew2.daemon.plist` with `KeepAlive: true`, so launchd relaunches the
+ *   dev.tappy.daemon.plist` with `KeepAlive: true`, so launchd relaunches the
  *   daemon whenever it exits. The daemon never has to re-exec itself; exiting
  *   at an idle moment is the whole mechanism, and launchd's 10s restart
  *   throttle is the only pause the user could notice.
@@ -45,7 +45,7 @@ import pkg from "../../package.json" with { type: "json" };
 export const CURRENT_VERSION = (pkg as { version: string }).version;
 
 /** Where releases are published. `install.sh` resolves the same repository. */
-export const RELEASE_API_URL = "https://api.github.com/repos/KenKaiii/pew2/releases/latest";
+export const RELEASE_API_URL = "https://api.github.com/repos/zahdourmoustafa/tappycode/releases/latest";
 
 /**
  * How long to wait on GitHub before giving up.
@@ -157,7 +157,7 @@ export async function checkForUpdate(options: CheckOptions = {}): Promise<Update
       headers: {
         // GitHub refuses requests without one, and the version makes an
         // unexpected traffic pattern traceable to a build.
-        "User-Agent": `pew2-daemon/${currentVersion}`,
+        "User-Agent": `tappy-daemon/${currentVersion}`,
         Accept: "application/vnd.github+json",
       },
       // Bounded rather than open-ended; see CHECK_TIMEOUT_MS.

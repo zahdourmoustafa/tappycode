@@ -1,7 +1,7 @@
 /**
- * Pew, pew2's living mascot, as a React Native component.
+ * Tappy, tappy's living mascot, as a React Native component.
  *
- *   <Pew size={120} mood="working" color="#4ade80" interactive />
+ *   <Tappy size={120} mood="working" color="#4ade80" interactive />
  *
  * The body is simulated and painted entirely on the UI thread: a Reanimated
  * frame callback advances `engine.ts` and records the frame into a Skia
@@ -11,7 +11,7 @@
  *
  * It sleeps when nobody can see it: the app in the background, `paused`, or
  * Reduce Motion (then it holds one settled, still pose in its mood). A small
- * Pew runs at half rate; nobody can tell at chip size and it halves the cost.
+ * Tappy runs at half rate; nobody can tell at chip size and it halves the cost.
  *
  * Decorative by default (hidden from assistive tech); pass
  * `accessibilityLabel` when it carries meaning on its own.
@@ -25,29 +25,29 @@ import { haptics } from "../ui/haptics";
 import { useAppActive } from "../ui/useAppActive";
 import { useReducedMotion } from "../ui/useReducedMotion";
 import {
-  advancePew,
-  dragPew,
-  makePewBody,
-  pewSleepSeed,
-  PEW_SLEEP_STYLES,
-  paintPew,
-  pokePew,
-  releasePew,
-  settlePew,
-  type PewBody,
-  type PewMood,
-  type PewPainter,
-  type PewPalette,
+  advanceTappy,
+  dragTappy,
+  makeTappyBody,
+  tappySleepSeed,
+  TAPPY_SLEEP_STYLES,
+  paintTappy,
+  pokeTappy,
+  releaseTappy,
+  settleTappy,
+  type TappyBody,
+  type TappyMood,
+  type TappyPainter,
+  type TappyPalette,
   type RGB,
 } from "./engine";
-import { pewPalette } from "./palette";
+import { tappyPalette } from "./palette";
 import { beginFrame, blankPicture, endFrame } from "../ui/skiaFrame";
 
-export interface PewProps {
+export interface TappyProps {
   /** Edge of its square box, in points. */
   size: number;
-  mood?: PewMood;
-  /** The agent's brand colour; none is pew2's own coral. */
+  mood?: TappyMood;
+  /** The agent's brand colour; none is tappy's own coral. */
   color?: string;
   /** Drag to spin it, tap to poke it. */
   interactive?: boolean;
@@ -66,7 +66,7 @@ export interface PewProps {
   /** Freeze it (an off-screen row, a closed drawer). */
   paused?: boolean;
   accessibilityLabel?: string;
-  /** Picks one of ten sleeping styles (hashed), e.g. a provider id, so a column of dozing Pews differs. */
+  /** Picks one of ten sleeping styles (hashed), e.g. a provider id, so a column of dozing Tappies differs. */
   sleepKey?: string;
   /**
    * Picks the sleeping style outright (0–9) instead of from the key's hash, for
@@ -84,7 +84,7 @@ const HALF_RATE_BELOW = 40;
 /**
  * The Skia objects a frame paints with, made once per UI runtime and reused.
  *
- * Measured: the hero Pew used to cost so much UI-thread time per frame that the
+ * Measured: the hero Tappy used to cost so much UI-thread time per frame that the
  * whole screen fell to ~20fps (the keyboard-tracking events arrived every 50ms
  * instead of every 16ms, so the composer stepped behind the keyboard). Most of
  * it was allocation and string parsing per dot: three Paints and a set of blur
@@ -92,7 +92,7 @@ const HALF_RATE_BELOW = 40;
  * string and parsed back by `Skia.Color`. Now the paints and filters live for
  * the runtime and a colour is four floats written into one reused array.
  */
-interface PewTools {
+interface TappyTools {
   fill: ReturnType<typeof Skia.Paint>;
   halo: ReturnType<typeof Skia.Paint>;
   stroke: ReturnType<typeof Skia.Paint>;
@@ -102,10 +102,10 @@ interface PewTools {
   shape: ReturnType<typeof Skia.Path.Make>;
 }
 
-function pewTools(): PewTools {
+function tappyTools(): TappyTools {
   "worklet";
-  const g = globalThis as unknown as { __pewTools?: PewTools };
-  if (g.__pewTools) return g.__pewTools;
+  const g = globalThis as unknown as { __tappyTools?: TappyTools };
+  if (g.__tappyTools) return g.__tappyTools;
   const fill = Skia.Paint();
   fill.setAntiAlias(true);
   const halo = Skia.Paint();
@@ -115,14 +115,14 @@ function pewTools(): PewTools {
   stroke.setAntiAlias(true);
   stroke.setStyle(1); // Stroke
   stroke.setStrokeCap(1); // Round
-  g.__pewTools = { fill, halo, stroke, col: new Float32Array(4), blurs: {}, shape: Skia.Path.Make() };
-  return g.__pewTools;
+  g.__tappyTools = { fill, halo, stroke, col: new Float32Array(4), blurs: {}, shape: Skia.Path.Make() };
+  return g.__tappyTools;
 }
 
 /** Paints one recorded frame through Skia. */
-function skiaPainter(canvas: SkCanvas): PewPainter {
+function skiaPainter(canvas: SkCanvas): TappyPainter {
   "worklet";
-  const { fill, halo, stroke, col, blurs, shape } = pewTools();
+  const { fill, halo, stroke, col, blurs, shape } = tappyTools();
   // Writes the colour into the shared array; setColor copies it on the call.
   const color = (c: RGB, a: number) => {
     col[0] = c[0] / 255;
@@ -209,65 +209,65 @@ function skiaPainter(canvas: SkCanvas): PewPainter {
 }
 
 /** One frame, recorded with the runtime's shared recorder (see `skiaFrame.ts`). */
-function recordFrame(body: PewBody, t: number, mood: PewMood, pal: PewPalette): SkPicture {
+function recordFrame(body: TappyBody, t: number, mood: TappyMood, pal: TappyPalette): SkPicture {
   "worklet";
   const canvas = beginFrame(body.S, body.S);
-  paintPew(body, t, mood, pal, skiaPainter(canvas));
+  paintTappy(body, t, mood, pal, skiaPainter(canvas));
   return endFrame();
 }
 
 interface TickerProps {
   S: number;
   seed: number;
-  body: SharedValue<PewBody | null>;
-  mood: SharedValue<PewMood>;
-  palette: SharedValue<PewPalette>;
+  body: SharedValue<TappyBody | null>;
+  mood: SharedValue<TappyMood>;
+  palette: SharedValue<TappyPalette>;
   /** The palette actually painted, easing toward `palette`. */
-  shown: SharedValue<PewPalette | null>;
+  shown: SharedValue<TappyPalette | null>;
   picture: SharedValue<SkPicture>;
   clock: SharedValue<number>;
   /** Seconds since the last repaint (repaints are capped per second). */
   sinceDraw: SharedValue<number>;
-  /** While strictly between 0 and 1, hold still (see PewProps.holdWhile). */
+  /** While strictly between 0 and 1, hold still (see TappyProps.holdWhile). */
   hold?: SharedValue<number>;
 }
 
 const PALETTE_KEYS = ["base", "light", "dark", "glow", "eye", "off"] as const;
 
 /**
- * The heartbeat, mounted only while Pew is awake. Mounting and unmounting is
+ * The heartbeat, mounted only while Tappy is awake. Mounting and unmounting is
  * how it starts and stops: Reanimated registers a frame callback in an effect,
  * and toggling one with `setActive` while it re-registers can reach a callback
  * that is already gone. The callback is stable for the same reason — a new
  * function every render would re-register it every render.
  */
-function PewTicker({ S, seed, body, mood, palette, shown, picture, clock, sinceDraw, hold }: TickerProps) {
+function TappyTicker({ S, seed, body, mood, palette, shown, picture, clock, sinceDraw, hold }: TickerProps) {
   const tick = useCallback(
     (info: FrameInfo) => {
       "worklet";
-      if (body.value === null || body.value.S !== S || body.value.seed !== seed) body.value = makePewBody(S, seed < 0 ? undefined : seed);
+      if (body.value === null || body.value.S !== S || body.value.seed !== seed) body.value = makeTappyBody(S, seed < 0 ? undefined : seed);
       const B = body.value;
       const dt = Math.min(1 / 30, Math.max(0.001, (info.timeSincePreviousFrame ?? 16) / 1000));
       clock.value += dt;
-      advancePew(B, clock.value, dt, mood.value);
+      advanceTappy(B, clock.value, dt, mood.value);
       // Something on screen is moving that must not be starved of frames
       // (the keyboard, while the composer tracks it): hold this pose.
       if (hold && hold.value > 0.01 && hold.value < 0.99) return;
-      // Repainted at most 60 times a second (30 for a small Pew), whatever the
+      // Repainted at most 60 times a second (30 for a small Tappy), whatever the
       // display's rate: a 120Hz screen otherwise doubles the cost of something
       // nobody can see the difference in. The simulation still runs every frame.
       sinceDraw.value += dt;
       if (sinceDraw.value < (S < HALF_RATE_BELOW ? 1 / 31 : 1 / 61)) return;
       sinceDraw.value = 0;
       // A colour change morphs: the painted palette eases toward the target,
-      // so switching agent recolours the same Pew instead of swapping it.
+      // so switching agent recolours the same Tappy instead of swapping it.
       const target = palette.value;
       let pal = shown.value;
       if (pal === null) pal = target;
       else if (pal !== target) {
         const k = 1 - Math.exp(-dt * 9);
         let done = true;
-        const next = {} as PewPalette;
+        const next = {} as TappyPalette;
         for (const key of PALETTE_KEYS) {
           const a = pal[key];
           const b = target[key];
@@ -286,13 +286,13 @@ function PewTicker({ S, seed, body, mood, palette, shown, picture, clock, sinceD
   return null;
 }
 
-function PewView({ size, mood = "idle", color, interactive: interactiveProp = false, onPress, paused = false, accessibilityLabel, sleepKey, sleepStyle, holdWhile, style }: PewProps) {
-  const hashed = sleepKey === undefined ? -1 : pewSleepSeed(sleepKey);
+function TappyView({ size, mood = "idle", color, interactive: interactiveProp = false, onPress, paused = false, accessibilityLabel, sleepKey, sleepStyle, holdWhile, style }: TappyProps) {
+  const hashed = sleepKey === undefined ? -1 : tappySleepSeed(sleepKey);
   // The style is the seed's remainder by the style count: swap just that part.
   const seed =
     sleepStyle === undefined
       ? hashed
-      : Math.max(0, hashed) - (Math.max(0, hashed) % PEW_SLEEP_STYLES) + (((sleepStyle % PEW_SLEEP_STYLES) + PEW_SLEEP_STYLES) % PEW_SLEEP_STYLES);
+      : Math.max(0, hashed) - (Math.max(0, hashed) % TAPPY_SLEEP_STYLES) + (((sleepStyle % TAPPY_SLEEP_STYLES) + TAPPY_SLEEP_STYLES) % TAPPY_SLEEP_STYLES);
   const interactive = interactiveProp || onPress !== undefined;
   const pressRef = useRef(onPress);
   pressRef.current = onPress;
@@ -304,13 +304,13 @@ function PewView({ size, mood = "idle", color, interactive: interactiveProp = fa
   const S = Math.max(10, Math.round(size));
   const appActive = useAppActive();
   const reduceMotion = useReducedMotion();
-  const palette = useMemo(() => pewPalette(color), [color]);
+  const palette = useMemo(() => tappyPalette(color), [color]);
 
   // UI-thread state. The body is rebuilt only when the size changes.
-  const body = useSharedValue<PewBody | null>(null);
-  const moodSV = useSharedValue<PewMood>(mood);
-  const paletteSV = useSharedValue<PewPalette>(palette);
-  const shownPal = useSharedValue<PewPalette | null>(null);
+  const body = useSharedValue<TappyBody | null>(null);
+  const moodSV = useSharedValue<TappyMood>(mood);
+  const paletteSV = useSharedValue<TappyPalette>(palette);
+  const shownPal = useSharedValue<TappyPalette | null>(null);
   // The app-wide blank, never one of its own: see skiaFrame.ts (the crash).
   const picture = useSharedValue<SkPicture>(blankPicture());
   const clock = useSharedValue(0);
@@ -331,10 +331,10 @@ function PewView({ size, mood = "idle", color, interactive: interactiveProp = fa
     // On the UI thread like every other frame: the engine paints through
     // module-level scratch colours, and once a worklet has captured those the
     // JS-thread copies are frozen, so painting here would warn on every write.
-    runOnUI((size: number, m: PewMood, pal: PewPalette, sd: number) => {
+    runOnUI((size: number, m: TappyMood, pal: TappyPalette, sd: number) => {
       "worklet";
-      const still = makePewBody(size, sd < 0 ? undefined : sd);
-      settlePew(still, 1.2, m);
+      const still = makeTappyBody(size, sd < 0 ? undefined : sd);
+      settleTappy(still, 1.2, m);
       picture.value = recordFrame(still, 1.2, m, pal);
     })(S, mood, palette, seed);
   }, [live, S, mood, palette, picture, seed]);
@@ -349,15 +349,15 @@ function PewView({ size, mood = "idle", color, interactive: interactiveProp = fa
       })
       .onChange((e) => {
         "worklet";
-        if (body.value) dragPew(body.value, e.changeX, e.changeY, 1 / 60);
+        if (body.value) dragTappy(body.value, e.changeX, e.changeY, 1 / 60);
       })
       .onFinalize(() => {
         "worklet";
-        if (body.value) releasePew(body.value);
+        if (body.value) releaseTappy(body.value);
       });
     const tap = Gesture.Tap().onEnd((e) => {
       "worklet";
-      if (body.value) pokePew(body.value, e.x, e.y);
+      if (body.value) pokeTappy(body.value, e.x, e.y);
       runOnJS(tapped)();
     });
     return Gesture.Exclusive(pan, tap);
@@ -378,7 +378,7 @@ function PewView({ size, mood = "idle", color, interactive: interactiveProp = fa
       importantForAccessibility={accessibilityLabel === undefined ? "no-hide-descendants" : "yes"}
     >
       {live ? (
-        <PewTicker S={S} seed={seed} body={body} mood={moodSV} palette={paletteSV} shown={shownPal} picture={picture} clock={clock} sinceDraw={sinceDraw} hold={holdWhile} />
+        <TappyTicker S={S} seed={seed} body={body} mood={moodSV} palette={paletteSV} shown={shownPal} picture={picture} clock={clock} sinceDraw={sinceDraw} hold={holdWhile} />
       ) : null}
       {/* The canvas never takes touches (pointerEvents none), so a detector
           attached to it saw nothing: a real view holds the gesture instead. */}
@@ -395,4 +395,4 @@ function PewView({ size, mood = "idle", color, interactive: interactiveProp = fa
   );
 }
 
-export const Pew = memo(PewView);
+export const Tappy = memo(TappyView);

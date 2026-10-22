@@ -15,7 +15,7 @@ import {
 } from "./known-projects.js";
 
 async function scratch(): Promise<NodeJS.ProcessEnv> {
-  return { PEW2_HOME: await mkdtemp(join(tmpdir(), "pew2-known-")) };
+  return { TAPPY_HOME: await mkdtemp(join(tmpdir(), "tappy-known-")) };
 }
 
 test("a project survives the process that stored it", async () => {
@@ -47,7 +47,7 @@ test("a second daemon adds to the list instead of replacing it", async () => {
   // every project the other daemon had accepted.
   const env = await scratch();
   await writeFile(
-    join(env.PEW2_HOME!, "known-projects.json"),
+    join(env.TAPPY_HOME!, "known-projects.json"),
     JSON.stringify(["/from-the-other-daemon"]),
     "utf8",
   );
@@ -75,7 +75,7 @@ test("an unreadable file is a miss, not a failure", async () => {
   // re-pick. Throwing here would instead take out session start, which is the
   // one thing that must keep working.
   const env = await scratch();
-  await writeFile(join(env.PEW2_HOME!, "known-projects.json"), "{ not json", "utf8");
+  await writeFile(join(env.TAPPY_HOME!, "known-projects.json"), "{ not json", "utf8");
 
   expect(await readKnownProjects(env)).toEqual([]);
 
@@ -86,7 +86,7 @@ test("an unreadable file is a miss, not a failure", async () => {
 test("entries that are not paths are dropped rather than trusted", async () => {
   const env = await scratch();
   await writeFile(
-    join(env.PEW2_HOME!, "known-projects.json"),
+    join(env.TAPPY_HOME!, "known-projects.json"),
     JSON.stringify(["/real", 7, null, { cwd: "/nope" }]),
     "utf8",
   );

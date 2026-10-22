@@ -154,6 +154,23 @@ async function request(): Promise<boolean> {
 }
 
 /**
+ * Where notification permission stands, without asking. "undetermined" is the
+ * only state worth a first-run screen: a yes needs nothing, and after a no the
+ * system will not show its prompt again anyway.
+ */
+export async function notificationPermissionState(): Promise<"granted" | "denied" | "undetermined"> {
+  try {
+    const existing = await Notifications.getPermissionsAsync();
+    if (existing.granted) return "granted";
+    return existing.canAskAgain ? "undetermined" : "denied";
+  } catch {
+    // A simulator or a locked-down device: skip the screen rather than show a
+    // button that cannot work.
+    return "denied";
+  }
+}
+
+/**
  * Ask for permission, caching only a yes.
  *
  * A no is re-checked because the user can grant it in Settings later, and

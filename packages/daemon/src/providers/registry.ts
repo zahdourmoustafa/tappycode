@@ -17,7 +17,7 @@ import {
   resolveCommand,
   type ProviderManifest as Manifest,
   type ProviderManifestInput,
-} from "@pew2/protocol";
+} from "@tappy/protocol";
 
 export interface LoadedProvider {
   manifest: Manifest;
@@ -45,8 +45,8 @@ function platformOf(env: NodeJS.ProcessEnv): Platform {
   // An env override rather than an argument threaded through six call sites:
   // the tests that need it are about resolution, and everything else should not
   // have to know this exists.
-  if (env.PEW2_FAKE_PLATFORM === "win32") return "win32";
-  if (env.PEW2_FAKE_PLATFORM === "posix") return "posix";
+  if (env.TAPPY_FAKE_PLATFORM === "win32") return "win32";
+  if (env.TAPPY_FAKE_PLATFORM === "posix") return "posix";
   return process.platform === "win32" ? "win32" : "posix";
 }
 
@@ -187,13 +187,13 @@ export function defaultProvidersDir(): string {
 /**
  * Where manifests the user (or their coding agent) creates live.
  *
- * Kept out of the repo on purpose: `pew2 detect` runs on a machine that may
+ * Kept out of the repo on purpose: `tappy detect` runs on a machine that may
  * have no checkout at all, and a globally installed CLI must not write into
- * whatever directory it happened to be invoked from. `PEW2_HOME` overrides it
+ * whatever directory it happened to be invoked from. `TAPPY_HOME` overrides it
  * so tests never touch a real home directory.
  */
 export function userProvidersDir(env: NodeJS.ProcessEnv = process.env): string {
-  return join(env.PEW2_HOME ?? join(homedir(), ".pew2"), "providers");
+  return join(env.TAPPY_HOME ?? join(homedir(), ".tappy"), "providers");
 }
 
 /**
@@ -229,7 +229,7 @@ function addManifest(
     parsed.distribution.type === "command"
       ? rawArgs.map((arg) => (/^\.{1,2}\//.test(arg) ? resolve(dirname(source), arg) : arg))
       : rawArgs;
-  const missingEnv = parsed.pew.env
+  const missingEnv = parsed.tappy.env
     .filter((v) => v.required && !env[v.name])
     .map((v) => v.name);
 
@@ -278,7 +278,7 @@ async function loadOneDir(
     entries = await readdir(dir);
   } catch (error) {
     // A directory that does not exist yet contributes nothing and is not a
-    // problem: a fresh machine has no `~/.pew2/providers`, and the CLI is run
+    // problem: a fresh machine has no `~/.tappy/providers`, and the CLI is run
     // from outside the repo. Anything else (permissions, not a directory) is
     // real and must be reported.
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
@@ -336,7 +336,7 @@ async function loadOneDir(
       manifest.distribution.type === "command"
         ? rawArgs.map((arg) => (/^\.{1,2}\//.test(arg) ? resolve(dirname(source), arg) : arg))
         : rawArgs;
-    const missingEnv = manifest.pew.env
+    const missingEnv = manifest.tappy.env
       .filter((v) => v.required && !env[v.name])
       .map((v) => v.name);
     const commandMissing = !canResolveCommand(command, env);

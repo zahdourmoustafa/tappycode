@@ -3,7 +3,7 @@
 > Read this file top to bottom before adding a provider. It is written to be
 > followed exactly, by a person or a coding agent, with no other context.
 
-A **provider** is any agent, app or CLI that shows up in the pew2 mobile app.
+A **provider** is any agent, app or CLI that shows up in the tappy mobile app.
 Adding one means **writing a single JSON file into `providers/`**. There is no
 registration call, no code change, no rebuild.
 
@@ -14,14 +14,14 @@ registration call, no code change, no rebuild.
 Most of the time you do not need this file at all:
 
 ```bash
-pew2 setup            # detect what is installed, configure it, verify it, diagnose
+tappy setup            # detect what is installed, configure it, verify it, diagnose
 ```
 
 Read on only when `setup` reports an agent it does not know about.
 
 ```bash
 bun run packages/daemon/src/cli/index.ts providers add my-agent   # scaffold
-$EDITOR ~/.pew2/providers/my-agent.json                            # point it at your binary
+$EDITOR ~/.tappy/providers/my-agent.json                            # point it at your binary
 bun run packages/daemon/src/cli/index.ts providers verify my-agent # prove it works
 ```
 
@@ -34,7 +34,7 @@ Manifests are read from two directories, highest precedence first:
 
 | Directory | What lives there |
 | --- | --- |
-| `~/.pew2/providers` | Anything you or `pew2 detect` writes. Override the root with `PEW2_HOME`. |
+| `~/.tappy/providers` | Anything you or `tappy detect` writes. Override the root with `TAPPY_HOME`. |
 | `./providers` | The manifests bundled with a checkout. |
 
 Same id in both is deliberate shadowing — yours wins, silently. Same id twice in
@@ -95,7 +95,7 @@ whose `required` variables are missing, so failures are loud and early instead
 of a confusing mid-session crash.
 
 ```json
-"pew": {
+"tappy": {
   "env": [
     { "name": "MY_API_KEY", "description": "Get one at example.com", "required": true }
   ]
@@ -119,7 +119,7 @@ its own login flow (this is why `claude-code` and `codex` do not force one).
   "distribution": { "type": "command", "command": "my-agent", "args": ["--acp"] },
   "repository": "https://github.com/me/my-agent",
   "license": "MIT",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#4285f4",
     "env": [{ "name": "MY_API_KEY", "required": true }]

@@ -17,7 +17,7 @@ import { isCompiled } from "./service.js";
 
 /** An isolated machine: empty PATH, empty home, no daemon. */
 async function sandbox() {
-  const root = await mkdtemp(join(tmpdir(), "pew2-setup-"));
+  const root = await mkdtemp(join(tmpdir(), "tappy-setup-"));
   const bin = join(root, "bin");
   await mkdir(bin, { recursive: true });
   await mkdir(join(root, "home", "providers"), { recursive: true });
@@ -25,7 +25,7 @@ async function sandbox() {
     root,
     bin,
     providersDir: join(root, "home", "providers"),
-    env: { PATH: bin, PEW2_HOME: join(root, "home") } as NodeJS.ProcessEnv,
+    env: { PATH: bin, TAPPY_HOME: join(root, "home") } as NodeJS.ProcessEnv,
   };
 }
 
@@ -45,7 +45,7 @@ test("a bare machine reports blocking problems, each with a fix", async () => {
   expect(ids).toEqual(["daemon-unreachable", "local-only", "no-providers"]);
   // The whole contract: an agent can act on every problem without parsing prose.
   for (const problem of report.problems) expect(problem.fix.length).toBeGreaterThan(0);
-  expect(report.problems.find((p) => p.id === "no-providers")!.fix).toBe("pew2 detect");
+  expect(report.problems.find((p) => p.id === "no-providers")!.fix).toBe("tappy detect");
 });
 
 test("setup configures what is installed and stops blocking once it can run", async () => {
@@ -84,7 +84,7 @@ test("a missing optional API key warns without blocking", async () => {
       version: "1.0.0",
       description: "Test agent.",
       distribution: { type: "command", command: "my-agent", args: [] },
-      pew: { env: [{ name: "OPTIONAL_KEY", required: false }] },
+      tappy: { env: [{ name: "OPTIONAL_KEY", required: false }] },
     }),
   );
 
@@ -106,7 +106,7 @@ test("a required API key is reported but never blocks the loop", async () => {
       version: "1.0.0",
       description: "Test agent.",
       distribution: { type: "command", command: "my-agent", args: [] },
-      pew: { env: [{ name: "NEEDED_KEY", required: true }] },
+      tappy: { env: [{ name: "NEEDED_KEY", required: true }] },
     }),
   );
 
@@ -179,7 +179,7 @@ test("one working agent is enough, whatever the others are doing", async () => {
   });
 
   expect(none.ok).toBe(false);
-  expect(none.nextSteps.join(" ")).toContain("pew2 providers verify");
+  expect(none.nextSteps.join(" ")).toContain("tappy providers verify");
 });
 
 /** Long enough to clear the 32-character floor the pairing token must meet. */
@@ -286,9 +286,9 @@ test("a legacy disabled list is retired, and every agent re-checked once", async
 });
 
 test("a daemon that starts and dies is named as that, not as 'not started'", async () => {
-  // Every binary install was in this state: the plist named `pew2 run
+  // Every binary install was in this state: the plist named `tappy run
   // /$bunfs/server.ts` - a subcommand that did not exist, pointed at a path
-  // inside the executable - so pew2 printed its help and exited 1, KeepAlive
+  // inside the executable - so tappy printed its help and exited 1, KeepAlive
   // restarted it for ever, and doctor said only "nothing serving on ...",
   // which reads as "you have not started it yet".
   const { providersDir, env } = await sandbox();
@@ -303,7 +303,7 @@ test("a daemon that starts and dies is named as that, not as 'not started'", asy
   const problem = report.problems.find((p) => p.id === "daemon-unreachable")!;
   expect(problem.detail).toContain("keeps exiting");
   // Reinstalling rewrites the plist, which is what repairs a bad one.
-  expect(problem.fix).toBe("pew2 service install");
+  expect(problem.fix).toBe("tappy service install");
 });
 
 test("a daemon that was simply never started still says so plainly", async () => {
@@ -320,5 +320,5 @@ test("a daemon that was simply never started still says so plainly", async () =>
   expect(problem.detail).not.toContain("keeps exiting");
   // And never a path from a source checkout when this is a compiled binary:
   // someone who ran the installer has no such directory.
-  if (isCompiled()) expect(problem.fix).toBe("pew2 serve");
+  if (isCompiled()) expect(problem.fix).toBe("tappy serve");
 });

@@ -4,7 +4,7 @@
  *
  * This is the first half of the one-command setup story. A coding agent should
  * not have to know that Claude Code needs an npx adapter while OpenClaw has a
- * built-in `acp` subcommand — it runs `pew2 detect --json`, reads what was
+ * built-in `acp` subcommand — it runs `tappy detect --json`, reads what was
  * found, and acts on what was not.
  *
  * Two rules make it safe to run repeatedly, which is what lets an agent loop on
@@ -13,7 +13,7 @@
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ProviderManifestInput } from "@pew2/protocol";
+import type { ProviderManifestInput } from "@tappy/protocol";
 import { findOnPath, loadProviders, providerDirs, userProvidersDir } from "./registry.js";
 
 export interface CatalogEntry {
@@ -38,7 +38,7 @@ export interface CatalogEntry {
  *
  * Kept to entries that have been verified to speak ACP over stdio. Adding one
  * here is the only code change any agent integration should ever need, and even
- * that is optional — a hand-written manifest in `~/.pew2/providers` works
+ * that is optional — a hand-written manifest in `~/.tappy/providers` works
  * identically.
  */
 export const CATALOG: CatalogEntry[] = [
@@ -59,7 +59,7 @@ export const CATALOG: CatalogEntry[] = [
       },
       repository: "https://github.com/zed-industries/claude-agent-acp",
       license: "Apache-2.0",
-      pew: {
+      tappy: {
         transport: "acp",
         color: "#d97757",
         env: [
@@ -86,7 +86,7 @@ export const CATALOG: CatalogEntry[] = [
       distribution: { type: "command", command: "codex-acp", args: [] },
       repository: "https://github.com/zed-industries/codex-acp",
       license: "Apache-2.0",
-      pew: {
+      tappy: {
         transport: "acp",
         color: "#10a37f",
         env: [
@@ -121,7 +121,7 @@ export const CATALOG: CatalogEntry[] = [
       },
       repository: "https://github.com/google-gemini/gemini-cli",
       license: "Apache-2.0",
-      pew: {
+      tappy: {
         transport: "acp",
         color: "#4285f4",
         env: [
@@ -152,7 +152,7 @@ export const CATALOG: CatalogEntry[] = [
       distribution: { type: "command", command: "openclaw", args: ["acp"] },
       repository: "https://github.com/openclaw/openclaw",
       license: "MIT",
-      pew: {
+      tappy: {
         transport: "acp",
         color: "#c2410c",
         env: [
@@ -201,7 +201,7 @@ export const CATALOG: CatalogEntry[] = [
       // from ~/.hermes/.env, so naming any one key required would gate a
       // correctly configured install — the inverse of the Gemini case, where the
       // key genuinely is the only way in.
-      pew: { transport: "acp", color: "#6366f1" },
+      tappy: { transport: "acp", color: "#6366f1" },
     },
   },
   {
@@ -221,7 +221,7 @@ export const CATALOG: CatalogEntry[] = [
       // they are picked for contrast against it rather than matched exactly to a
       // brand mark. OpenCode's and Cursor's marks are near-black and would be
       // invisible dots.
-      pew: { transport: "acp", color: "#e4e4e7" },
+      tappy: { transport: "acp", color: "#e4e4e7" },
     },
   },
   {
@@ -237,7 +237,7 @@ export const CATALOG: CatalogEntry[] = [
       distribution: { type: "npx", package: "cline", version: "latest", args: ["--acp"] },
       repository: "https://github.com/cline/cline",
       license: "Apache-2.0",
-      pew: { transport: "acp", color: "#818cf8" },
+      tappy: { transport: "acp", color: "#818cf8" },
     },
   },
   {
@@ -268,7 +268,7 @@ export const CATALOG: CatalogEntry[] = [
       },
       repository: "https://github.com/QwenLM/qwen-code",
       license: "Apache-2.0",
-      pew: { transport: "acp", color: "#615ced" },
+      tappy: { transport: "acp", color: "#615ced" },
     },
   },
   {
@@ -287,7 +287,7 @@ export const CATALOG: CatalogEntry[] = [
       distribution: { type: "command", command: "goose", args: ["acp"] },
       repository: "https://github.com/block/goose",
       license: "Apache-2.0",
-      pew: { transport: "acp", color: "#26c6da" },
+      tappy: { transport: "acp", color: "#26c6da" },
     },
   },
   {
@@ -304,7 +304,7 @@ export const CATALOG: CatalogEntry[] = [
       distribution: { type: "command", command: "cursor-agent", args: ["acp"] },
       repository: "https://cursor.com/docs/cli/acp",
       license: "proprietary",
-      pew: { transport: "acp", color: "#94a3b8" },
+      tappy: { transport: "acp", color: "#94a3b8" },
     },
   },
 ];
@@ -342,7 +342,7 @@ export interface DetectResult {
 
 export interface DetectOptions {
   env?: NodeJS.ProcessEnv;
-  /** Where new manifests are written. Defaults to `~/.pew2/providers`. */
+  /** Where new manifests are written. Defaults to `~/.tappy/providers`. */
   targetDir?: string;
   /** Directories scanned for providers that already exist. */
   searchDirs?: string[];

@@ -9,7 +9,7 @@ import {
   ORBITERS,
   paintDialBack,
   paintDialFront,
-  pewKick,
+  tappyKick,
   SPARKS,
   stopFraction,
   TRACK_DOTS,
@@ -17,7 +17,7 @@ import {
   type DialMoment,
 } from "./thinkFx";
 
-const G: DialGeometry = { size: 260, radius: 104, pewR: 36, start: (150 * Math.PI) / 180, span: (240 * Math.PI) / 180, stops: 5 };
+const G: DialGeometry = { size: 260, radius: 104, tappyR: 36, start: (150 * Math.PI) / 180, span: (240 * Math.PI) / 180, stops: 5 };
 const PAL: FxPalette = { bg: [10, 10, 12], base: [217, 119, 87], light: [255, 190, 160], off: [52, 54, 62] };
 const still = (level: number): DialMoment => ({ t: 1, level, since: 10, dir: 1, stop: 0 });
 
@@ -53,13 +53,13 @@ describe("energy", () => {
     expect(energy(0.5)).toBeGreaterThan(energy(0.25));
   });
 
-  test("the lowest level has no sparks round Pew, the top has them all", () => {
+  test("the lowest level has no sparks round Tappy, the top has them all", () => {
     expect(visibleOrbiters(0)).toBeLessThanOrEqual(1);
     expect(visibleOrbiters(0.5)).toBeGreaterThan(visibleOrbiters(0.25));
     expect(visibleOrbiters(1)).toBe(ORBITERS);
   });
 
-  test("orbits stay round Pew and inside the dial", () => {
+  test("orbits stay round Tappy and inside the dial", () => {
     const out = new Float32Array(4);
     for (let i = 0; i < ORBITERS; i++) {
       for (let t = 0; t < 5; t += 0.1) {
@@ -102,10 +102,10 @@ describe("a change", () => {
     expect(calm.calls.ring).toBe(0);
   });
 
-  test("Pew swells on a step up and shrinks on a step down, then settles", () => {
-    expect(pewKick(0.12, 1)).toBeGreaterThan(1);
-    expect(pewKick(0.12, -1)).toBeLessThan(1);
-    expect(pewKick(1, 1)).toBe(1);
+  test("Tappy swells on a step up and shrinks on a step down, then settles", () => {
+    expect(tappyKick(0.12, 1)).toBeGreaterThan(1);
+    expect(tappyKick(0.12, -1)).toBeLessThan(1);
+    expect(tappyKick(1, 1)).toBe(1);
   });
 });
 

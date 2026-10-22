@@ -1,7 +1,7 @@
 /**
  * Messages waiting for the running turn, above the composer — Stage "Packets".
  *
- * A sleeping Pew, a dotted wire, and one glowing packet per queued message
+ * A sleeping Tappy, a dotted wire, and one glowing packet per queued message
  * bobbing on it. Tap a packet to cancel that message (it shrinks away). When
  * the queue empties on its own — the agent took them — the packets fly off
  * the right end of the wire before the row collapses.
@@ -25,7 +25,7 @@ import { theme } from "../theme";
 import { haptics } from "./haptics";
 import { useReducedMotion } from "./useReducedMotion";
 import { queuePreview, type QueuedMessage } from "../queue";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { DashedRule } from "./stage/DashedRule";
 import { useAgentColor } from "./stage/agentColor";
 import { withAlpha } from "../motion";
@@ -81,7 +81,7 @@ function QueuedStripView({ messages = EMPTY, onCancel }: QueuedStripProps) {
       accessibilityElementsHidden={leaving}
       accessibilityLiveRegion="polite"
     >
-      <Pew size={32} mood="sleepy" color={agent} paused={reduceMotion} style={styles.pew} />
+      <Tappy size={32} mood="sleepy" color={agent} paused={reduceMotion} style={styles.tappy} />
       <View style={styles.wire}>
         <DashedRule />
         <View style={styles.packets}>
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     gap: theme.space(2),
   },
   // The globe fills ~60% of its box; pull the box in so the row stays tight.
-  pew: { marginVertical: -theme.space(1) },
+  tappy: { marginVertical: -theme.space(1) },
   wire: { flex: 1, justifyContent: "center", overflow: "hidden" },
   packets: {
     ...StyleSheet.absoluteFillObject,

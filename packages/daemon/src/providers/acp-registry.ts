@@ -1,5 +1,5 @@
 /**
- * Syncing the official ACP Agent Registry into pew2 provider manifests.
+ * Syncing the official ACP Agent Registry into tappy provider manifests.
  *
  * The registry (https://agentclientprotocol.com) publishes every ACP-speaking
  * agent as one JSON document, with pinned versions and — sometimes — sha256
@@ -23,7 +23,7 @@
  *      hand-verified — the right probe name, a colour legible on the app's
  *      surface — and the registry has no equivalent fields to check.
  */
-import { ProviderManifest, type ProviderManifestInput } from "@pew2/protocol";
+import { ProviderManifest, type ProviderManifestInput } from "@tappy/protocol";
 
 /** One platform's binary for a registry `binary` distribution. */
 export interface RegistryBinary {
@@ -270,7 +270,7 @@ export function toManifest(
     repository: agent.repository ?? agent.website,
     authors: agent.authors ?? [],
     license: agent.license,
-    pew: { transport: "acp", color: colorForId(id) },
+    tappy: { transport: "acp", color: colorForId(id) },
   };
 
   const parsed = ProviderManifest.safeParse(input);
@@ -287,7 +287,7 @@ export function toManifest(
 /**
  * Convert a whole registry document.
  *
- * `exclude` holds the manifests that already ship with pew2. Those are skipped
+ * `exclude` holds the manifests that already ship with tappy. Those are skipped
  * rather than converted: a synced manifest lands in the user directory, which
  * *shadows* the bundled one, so converting them would silently replace a
  * hand-verified entry with a generated one.

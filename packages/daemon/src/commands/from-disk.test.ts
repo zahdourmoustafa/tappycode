@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { readCommandDirs } from "./from-disk.js";
 
 async function project(files: Record<string, string>) {
-  const root = await mkdtemp(join(tmpdir(), "pew2-cmds-"));
+  const root = await mkdtemp(join(tmpdir(), "tappy-cmds-"));
   for (const [path, body] of Object.entries(files)) {
     const full = join(root, path);
     await mkdir(join(full, ".."), { recursive: true });

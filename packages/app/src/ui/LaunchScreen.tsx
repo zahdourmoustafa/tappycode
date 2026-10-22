@@ -1,7 +1,7 @@
 /**
  * First launch: "Wake up".
  *
- * A sleeping Pew on the dot grid. Tapping it pokes it awake and the greeting
+ * A sleeping Tappy on the dot grid. Tapping it pokes it awake and the greeting
  * and the one useful action rise in. Nobody is stuck behind the poke: a quiet
  * "Skip" connects straight away, and the action appears on its own after a
  * few seconds.
@@ -19,16 +19,16 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "../theme";
 import { haptics } from "./haptics";
-import { Pew } from "../pew/Pew";
-import type { PewMood } from "../pew/engine";
+import { Tappy } from "../tappy/Tappy";
+import type { TappyMood } from "../tappy/engine";
 import { StageButton } from "./stage/StageButton";
 import { DotGrid } from "./stage/DotGrid";
 import { Led } from "./stage/Led";
 import { Dissolve } from "./motion/Dissolve";
-import { pewInk } from "../pew/palette";
+import { tappyInk } from "../tappy/palette";
 
-/** pew2's own coral: nobody has picked an agent yet. */
-const PEW_CORAL = pewInk();
+/** tappy's own coral: nobody has picked an agent yet. */
+const TAPPY_CORAL = tappyInk();
 
 interface Props {
   onConnect: () => void;
@@ -41,7 +41,7 @@ export function LaunchScreen({ onConnect }: Props) {
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
   const [awake, setAwake] = useState(false);
-  const [mood, setMood] = useState<PewMood>("sleepy");
+  const [mood, setMood] = useState<TappyMood>("sleepy");
 
   // Blinking "Tap to wake" hint; held lit under Reduce Motion.
   const blink = useSharedValue(1);
@@ -97,23 +97,23 @@ export function LaunchScreen({ onConnect }: Props) {
       </View>
 
       <View style={styles.centre}>
-        <Pew
+        <Tappy
           size={260}
           mood={mood}
           interactive
           onPress={awake ? () => haptics.poke() : wake}
-          accessibilityLabel={awake ? "Pew" : "Pew is asleep. Tap to wake Pew"}
-          style={styles.pew}
+          accessibilityLabel={awake ? "Tappy" : "Tappy is asleep. Tap to wake Tappy"}
+          style={styles.tappy}
         />
         {!awake ? (
           <Animated.View style={blinkStyle}>
-            <Led tone="dim">Tap to wake Pew</Led>
+            <Led tone="dim">Tap to wake Tappy</Led>
           </Animated.View>
         ) : (
           <View style={styles.copy}>
             <Dissolve delay={0} enabled={!reduce}>
               <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-                Hi, I&apos;m Pew.
+                Hi, I&apos;m Tappy.
               </Text>
             </Dissolve>
             <Dissolve delay={120} enabled={!reduce}>
@@ -128,8 +128,8 @@ export function LaunchScreen({ onConnect }: Props) {
       <View style={[styles.actions, { paddingBottom: insets.bottom + theme.space(8) }]}>
         {awake ? (
           <Dissolve delay={240} enabled={!reduce}>
-            {/* connect() plays the haptic. pew2's own coral: no agent yet. */}
-            <StageButton color={PEW_CORAL} feel="none" label="Connect your computer" onPress={connect} />
+            {/* connect() plays the haptic. tappy's own coral: no agent yet. */}
+            <StageButton color={TAPPY_CORAL} feel="none" label="Connect your computer" onPress={connect} />
           </Dissolve>
         ) : (
           <View style={styles.buttonSpace} />
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   centre: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: theme.gutter },
   // The globe fills ~60% of its box; pull the copy up under it.
-  pew: { marginBottom: -theme.space(10) },
+  tappy: { marginBottom: -theme.space(10) },
   copy: { alignSelf: "stretch", alignItems: "center", gap: theme.space(2) },
   title: { color: theme.color.text, fontFamily: theme.display.regular, fontSize: 32, letterSpacing: 0.5 },
   body: { color: theme.color.textDim, fontSize: 15, lineHeight: theme.line.body, textAlign: "center" },

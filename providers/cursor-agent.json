@@ -16,7 +16,7 @@
     "Cursor"
   ],
   "license": "proprietary",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#94a3b8"
   }

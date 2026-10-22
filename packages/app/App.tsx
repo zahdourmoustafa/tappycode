@@ -1,5 +1,5 @@
 /**
- * pew2 — mobile remote for coding agents.
+ * tappy — mobile remote for coding agents.
  *
  * One screen. The provider list, the greeting and the conversation are states
  * of the same surface rather than separate pages, so the composer never moves
@@ -14,10 +14,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { theme } from "./src/theme";
-import { Pew2 } from "./src/Pew2Screen";
+import { Tappy } from "./src/TappyScreen";
 import { ErrorBoundary } from "./src/ui/ErrorBoundary";
 import { PairingScreen } from "./src/ui/PairingScreen";
 import { LaunchScreen } from "./src/ui/LaunchScreen";
+import { SetupScreen } from "./src/ui/SetupScreen";
+import { NotificationsScreen } from "./src/ui/NotificationsScreen";
+import { notificationPermissionState } from "./src/ui/notifier";
+import { afterPairing, type OnboardingStep } from "./src/onboarding";
 import { clearPairing, loadPairing, savePairing, type Pairing } from "./src/pairing";
 import { clearCachedProviders } from "./src/preferences";
 import * as SplashScreen from "expo-splash-screen";
@@ -63,7 +67,7 @@ export default function App() {
     clearCrash();
     const detail = `${crash.at}\n${crash.message}${crash.stack ? `\n\n${crash.stack}` : ""}`;
     Alert.alert(
-      "pew2 closed unexpectedly",
+      "tappy closed unexpectedly",
       `${crash.message}\n\nThis was not sent anywhere. Copy it if you want to report it.`,
       [
         { text: "Copy details", onPress: () => void Clipboard.setStringAsync(detail) },
@@ -120,10 +124,10 @@ export default function App() {
 function Root() {
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [checked, setChecked] = useState(false);
-  // Whether the user has moved past the launch screen. Not persisted: it only
-  // exists between opening the app and pairing, and a stored pairing skips it
-  // entirely.
-  const [connecting, setConnecting] = useState(false);
+  // Where first launch has got to. Not persisted: it only exists between
+  // opening the app and finishing setup, and a stored pairing skips it all —
+  // except that a pairing made just now carries on to the last two steps.
+  const [step, setStep] = useState<OnboardingStep>("welcome");
 
   useEffect(() => {
     let alive = true;
@@ -169,9 +173,12 @@ function Root() {
     // Connect regardless of whether the keychain accepted it. A locked or
     // unavailable keychain costs the user a re-pair next launch; blocking on it
     // would strand them on this screen with a spinner and no way forward.
-    void savePairing(next)
-      .catch(() => {})
-      .then(() => setPairing(next));
+    void Promise.all([savePairing(next).catch(() => {}), notificationPermissionState()]).then(
+      ([, permission]) => {
+        setStep(afterPairing(permission));
+        setPairing(next);
+      },
+    );
   }, []);
 
   const unpair = useCallback(() => {
@@ -187,14 +194,29 @@ function Root() {
         setPairing(null);
         // Back to the launch screen rather than straight to the form, so
         // disconnecting lands somewhere deliberate.
-        setConnecting(false);
+        setStep("welcome");
       });
   }, []);
 
   if (!checked) return <View style={{ flex: 1, backgroundColor: theme.color.bg }} />;
   // A paired device never sees the launch screen: it has a machine already, and
   // an extra tap on every cold start would be pure friction.
-  if (pairing) return <Pew2 pairing={pairing} onUnpair={unpair} />;
-  if (!connecting) return <LaunchScreen onConnect={() => setConnecting(true)} />;
-  return <PairingScreen onPaired={pair} onBack={() => setConnecting(false)} />;
+  if (pairing) {
+    if (step === "notifications") {
+      return <NotificationsScreen onDone={() => setStep("try")} />;
+    }
+    return (
+      <Tappy
+        pairing={pairing}
+        onUnpair={unpair}
+        firstRun={step === "try"}
+        onFirstRunDone={() => setStep("welcome")}
+      />
+    );
+  }
+  if (step === "install") {
+    return <SetupScreen onScan={() => setStep("scan")} onBack={() => setStep("welcome")} />;
+  }
+  if (step === "scan") return <PairingScreen onPaired={pair} onBack={() => setStep("install")} />;
+  return <LaunchScreen onConnect={() => setStep("install")} />;
 }

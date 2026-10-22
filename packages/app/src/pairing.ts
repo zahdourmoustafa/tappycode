@@ -11,8 +11,8 @@ import { parsePairing, type Pairing } from "./pairingLink";
 
 export { parsePairing, type Pairing, type ParseResult } from "./pairingLink";
 
-const KEY = "pew2.pairing";
-const DEVICE_KEY = "pew2.deviceId";
+const KEY = "tappy.pairing";
+const DEVICE_KEY = "tappy.deviceId";
 
 /**
  * A stable id for this install.

@@ -11,7 +11,7 @@
  * a socket may be someone who learned a room id and nothing else, and they
  * narrow what such a party can do:
  *
- *   - a token that could never have been minted by `pew2` never names a room
+ *   - a token that could never have been minted by `tappy` never names a room
  *   - a retired token cannot leave a device sitting in an empty room, looking
  *     connected to a machine that will never answer
  *   - one leaked token cannot pile up unbounded sockets
@@ -31,7 +31,7 @@
 export const MIN_PAIRING_TOKEN_LENGTH = 32;
 
 /**
- * Tokens are hex, because that is the only thing `pew2` mints.
+ * Tokens are hex, because that is the only thing `tappy` mints.
  *
  * Rejecting anything else costs nothing and means a mistyped or probing request
  * is refused before it can name a Durable Object at all — which matters because
@@ -60,7 +60,7 @@ export type Admission =
   | { ok: false; status: 400 | 409 | 429; reason: string }
   | { ok: true; role: Role; deviceId: string; evictDaemons: boolean };
 
-/** Is this string shaped like a token `pew2` could have produced? */
+/** Is this string shaped like a token `tappy` could have produced? */
 export function isPairingToken(token: string | null): token is string {
   return (
     token !== null && token.length >= MIN_PAIRING_TOKEN_LENGTH && PAIRING_TOKEN.test(token)

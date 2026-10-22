@@ -50,7 +50,7 @@ export { LABEL, isCompiled, programArguments, serverEntry, unitPath, taskXmlPath
 export type { CommandResult, InstallOptions, ServiceState, ServiceStatus };
 
 /**
- * Every platform pew2 ships a binary for now has a supervisor.
+ * Every platform tappy ships a binary for now has a supervisor.
  *
  * Kept as a function because it is asked on the machine being installed to, not
  * at build time.
@@ -84,8 +84,8 @@ export function supervisorPath(
  * Is a supervisor actually installed on this machine?
  *
  * The platform is not enough, and assuming it was is a way to take a user's
- * daemon offline for good: `pew2 serve` is a first-class command, and a fresh
- * install has no service until `pew2 setup` creates one. On such a machine an
+ * daemon offline for good: `tappy serve` is a first-class command, and a fresh
+ * install has no service until `tappy setup` creates one. On such a machine an
  * exit-to-update is simply an exit.
  *
  * Synchronous, because the update scheduler asks before arming anything.
@@ -148,10 +148,10 @@ export function buildPlist(options: InstallOptions = {}): string {
   const program = programArguments(options.bunPath);
   // The directory the runtime lives in is prepended to PATH below. For a source
   // install that is bun's own directory, which is what makes `npx` reachable;
-  // for a binary it is wherever pew2 was installed, which is harmless.
+  // for a binary it is wherever tappy was installed, which is harmless.
   const bun = options.bunPath ?? process.execPath;
   const logs = logDir(options.env);
-  const port = options.port ?? Number(options.env?.PEW2_PORT ?? 8787);
+  const port = options.port ?? Number(options.env?.TAPPY_PORT ?? 8787);
 
   // launchd starts processes with a near-empty environment, so anything the
   // daemon needs has to be stated explicitly. PATH in particular: without it
@@ -159,12 +159,12 @@ export function buildPlist(options: InstallOptions = {}): string {
   const path = options.env?.PATH ?? process.env.PATH ?? "/usr/bin:/bin";
   const entries: [string, string][] = [
     ["PATH", `${dirname(bun)}:${path}`],
-    ["PEW2_PORT", String(port)],
+    ["TAPPY_PORT", String(port)],
     ["HOME", options.home ?? homedir()],
   ];
-  if (options.experimental) entries.push(["PEW2_EXPERIMENTAL", "1"]);
-  if (options.env?.PEW2_HOME) entries.push(["PEW2_HOME", options.env.PEW2_HOME]);
-  if (options.env?.PEW2_RELAY) entries.push(["PEW2_RELAY", options.env.PEW2_RELAY]);
+  if (options.experimental) entries.push(["TAPPY_EXPERIMENTAL", "1"]);
+  if (options.env?.TAPPY_HOME) entries.push(["TAPPY_HOME", options.env.TAPPY_HOME]);
+  if (options.env?.TAPPY_RELAY) entries.push(["TAPPY_RELAY", options.env.TAPPY_RELAY]);
 
   const envXml = entries
     .map(([key, value]) => `      <key>${key}</key>\n      <string>${escapeXml(value)}</string>`)
@@ -220,7 +220,7 @@ function escapeXml(value: string): string {
 /**
  * Keep `plistPath` populated alongside `servicePath`.
  *
- * `pew2 setup --json` and `doctor --json` are an agent-facing contract, and a
+ * `tappy setup --json` and `doctor --json` are an agent-facing contract, and a
  * field that silently changed name would break whatever is parsing it. The new
  * platforms fill both; on macOS they are the same file.
  */

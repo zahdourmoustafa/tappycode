@@ -95,6 +95,16 @@ interface NewChatSheetProps {
   browse?: WorkspaceBrowse;
   /** Ask the desktop for a listing. No path means "suggest repositories". */
   onBrowse?: (path?: string) => void;
+  /**
+   * Open the agent in a terminal on the computer instead, in `cwd` — the window
+   * shows up on the laptop and the phone follows it. Absent for an agent that
+   * cannot be opened that way.
+   */
+  onStartOnComputer?: (cwd: string, bypass: boolean) => void;
+  /** The agent's name, for the computer button: "Claude". */
+  computerAgent?: string;
+  /** Whether this agent has a skip-permissions switch to offer. */
+  bypassOffered?: boolean;
 }
 
 function NewChatSheetView({
@@ -106,8 +116,17 @@ function NewChatSheetView({
   onClose,
   browse,
   onBrowse,
+  onStartOnComputer,
+  computerAgent,
+  bypassOffered,
 }: NewChatSheetProps) {
   const [step, setStep] = useState(STEP_CHOICES);
+  // Off every time the sheet opens: skipping approvals is a choice made per
+  // window, never a setting that quietly carries over.
+  const [bypass, setBypass] = useState(false);
+  useEffect(() => {
+    if (!visible) setBypass(false);
+  }, [visible]);
   const reduceMotion = useReducedMotion();
 
   const agent = useAgentColor();
@@ -310,14 +329,55 @@ function NewChatSheetView({
               )
             }
           />
-          {(chosen !== undefined || !canBrowse) && (
-            <StageButton
-              style={styles.primary}
-              feel="sent"
-              label={chosenName ? `Start in ${chosenName}` : "Start a chat"}
-              accessibilityLabel={chosenName ? `Start a chat in ${chosenName}` : "Start a chat"}
-              onPress={() => onStart(chosen)}
-            />
+          {(chosen !== undefined || !canBrowse) && onStartOnComputer && computerAgent && chosen !== undefined ? (
+            <>
+              <StageButton
+                style={styles.primary}
+                feel="sent"
+                label={chosenName ? `Open ${computerAgent} in ${chosenName}` : `Open ${computerAgent}`}
+                accessibilityLabel={`Open ${computerAgent} in a terminal on your computer${chosenName ? `, in ${chosenName}` : ""}`}
+                accessibilityHint="A window opens on your computer, and this phone types into it"
+                onPress={() => onStartOnComputer(chosen, bypassOffered === true && bypass)}
+              />
+              {bypassOffered && (
+                <Pressable
+                  onPress={() => setBypass((on) => !on)}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: bypass }}
+                  accessibilityLabel="Skip permission prompts"
+                  accessibilityHint={`${computerAgent} will act without asking first`}
+                  style={({ pressed }) => [styles.bypass, pressed && styles.rowPressed]}
+                >
+                  <View style={[styles.bypassDot, bypass && styles.bypassDotOn]} />
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>Skip permission prompts</Text>
+                    <Text style={styles.rowDetail}>
+                      {bypass
+                        ? `${computerAgent} won't ask before editing files or running commands.`
+                        : "Off: it asks before anything risky."}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+              <StageButton
+                kind="secondary"
+                compact
+                style={styles.secondary}
+                label="Chat here instead"
+                accessibilityLabel={chosenName ? `Start a chat on this phone in ${chosenName}` : "Start a chat on this phone"}
+                onPress={() => onStart(chosen)}
+              />
+            </>
+          ) : (
+            (chosen !== undefined || !canBrowse) && (
+              <StageButton
+                style={styles.primary}
+                feel="sent"
+                label={chosenName ? `Start in ${chosenName}` : "Start a chat"}
+                accessibilityLabel={chosenName ? `Start a chat in ${chosenName}` : "Start a chat"}
+                onPress={() => onStart(chosen)}
+              />
+            )
           )}
         </Animated.View>
 
@@ -585,6 +645,24 @@ const styles = StyleSheet.create({
   cardTitle: { color: theme.color.text, fontSize: theme.font.body },
   // On the sheet's rail, like the cards above it.
   primary: { marginTop: theme.space(3), marginBottom: theme.space(4) },
+  secondary: { marginBottom: theme.space(4) },
+  bypass: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space(3),
+    paddingVertical: theme.space(2),
+    paddingHorizontal: theme.space(2),
+    marginBottom: theme.space(3),
+    borderRadius: theme.radius.md,
+  },
+  bypassDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: theme.color.textDim,
+  },
+  bypassDotOn: { backgroundColor: theme.color.danger, borderColor: theme.color.danger },
   rowPressed: { backgroundColor: theme.glass.fillPressed },
   // Yields to the chevron rather than pushing it off the row.
   rowText: { flex: 1 },

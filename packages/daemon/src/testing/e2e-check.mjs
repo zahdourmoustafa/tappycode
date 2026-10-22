@@ -1,6 +1,6 @@
 /**
  * End-to-end check against a running daemon server
- * (`PEW2_EXPERIMENTAL=1 bun run packages/daemon/src/server.ts`).
+ * (`TAPPY_EXPERIMENTAL=1 bun run packages/daemon/src/server.ts`).
  *
  * Drives exactly what the app does: connect, list providers, start a session,
  * prompt, stream, and answer a permission request.
@@ -8,21 +8,21 @@
 // The daemon's own pairing decides both halves of this: the query token that
 // gets the socket upgraded, and the key every frame after `hello` is sealed
 // with. Loaded the same way the daemon loads it, so a scratch daemon
-// (`PEW2_HOME`/`PEW2_TOKEN`/`PEW2_PORT`) can be driven without disturbing the
+// (`TAPPY_HOME`/`TAPPY_TOKEN`/`TAPPY_PORT`) can be driven without disturbing the
 // one a phone is paired to.
 import { loadPairing } from "../pairing.js";
 import { CLI_DEVICE_PREFIX } from "../device-claim.js";
-import { SecureChannel, e2e, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, wire } from "@tappy/protocol";
 
-const port = process.env.PEW2_PORT ?? "8787";
+const port = process.env.TAPPY_PORT ?? "8787";
 const pairing = await loadPairing();
 const channel = new SecureChannel(e2e.fromHex(pairing.key), "app");
 // The local-watcher identity, not a device name. A pairing belongs to one
 // device, and proving the key is what claims it — so a plain id here would take
 // an unclaimed pairing (the phone that scanned next is refused until
-// `pew2 pair --rotate`) or be refused itself by the phone that already owns it,
+// `tappy pair --rotate`) or be refused itself by the phone that already owns it,
 // which is every run on a machine actually in use. This prefix is admitted and
-// never recorded, exactly as `pew2 pair`'s own watching socket is.
+// never recorded, exactly as `tappy pair`'s own watching socket is.
 const deviceId = `${CLI_DEVICE_PREFIX}e2e-check`;
 const ws = new WebSocket(`ws://127.0.0.1:${port}?token=${pairing.token}`);
 const inbox = [];
@@ -93,7 +93,7 @@ if (!started) {
   process.exit(1);
 }
 
-// Models and thinking levels must come from the agent, not from pew2.
+// Models and thinking levels must come from the agent, not from tappy.
 const models = started.configOptions?.find((o) => o.category === "model");
 const thinking = started.configOptions?.find((o) => o.category === "thought_level");
 check("agent advertises its models", models?.options?.length > 0);
@@ -176,7 +176,7 @@ const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64",
 );
-const imageDir = mkdtempSync(join(tmpdir(), "pew2-e2e-image-"));
+const imageDir = mkdtempSync(join(tmpdir(), "tappy-e2e-image-"));
 writeFileSync(join(imageDir, "plot.png"), PNG);
 
 inbox.length = 0;

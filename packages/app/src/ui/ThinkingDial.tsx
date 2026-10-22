@@ -1,8 +1,8 @@
 /**
- * The thinking-level dial in the model sheet: Pew in the middle of an LED arc,
+ * The thinking-level dial in the model sheet: Tappy in the middle of an LED arc,
  * with the level shown as energy round him (`thinkFx.ts`).
  *
- * The light show is two Skia layers painted on the UI thread, one behind Pew
+ * The light show is two Skia layers painted on the UI thread, one behind Tappy
  * and one in front, so sparks orbit round him. The stops are real buttons laid
  * over the arc (tap one to jump to it, or use − and +), and the level's name
  * rolls up or down on the LED readout with the direction of the change.
@@ -33,25 +33,25 @@ import { useReducedMotion } from "./useReducedMotion";
 import { useAppActive } from "./useAppActive";
 import { Led } from "./stage/Led";
 import { dashedOutline } from "./stage/DashedRule";
-import { Pew } from "../pew/Pew";
-import { pewPalette } from "../pew/palette";
-import type { PewMood } from "../pew/engine";
+import { Tappy } from "../tappy/Tappy";
+import { tappyPalette } from "../tappy/palette";
+import type { TappyMood } from "../tappy/engine";
 import { DUR } from "../motion";
 import { sounds } from "./sounds";
 import { levelSound, SOUND_NAMES } from "../soundsPolicy";
 import { hexRgb, skiaFx } from "./LaunchFx";
-import { paintDialBack, paintDialFront, pewKick, stopFraction, type DialGeometry, type DialMoment } from "../thinkFx";
+import { paintDialBack, paintDialFront, tappyKick, stopFraction, type DialGeometry, type DialMoment } from "../thinkFx";
 import type { FxPalette } from "../launchFx";
 
 const SIZE = 260;
 const RADIUS = 104;
-const PEW = 120;
+const TAPPY = 120;
 const ARC_START = (150 * Math.PI) / 180;
 const ARC_SPAN = (240 * Math.PI) / 180;
 const HIT = 36;
 
-/** Pew's mood for a position along the dial, 0..1. */
-export function levelMood(fraction: number): PewMood {
+/** Tappy's mood for a position along the dial, 0..1. */
+export function levelMood(fraction: number): TappyMood {
   if (fraction <= 0) return "sleepy";
   if (fraction < 0.5) return "idle";
   if (fraction < 0.85) return "thinking";
@@ -112,11 +112,11 @@ export function ThinkingDial({ names, index, color, paused, onStep }: ThinkingDi
   const count = names.length;
   const fraction = count > 1 ? index / (count - 1) : 0;
   const g = useMemo<DialGeometry>(
-    () => ({ size: SIZE, radius: RADIUS, pewR: PEW * 0.3, start: ARC_START, span: ARC_SPAN, stops: Math.max(1, count) }),
+    () => ({ size: SIZE, radius: RADIUS, tappyR: TAPPY * 0.3, start: ARC_START, span: ARC_SPAN, stops: Math.max(1, count) }),
     [count],
   );
   const pal = useMemo<FxPalette>(() => {
-    const p = pewPalette(color);
+    const p = tappyPalette(color);
     return { bg: hexRgb(theme.color.bg), base: p.base, light: p.light, off: hexRgb(theme.stage.dash) };
   }, [color]);
   const v: Values = {
@@ -165,7 +165,7 @@ export function ThinkingDial({ names, index, color, paused, onStep }: ThinkingDi
     runOnUI(paint)(g, m, pal);
   }, [live, fraction, index, g, pal, back, front]);
 
-  const pewStyle = useAnimatedStyle(() => ({ transform: [{ scale: pewKick(v.since.value, v.dir.value) }] }));
+  const tappyStyle = useAnimatedStyle(() => ({ transform: [{ scale: tappyKick(v.since.value, v.dir.value) }] }));
 
   useEffect(() => {
     if (!paused) sounds.preload(SOUND_NAMES.filter((n) => n.startsWith("level-")));
@@ -199,8 +199,8 @@ export function ThinkingDial({ names, index, color, paused, onStep }: ThinkingDi
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
           <Picture picture={back as SharedValue<SkPicture>} />
         </Canvas>
-        <Reanimated.View style={[styles.pew, pewStyle]} pointerEvents="none">
-          <Pew size={PEW} mood={levelMood(fraction)} color={color} paused={paused} accessibilityLabel="Pew" />
+        <Reanimated.View style={[styles.tappy, tappyStyle]} pointerEvents="none">
+          <Tappy size={TAPPY} mood={levelMood(fraction)} color={color} paused={paused} accessibilityLabel="Tappy" />
         </Reanimated.View>
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
           <Picture picture={front as SharedValue<SkPicture>} />
@@ -257,7 +257,7 @@ function StepButton({ icon, label, disabled, at, onPress }: {
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", gap: theme.space(1) },
   dial: { width: SIZE, height: SIZE },
-  pew: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  tappy: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   hit: { position: "absolute", width: HIT, height: HIT, borderRadius: HIT / 2 },
   readout: { height: 28, alignSelf: "stretch", alignItems: "center", justifyContent: "center" },
   readoutLine: { position: "absolute" },

@@ -76,7 +76,7 @@ export const theme = {
   },
 
   /**
-   * Stage: pew2's LED look. Dashed rules instead of solid borders, a dot grid
+   * Stage: tappy's LED look. Dashed rules instead of solid borders, a dot grid
    * on the canvas, dot-matrix labels that glow in the agent's colour. The
    * glow is the agent's colour, so these are geometry, not colours.
    */

@@ -6,8 +6,8 @@ import { join } from "node:path";
 import { readProbeCache, writeProbeCache } from "./probe-cache.js";
 
 async function tempEnv() {
-  const home = await mkdtemp(join(tmpdir(), "pew2-cache-"));
-  return { PEW2_HOME: home } as NodeJS.ProcessEnv;
+  const home = await mkdtemp(join(tmpdir(), "tappy-cache-"));
+  return { TAPPY_HOME: home } as NodeJS.ProcessEnv;
 }
 
 const capabilities = {
@@ -85,12 +85,12 @@ test("the project list survives the round trip, so the menu works on a cold star
   const env = await tempEnv();
   await writeProbeCache(
     "claude-code",
-    { ...capabilities, projects: [{ path: "/a/pew2", name: "pew2", sessions: 12 }] },
+    { ...capabilities, projects: [{ path: "/a/tappy", name: "tappy", sessions: 12 }] },
     env,
   );
 
   expect((await readProbeCache("claude-code", env))?.projects).toEqual([
-    { path: "/a/pew2", name: "pew2", sessions: 12 },
+    { path: "/a/tappy", name: "tappy", sessions: 12 },
   ]);
 });
 
@@ -100,7 +100,7 @@ test("the uncapped history is cached alongside the capped one", async () => {
   const env = await tempEnv();
   const all = Array.from({ length: 40 }, (_, index) => ({
     sessionId: `s${index}`,
-    cwd: index % 2 === 0 ? "/a/pew2" : "/a/site",
+    cwd: index % 2 === 0 ? "/a/tappy" : "/a/site",
     title: `Session ${index}`,
     messageCount: index,
   }));
@@ -113,7 +113,7 @@ test("the uncapped history is cached alongside the capped one", async () => {
   // caching them would pin a number that goes stale the next time the agent is
   // used at the desk.
   expect(cached?.allSessions?.[0]?.messageCount).toBeUndefined();
-  expect(cached?.allSessions?.[0]?.cwd).toBe("/a/pew2");
+  expect(cached?.allSessions?.[0]?.cwd).toBe("/a/tappy");
 });
 
 test("a pathological history is capped before it becomes a megabyte to parse", async () => {
@@ -124,7 +124,7 @@ test("a pathological history is capped before it becomes a megabyte to parse", a
     env,
     Array.from({ length: 600 }, (_, index) => ({
       sessionId: `s${index}`,
-      cwd: "/a/pew2",
+      cwd: "/a/tappy",
       title: `Session ${index}`,
     })),
   );
@@ -148,13 +148,13 @@ test("a missing or corrupt cache is a miss, never an error", async () => {
   const env = await tempEnv();
   expect(await readProbeCache("nobody", env)).toBeUndefined();
 
-  await writeFile(join(env.PEW2_HOME!, "cache", "broken.json"), "{not json", {
+  await writeFile(join(env.TAPPY_HOME!, "cache", "broken.json"), "{not json", {
     encoding: "utf8",
   }).catch(async () => {
     // The cache directory may not exist yet; create it and retry once.
     const { mkdir } = await import("node:fs/promises");
-    await mkdir(join(env.PEW2_HOME!, "cache"), { recursive: true });
-    await writeFile(join(env.PEW2_HOME!, "cache", "broken.json"), "{not json");
+    await mkdir(join(env.TAPPY_HOME!, "cache"), { recursive: true });
+    await writeFile(join(env.TAPPY_HOME!, "cache", "broken.json"), "{not json");
   });
   expect(await readProbeCache("broken", env)).toBeUndefined();
 });
@@ -164,8 +164,8 @@ test("a daemon answers from disk without spawning the agent", async () => {
   // A cache entry with a marker no live probe would produce.
   await writeProbeCache("echo", capabilities, env);
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = env.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = env.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -180,8 +180,8 @@ test("a daemon answers from disk without spawning the agent", async () => {
     expect(elapsed).toBeLessThan(200);
     daemon.closeAll();
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -191,8 +191,8 @@ test("a warm spare is offered before the probe finishes listing history", async 
   // spare must therefore be adoptable as soon as the process answers — when the
   // two were one promise, the first tap paid for the whole history scan.
   const env = await tempEnv();
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = env.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = env.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -214,8 +214,8 @@ test("a warm spare is offered before the probe finishes listing history", async 
     await probe;
     daemon.closeAll();
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -230,8 +230,8 @@ test("a cache without message counts is still served from disk", async () => {
     env,
   );
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = env.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = env.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -245,8 +245,8 @@ test("a cache without message counts is still served from disk", async () => {
     expect(caps.sessions[0]?.title).toBe("Missing its count");
     daemon.closeAll();
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -259,8 +259,8 @@ test("a stale cached probe is refreshed on the next ask, not once per daemon", a
   const env = await tempEnv();
   await writeProbeCache("echo", capabilities, env);
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = env.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = env.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -289,8 +289,8 @@ test("a stale cached probe is refreshed on the next ask, not once per daemon", a
     await (daemon as any).refreshing.get("echo");
     daemon.closeAll();
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
@@ -303,8 +303,8 @@ test("a probe still booting is already dated, so nobody starts a second one", as
   // it was already waiting on. Two agents at 90-370MB, for one question.
   const env = await tempEnv();
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = env.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = env.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -324,19 +324,19 @@ test("a probe still booting is already dated, so nobody starts a second one", as
     await probe;
     daemon.closeAll();
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });
 
 test("a background refresh writes to the home its daemon was built for", async () => {
   // A cache hit kicks off a live reprobe that outlives the call, and its write
-  // lands whenever the agent finishes answering. Resolving `PEW2_HOME` at that
+  // lands whenever the agent finishes answering. Resolving `TAPPY_HOME` at that
   // moment rather than at construction meant the write followed whatever home
   // was installed *then* — so a refresh belonging to one daemon could overwrite
   // a cache belonging to something else.
   //
-  // In production nothing moves `PEW2_HOME` and the two are the same value. In a
+  // In production nothing moves `TAPPY_HOME` and the two are the same value. In a
   // test process where several homes exist at once it is the difference between
   // isolated cases and a suite that fails on whichever one happened to be
   // reading when a stray write landed.
@@ -349,8 +349,8 @@ test("a background refresh writes to the home its daemon was built for", async (
     theirs,
   );
 
-  const home = process.env.PEW2_HOME;
-  process.env.PEW2_HOME = mine.PEW2_HOME;
+  const home = process.env.TAPPY_HOME;
+  process.env.TAPPY_HOME = mine.TAPPY_HOME;
   try {
     const { Daemon } = await import("./index.js");
     const daemon = new Daemon({ id: "test", name: "test" }, true);
@@ -361,7 +361,7 @@ test("a background refresh writes to the home its daemon was built for", async (
 
     // The ambient home moves on, exactly as it does when the next test installs
     // its own, while that refresh is still in flight.
-    process.env.PEW2_HOME = theirs.PEW2_HOME;
+    process.env.TAPPY_HOME = theirs.TAPPY_HOME;
     await (daemon as any).warming.get("echo");
 
     // The cache write is fire-and-forget inside the probe, so it lands after the
@@ -377,7 +377,7 @@ test("a background refresh writes to the home its daemon was built for", async (
     // The other home is untouched: no live probe result landed on top of it.
     expect((await readProbeCache("echo", theirs))?.sessions[0]?.title).toBe("Not yours");
   } finally {
-    if (home === undefined) delete process.env.PEW2_HOME;
-    else process.env.PEW2_HOME = home;
+    if (home === undefined) delete process.env.TAPPY_HOME;
+    else process.env.TAPPY_HOME = home;
   }
 });

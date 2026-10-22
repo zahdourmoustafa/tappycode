@@ -14,7 +14,7 @@
     "Zed Industries"
   ],
   "license": "Apache-2.0",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#d97757",
     "env": [

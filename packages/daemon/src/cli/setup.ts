@@ -1,7 +1,7 @@
 /**
- * `pew2 setup` — the whole A-to-Z, in one call.
+ * `tappy setup` — the whole A-to-Z, in one call.
  *
- * The premise of pew2 is that a user asks the coding agent they already have to
+ * The premise of tappy is that a user asks the coding agent they already have to
  * connect their phone, and the agent does it. That only works if there is a
  * single entry point that is safe to run repeatedly, never destroys existing
  * configuration, and ends by saying — in machine-readable form — exactly what is
@@ -26,7 +26,7 @@ export interface SetupResult {
   verify: VerifyReport[];
   doctor: DoctorReport;
   /**
-   * Every agent pew2 knows about, and what state it is in on this machine.
+   * Every agent tappy knows about, and what state it is in on this machine.
    *
    * The presentation layer groups these; assembling the list here keeps the
    * command from having to re-derive it from three separate result shapes.
@@ -110,7 +110,7 @@ export async function setup(options: SetupOptions = {}): Promise<SetupResult> {
     const runnable = providers.filter(
       (p) =>
         isAvailable(p) &&
-        p.manifest.pew.transport === "acp" &&
+        p.manifest.tappy.transport === "acp" &&
         !disabled.has(p.manifest.id),
     );
     for (const provider of runnable) progress("verify", provider.manifest.id);
@@ -130,7 +130,7 @@ export async function setup(options: SetupOptions = {}): Promise<SetupResult> {
   //
   // Nobody signs in to all thirteen: you use the one or two you pay for, and the
   // rest sit there unconfigured forever. Treating an unconfigured agent as a
-  // failure made `pew2 setup` exit non-zero on a machine that was completely
+  // failure made `tappy setup` exit non-zero on a machine that was completely
   // working, which is both wrong and the thing that makes people think they have
   // broken something.
   //
@@ -161,7 +161,7 @@ export async function setup(options: SetupOptions = {}): Promise<SetupResult> {
     // a list of chores.
     if (!usable) {
       for (const broken of brokenProviders) {
-        nextSteps.push(`pew2 providers verify ${broken.id}   # ${broken.detail ?? "failed"}`);
+        nextSteps.push(`tappy providers verify ${broken.id}   # ${broken.detail ?? "failed"}`);
       }
     }
   }
@@ -178,7 +178,7 @@ export async function setup(options: SetupOptions = {}): Promise<SetupResult> {
     return {
       id: provider.manifest.id,
       name: provider.manifest.name,
-      experimental: provider.manifest.pew.experimental,
+      experimental: provider.manifest.tappy.experimental,
       install: installById.get(provider.manifest.id),
       command: provider.command,
       missingEnv: provider.missingEnv,

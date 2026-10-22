@@ -69,24 +69,24 @@ test("passes through port, experimental and relay settings", () => {
     bunPath: bun,
     port: 9999,
     experimental: true,
-    env: { PEW2_RELAY: "wss://relay.example.com", PEW2_HOME: "/tmp/home" } as NodeJS.ProcessEnv,
+    env: { TAPPY_RELAY: "wss://relay.example.com", TAPPY_HOME: "/tmp/home" } as NodeJS.ProcessEnv,
   });
 
   expect(plist).toContain("<string>9999</string>");
-  expect(plist).toContain("<key>PEW2_EXPERIMENTAL</key>");
+  expect(plist).toContain("<key>TAPPY_EXPERIMENTAL</key>");
   expect(plist).toContain("wss://relay.example.com");
   expect(plist).toContain("<string>/tmp/home</string>");
 });
 
 test("omits experimental unless asked", () => {
   // The echo agent is a test fixture; it must not appear in a normal install.
-  expect(buildPlist({ bunPath: bun })).not.toContain("PEW2_EXPERIMENTAL");
+  expect(buildPlist({ bunPath: bun })).not.toContain("TAPPY_EXPERIMENTAL");
 });
 
 test("escapes values rather than producing malformed XML", () => {
   const plist = buildPlist({
     bunPath: bun,
-    env: { PATH: "/opt/a&b", PEW2_RELAY: "wss://x?a=1&b=2" } as NodeJS.ProcessEnv,
+    env: { PATH: "/opt/a&b", TAPPY_RELAY: "wss://x?a=1&b=2" } as NodeJS.ProcessEnv,
   });
 
   // An unescaped ampersand makes launchd reject the whole file, which reads as
@@ -96,17 +96,17 @@ test("escapes values rather than producing malformed XML", () => {
 });
 
 test("uses a stable reverse-DNS label under LaunchAgents", async () => {
-  const home = await mkdtemp(join(tmpdir(), "pew2-home-"));
+  const home = await mkdtemp(join(tmpdir(), "tappy-home-"));
   const path = plistPath(home);
 
-  expect(LABEL).toBe("dev.pew2.daemon");
-  expect(path).toBe(join(home, "Library", "LaunchAgents", "dev.pew2.daemon.plist"));
+  expect(LABEL).toBe("dev.tappy.daemon");
+  expect(path).toBe(join(home, "Library", "LaunchAgents", "dev.tappy.daemon.plist"));
   expect(buildPlist({ bunPath: bun })).toContain(`<string>${LABEL}</string>`);
 });
 
 test("doctor warns when the daemon will not survive a reboot", async () => {
   const report = await doctor({
-    env: { PEW2_HOME: "/tmp/pew2-nonexistent" } as NodeJS.ProcessEnv,
+    env: { TAPPY_HOME: "/tmp/tappy-nonexistent" } as NodeJS.ProcessEnv,
     searchDirs: [],
     probeDaemon: async () => true,
     addresses: () => ["192.168.1.24"],
@@ -115,7 +115,7 @@ test("doctor warns when the daemon will not survive a reboot", async () => {
   });
 
   const problem = report.problems.find((p) => p.id === "not-autostarted");
-  expect(problem?.fix).toBe("pew2 service install");
+  expect(problem?.fix).toBe("tappy service install");
   // A warning, not an error: running the daemon by hand is a legitimate choice
   // and an agent must not loop trying to "fix" it.
   expect(problem?.severity).toBe("warning");
@@ -124,7 +124,7 @@ test("doctor warns when the daemon will not survive a reboot", async () => {
 
 test("doctor stays quiet once the service is installed", async () => {
   const report = await doctor({
-    env: { PEW2_HOME: "/tmp/pew2-nonexistent" } as NodeJS.ProcessEnv,
+    env: { TAPPY_HOME: "/tmp/tappy-nonexistent" } as NodeJS.ProcessEnv,
     searchDirs: [],
     probeDaemon: async () => true,
     addresses: () => ["192.168.1.24"],
@@ -138,7 +138,7 @@ test("doctor stays quiet once the service is installed", async () => {
 
 test("an unreachable daemon is not also reported as not-autostarted", async () => {
   const report = await doctor({
-    env: { PEW2_HOME: "/tmp/pew2-nonexistent" } as NodeJS.ProcessEnv,
+    env: { TAPPY_HOME: "/tmp/tappy-nonexistent" } as NodeJS.ProcessEnv,
     searchDirs: [],
     probeDaemon: async () => false,
     addresses: () => ["192.168.1.24"],
@@ -160,7 +160,7 @@ test("reload waits for launchd teardown and retries a raced bootstrap", async ()
 
   const result = await reloadLaunchdJob({
     domain: "gui/501",
-    path: "/tmp/dev.pew2.daemon.plist",
+    path: "/tmp/dev.tappy.daemon.plist",
     sleep: async (milliseconds) => {
       sleeps.push(milliseconds);
     },
@@ -189,7 +189,7 @@ test("reload waits for launchd teardown and retries a raced bootstrap", async ()
 // file, and it still runs on the platform that can actually load it.
 test.skipIf(platform() !== "darwin")("the generated plist parses as real XML", async () => {
   const plist = buildPlist({ bunPath: bun });
-  const path = join(await mkdtemp(join(tmpdir(), "pew2-plist-")), "test.plist");
+  const path = join(await mkdtemp(join(tmpdir(), "tappy-plist-")), "test.plist");
   await Bun.write(path, plist);
 
   // plutil is what launchd itself uses; a file it rejects will never load.
@@ -228,9 +228,9 @@ test("launchd is given a program that actually exists", () => {
     expect(existsSync(args[2]!)).toBe(true);
   }
 
-  // Never the shape that shipped: `pew2 run /$bunfs/server.ts` named a
+  // Never the shape that shipped: `tappy run /$bunfs/server.ts` named a
   // subcommand that did not exist and a path nothing outside the executable
-  // can open, so launchd started it, pew2 printed its help and exited 1,
+  // can open, so launchd started it, tappy printed its help and exited 1,
   // KeepAlive restarted it, and the daemon crash-looped for ever.
   expect(args.join(" ")).not.toContain("$bunfs");
 });

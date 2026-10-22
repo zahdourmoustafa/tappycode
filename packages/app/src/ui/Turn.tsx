@@ -10,7 +10,7 @@
  * no longer means "a new message arrived" — a per-mount fade would fire while
  * scrolling through old history.
  */
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { memo } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -166,7 +166,7 @@ function TurnBody({ turn, onOpenThought, retryPrompt, onRetry, liveIdentity }: T
       <View style={styles.systemRow}>
         {hasText && (
           <View style={styles.systemError}>
-            <Pew size={28} mood="oops" style={styles.pew} />
+            <Tappy size={28} mood="oops" style={styles.tappy} />
             <View style={styles.systemText}>
               <MarkdownText text={text} tone="system" />
             </View>
@@ -265,9 +265,9 @@ export const Turn = memo(
 );
 
 const styles = StyleSheet.create({
-  // Pew's globe fills the middle of its box; the rest is room to bounce,
+  // Tappy's globe fills the middle of its box; the rest is room to bounce,
   // so the box overhangs the old icon's footprint instead of growing the row.
-  pew: { margin: -4 },
+  tappy: { margin: -4 },
   noteRow: { flexDirection: "row", alignItems: "center", gap: theme.space(3), paddingVertical: theme.space(1) },
   noteRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: theme.color.border },
   noteText: { color: theme.color.textDim, fontSize: theme.font.small, flexShrink: 1, textAlign: "center" },

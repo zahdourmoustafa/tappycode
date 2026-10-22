@@ -20,10 +20,10 @@
  * The cost of the feature is honest and belongs here rather than buried: the
  * banner's title and body are rendered by iOS with no JavaScript involved, so
  * they cannot be encrypted end-to-end. Expo, Apple and Google see the project
- * name and the agent's opening line. Everything else in pew2 stays sealed; this
+ * name and the agent's opening line. Everything else in tappy stays sealed; this
  * one string does not, and that is the price of an instant notification.
  */
-import { noticeBody, noticeTitle, type NoticeOrigin } from "@pew2/protocol";
+import { noticeBody, noticeTitle, type NoticeOrigin } from "@tappy/protocol";
 
 /** Expo's push endpoint. Needs no credentials of ours; EAS holds those. */
 const PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -31,10 +31,18 @@ const PUSH_URL = "https://exp.host/--/api/v2/push/send";
 /** Matches what `getExpoPushTokenAsync` returns, so junk never reaches Expo. */
 const TOKEN_SHAPE = /^Expo(nent)?PushToken\[[^\]]+\]$/;
 
+/**
+ * A raw Firebase registration token: what Android hands an app built without
+ * Expo's push service. Opaque, but always drawn from this alphabet.
+ */
+const FCM_TOKEN_SHAPE = /^[A-Za-z0-9:_-]{20,4096}$/;
+
 /** A phone that has asked to be told when its agents finish. */
 interface Target {
   token: string;
   platform: "ios" | "android";
+  /** Who delivers to the token: Expo's service, or Firebase through the relay. */
+  service: "expo" | "fcm";
   /** Android needs the channel named on the message, not just on the device. */
   channelId?: string;
 }
@@ -73,15 +81,32 @@ export class PushRegistry {
    *
    * @returns whether the token was accepted, so a caller can log the refusal.
    */
-  register(deviceId: string, token: string, platform: "ios" | "android"): boolean {
-    if (!TOKEN_SHAPE.test(token)) return false;
+  register(
+    deviceId: string,
+    token: string,
+    platform: "ios" | "android",
+    service: "expo" | "fcm" = "expo",
+  ): boolean {
+    // Firebase is Android's own service; an iPhone's raw token is Apple's.
+    if (service === "fcm" ? platform !== "android" || !FCM_TOKEN_SHAPE.test(token) : !TOKEN_SHAPE.test(token)) {
+      return false;
+    }
     this.targets.set(deviceId, {
       token,
       platform,
+      service,
       ...(platform === "android" ? { channelId: ANDROID_CHANNEL } : null),
     });
     return true;
   }
+
+  /**
+   * How a Firebase push leaves this machine: over the relay connection, which
+   * holds the signing key so this daemon never has to. Set by whoever runs the
+   * relay client; unset (LAN only, no relay) means such phones get local
+   * banners only. Returns whether the frame went.
+   */
+  relay?: (frame: RelayPush) => boolean;
 
   /**
    * Stop pushing to a token the push service has told us is dead.
@@ -133,10 +158,31 @@ interface ExpoTicket {
   details?: { error?: string };
 }
 
+/**
+ * A push for the relay to hand to Firebase. Sent in the clear on the relay
+ * connection (the relay has to read it to send it), so it carries nothing
+ * beyond what the banner shows anyway.
+ */
+export interface RelayPush {
+  t: "push";
+  messages: Array<{ token: string; title: string; body: string; sessionId: string }>;
+}
+
+/** The Firebase half of a push, for the relay; undefined when no phone wants one. */
+export function relayPush(registry: PushRegistry, turn: FinishedTurnPush): RelayPush | undefined {
+  const title = noticeTitle(turn);
+  const body = noticeBody(turn.lastText);
+  const messages = registry
+    .list()
+    .filter((target) => target.service === "fcm")
+    .map((target) => ({ token: target.token, title, body, sessionId: turn.sessionId }));
+  return messages.length ? { t: "push", messages } : undefined;
+}
+
 export function pushMessages(registry: PushRegistry, turn: FinishedTurnPush): ExpoMessage[] {
   const title = noticeTitle(turn);
   const body = noticeBody(turn.lastText);
-  return registry.list().map((target) => ({
+  return registry.list().filter((target) => target.service === "expo").map((target) => ({
     to: target.token,
     title,
     body,
@@ -189,7 +235,10 @@ export async function pushFinishedTurn(
   turn: FinishedTurnPush,
 ): Promise<void> {
   if (registry.size === 0) return;
+  const viaRelay = relayPush(registry, turn);
+  if (viaRelay) registry.relay?.(viaRelay);
   const messages = pushMessages(registry, turn);
+  if (messages.length === 0) return;
   try {
     const response = await fetch(PUSH_URL, {
       method: "POST",

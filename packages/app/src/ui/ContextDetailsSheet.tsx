@@ -1,5 +1,5 @@
 /**
- * Context: a ring of dots lit up to the used fraction, Pew in the middle.
+ * Context: a ring of dots lit up to the used fraction, Tappy in the middle.
  *
  * An agent that sends no `usage_update` gets an honest "no reading", never 0%.
  */
@@ -13,7 +13,7 @@ import { theme } from "../theme";
 import { contextDetails } from "../contextDetails";
 import { usagePercent, type ContextUsage } from "../contextUsage";
 import type { Workspace } from "../useDaemon";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { Led } from "./stage/Led";
 import { DashedRule } from "./stage/DashedRule";
 import { useAgentColor } from "./stage/agentColor";
@@ -101,7 +101,7 @@ export function ContextDetailsSheet({
         <View style={styles.ring}>
           <DotRing fraction={percent === undefined ? 0 : percent / 100} color={ringColor} visible={visible} />
           <View style={styles.center} pointerEvents="box-none">
-            <Pew size={88} mood={mood} color={agent} paused={!visible} accessibilityLabel={`Pew, ${mood}`} />
+            <Tappy size={88} mood={mood} color={agent} paused={!visible} accessibilityLabel={`Tappy, ${mood}`} />
           </View>
         </View>
         <DashedRule />

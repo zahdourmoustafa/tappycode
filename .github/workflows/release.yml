@@ -25,15 +25,15 @@ jobs:
       matrix:
         include:
           - target: bun-darwin-arm64
-            asset: pew2-darwin-arm64
+            asset: tappy-darwin-arm64
           - target: bun-darwin-x64
-            asset: pew2-darwin-x64
+            asset: tappy-darwin-x64
           - target: bun-linux-x64
-            asset: pew2-linux-x64
+            asset: tappy-linux-x64
           - target: bun-linux-arm64
-            asset: pew2-linux-arm64
+            asset: tappy-linux-arm64
           - target: bun-windows-x64
-            asset: pew2-windows-x64.exe
+            asset: tappy-windows-x64.exe
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -112,10 +112,10 @@ jobs:
       # A binary that cannot be the daemon is not a release, it is a crash loop
       # with a version number.
       #
-      # `pew2 service install` wrote a plist naming `pew2 run /$bunfs/server.ts`
+      # `tappy service install` wrote a plist naming `tappy run /$bunfs/server.ts`
       # - a subcommand that did not exist, pointing at a path inside the
-      # executable's own virtual filesystem. launchd started it, pew2 printed
-      # its help and exited 1, KeepAlive restarted it for ever, and `pew2 setup`
+      # executable's own virtual filesystem. launchd started it, tappy printed
+      # its help and exited 1, KeepAlive restarted it for ever, and `tappy setup`
       # reported the daemon unreachable with no hint why. Every binary install
       # shipped that way; only people running from a source checkout, whose
       # plist named a real server.ts, ever had a working daemon.
@@ -127,7 +127,7 @@ jobs:
         if: matrix.target == 'bun-linux-x64'
         run: |
           set -u
-          PEW2_HOME=$(mktemp -d) PEW2_PORT=8791 ./${{ matrix.asset }} serve > serve.log 2>&1 &
+          TAPPY_HOME=$(mktemp -d) TAPPY_PORT=8791 ./${{ matrix.asset }} serve > serve.log 2>&1 &
           pid=$!
 
           ok=0
@@ -141,7 +141,7 @@ jobs:
           kill "$pid" 2>/dev/null || true
           if [ "$ok" -ne 1 ]; then
             echo "::error::The compiled binary cannot run the daemon."
-            echo "'pew2 serve' never answered /health - a plist pointing at it would crash-loop."
+            echo "'tappy serve' never answered /health - a plist pointing at it would crash-loop."
             cat serve.log
             exit 1
           fi
@@ -196,7 +196,7 @@ jobs:
       - name: Require the platforms the installers fetch
         run: |
           missing=""
-          for asset in pew2-darwin-arm64 pew2-darwin-x64 pew2-linux-x64 pew2-windows-x64.exe; do
+          for asset in tappy-darwin-arm64 tappy-darwin-x64 tappy-linux-x64 tappy-windows-x64.exe; do
             if [ ! -f "dist/$asset" ] || [ ! -f "dist/$asset.sha256" ]; then
               missing="$missing $asset"
             fi

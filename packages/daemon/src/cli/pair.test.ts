@@ -1,12 +1,20 @@
 /**
- * The live half of `pew2 pair`.
+ * The live half of `tappy pair`.
  *
  * The property worth protecting is that waiting can never make pairing worse:
  * a missing daemon, a dead socket, a timeout or Ctrl-C all resolve quietly,
  * because the QR printed above is already valid.
  */
-import { expect, test } from "bun:test";
-import { checkRelay, cliDeviceId, deviceLabel, reachOf, rotationFor, waitForDevice } from "./pair.js";
+import { describe, expect, test } from "bun:test";
+import {
+  checkRelay,
+  cliDeviceId,
+  deviceLabel,
+  ensureDaemon,
+  reachOf,
+  rotationFor,
+  waitForDevice,
+} from "./pair.js";
 
 /** A WebSocket stand-in with just the surface `waitForDevice` touches. */
 class FakeSocket {
@@ -48,7 +56,11 @@ test("a device joining resolves the wait", async () => {
 test("the CLI never counts its own id as the phone", async () => {
   const { socket, create } = harness();
 
-  const pending = waitForDevice({ url: "ws://127.0.0.1:8787/", createSocket: create, timeoutMs: 60 });
+  const pending = waitForDevice({
+    url: "ws://127.0.0.1:8787/",
+    createSocket: create,
+    timeoutMs: 60,
+  });
   // The watching socket does not announce itself today, so this should be
   // unreachable — pinned so that adding a `hello` later cannot make the command
   // report success the instant it starts.
@@ -61,7 +73,11 @@ test("the CLI never counts its own id as the phone", async () => {
 test("unrelated and malformed traffic is ignored", async () => {
   const { socket, create } = harness();
 
-  const pending = waitForDevice({ url: "ws://127.0.0.1:8787/", createSocket: create, timeoutMs: 60 });
+  const pending = waitForDevice({
+    url: "ws://127.0.0.1:8787/",
+    createSocket: create,
+    timeoutMs: 60,
+  });
   socket.onmessage?.({ data: "not json at all" });
   socket.onmessage?.({ data: new ArrayBuffer(4) });
   socket.deliver({ t: "providers", providers: [] });
@@ -118,7 +134,9 @@ test("the relay check probes /health over http and treats any failure as down", 
 
   // A non-2xx is as unusable as an exception, and both must read as "down"
   // rather than propagating and killing the command.
-  expect(await checkRelay("wss://relay.example.com", async () => new Response("", { status: 500 }))).toBe(false);
+  expect(
+    await checkRelay("wss://relay.example.com", async () => new Response("", { status: 500 })),
+  ).toBe(false);
   expect(
     await checkRelay("wss://relay.example.com", async () => {
       throw new Error("getaddrinfo ENOTFOUND");
@@ -135,7 +153,7 @@ test("device names drop the relay's uuid suffix", () => {
 test("printing a code for a claimed pairing re-mints it", () => {
   // The old code could not have onboarded anyone: the phone holding it never
   // needs to scan again, and everyone else is refused. The app's own refusal
-  // tells people to run `pew2 pair`, so handing them the same dead code is a
+  // tells people to run `tappy pair`, so handing them the same dead code is a
   // loop with no way out of it.
   expect(rotationFor("phone-aaaa", false)).toEqual({
     rotate: true,
@@ -144,7 +162,7 @@ test("printing a code for a claimed pairing re-mints it", () => {
 });
 
 test("running the command at all is the request for a fresh code", () => {
-  // Someone typing `pew2 pair` wants to pair a phone, and only a new code can
+  // Someone typing `tappy pair` wants to pair a phone, and only a new code can
   // do that. Printing the existing one used to be the default whenever the
   // pairing merely *looked* unclaimed - which is exactly how a half-failed
   // attempt looks, so the command handed back the code the phone had already
@@ -167,5 +185,65 @@ test("--rotate is still accepted, and no longer decides anything", () => {
   expect(rotationFor("phone-aaaa", true)).toEqual({
     rotate: true,
     supersededDevice: "phone-aaaa",
+  });
+});
+
+describe("ensureDaemon", () => {
+  test("a daemon that already answers is left alone", async () => {
+    let installs = 0;
+    const up = await ensureDaemon({
+      check: async () => true,
+      install: async () => {
+        installs++;
+        return { state: "running" };
+      },
+    });
+    expect(up).toBe(true);
+    expect(installs).toBe(0);
+  });
+
+  test("a machine with nothing running gets the service installed, then waits for it to answer", async () => {
+    let installed = false;
+    let checks = 0;
+    let announced = false;
+    const up = await ensureDaemon({
+      supported: true,
+      check: async () => {
+        checks++;
+        // Not answering at once even after installing: the server binds a moment later.
+        return installed && checks > 2;
+      },
+      install: async () => {
+        installed = true;
+        return { state: "running" };
+      },
+      onStarting: () => {
+        announced = true;
+      },
+      waitMs: 5000,
+    });
+    expect(up).toBe(true);
+    expect(announced).toBe(true);
+  });
+
+  test("an unsupported platform or a failed install reports not running, without throwing", async () => {
+    expect(await ensureDaemon({ supported: false, check: async () => false })).toBe(false);
+    expect(
+      await ensureDaemon({
+        supported: true,
+        check: async () => false,
+        install: async () => {
+          throw new Error("launchctl said no");
+        },
+      }),
+    ).toBe(false);
+    expect(
+      await ensureDaemon({
+        supported: true,
+        check: async () => false,
+        install: async () => ({ state: "running" }),
+        waitMs: 200,
+      }),
+    ).toBe(false);
   });
 });

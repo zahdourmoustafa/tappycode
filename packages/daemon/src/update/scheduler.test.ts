@@ -21,7 +21,7 @@ const APPLIED: ApplyResult = {
   ok: true,
   previous: "0.9.17",
   installed: "0.9.18",
-  path: "/usr/local/bin/pew2",
+  path: "/usr/local/bin/tappy",
   restartRequired: true,
 };
 
@@ -174,7 +174,7 @@ test("a failed apply never exits", async () => {
     apply: async () => ({
       ok: false,
       reason: "download-failed",
-      detail: "Could not download pew2-darwin-arm64.",
+      detail: "Could not download tappy-darwin-arm64.",
     }),
   });
 

@@ -1,5 +1,5 @@
 /**
- * What `pew2 setup` shows you.
+ * What `tappy setup` shows you.
  *
  * The old output printed everything it learned, in the order it learned it, with
  * a red cross next to every agent you had not installed. Someone who owns Claude
@@ -9,7 +9,7 @@
  *
  * So the rule here: **not installed is not a failure.** It is a fact about the
  * computer, and most people will never install more than one or two agents.
- * Only something the user must act on to make pew2 work gets a warning colour,
+ * Only something the user must act on to make tappy work gets a warning colour,
  * and nothing at all gets a red cross unless it is genuinely broken.
  *
  * Rendering is separated from doing so the whole screen can be tested without
@@ -47,7 +47,7 @@ export interface AgentState {
   /**
    * One short line about what this agent is.
    *
-   * Shown by `pew2 providers list`, which is a catalogue. Setup does not use it:
+   * Shown by `tappy providers list`, which is a catalogue. Setup does not use it:
    * there the question is "does it work", and a description would bury that.
    */
   summary?: string;
@@ -101,8 +101,8 @@ export function needsSetup(detail: string | undefined): boolean {
  *
  * The broken section used to print the agent's raw failure under the heading
  * "Not working", which answers none of the three questions someone actually has:
- * is it me, is it the agent, or is it pew2? "'Gemini CLI' failed to start: ACP
- * connection closed. It was started with: npx …" reads as pew2 being broken, and
+ * is it me, is it the agent, or is it tappy? "'Gemini CLI' failed to start: ACP
+ * connection closed. It was started with: npx …" reads as tappy being broken, and
  * the one useful line — what the process printed on its way out — was on the
  * *second* line of the message, which this screen drops.
  *
@@ -146,7 +146,7 @@ const EMPTY_REASON =
   /^(?:acp )?connection closed$|^internal error$|^the agent failed without saying why$/i;
 
 /**
- * The agent's message with pew2's own framing taken back off.
+ * The agent's message with tappy's own framing taken back off.
  *
  * `connect.ts` wraps every failure as "'Name' failed to start: <message>. It was
  * started with: <command>" so a log line is attributable to something. On this
@@ -192,7 +192,7 @@ export function failureFor(agent: AgentState): Failure {
       kind: "outdated",
       label: "too old",
       explain:
-        "This version does not speak ACP, the protocol pew2 drives it with. Update the agent, then run pew2 setup again.",
+        "This version does not speak ACP, the protocol tappy drives it with. Update the agent, then run tappy setup again.",
       evidence: said ?? printed,
     };
   }
@@ -214,8 +214,8 @@ export function failureFor(agent: AgentState): Failure {
     return {
       kind: "crashed",
       label: "quit at startup",
-      explain: "The agent started, then exited before pew2 could connect to it.",
-      // Its own words first — "connection closed" is only pew2 noticing the
+      explain: "The agent started, then exited before tappy could connect to it.",
+      // Its own words first — "connection closed" is only tappy noticing the
       // exit, so where that is all there is, what it printed is the whole story.
       evidence: said ?? printed,
     };
@@ -292,7 +292,7 @@ export function pickerNote(agent: AgentState): string | undefined {
  * thirty-second job someone may well do straight after this screen, and
  * refusing to let them select it meant setup wrote the agent into the disabled
  * list on their behalf: an agent they authenticated an hour later stayed hidden
- * from the phone until they found `pew2 providers enable`.
+ * from the phone until they found `tappy providers enable`.
  */
 export function canPick(agent: AgentState): boolean {
   const bucket = bucketFor(agent);
@@ -342,7 +342,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
     );
     out.push(
       r.line(
-        `${s.hex(PALETTE.faint, "pew2 providers enable <id>")}   ${s.hex(PALETTE.faint, "to use one again")}`,
+        `${s.hex(PALETTE.faint, "tappy providers enable <id>")}   ${s.hex(PALETTE.faint, "to use one again")}`,
       ),
     );
   }
@@ -371,7 +371,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
     // machine and genuinely will not run.
     //
     // The heading names the agent as the subject, not the verdict: "Not working"
-    // above a pew2 screen reads as pew2 not working, which is the opposite of
+    // above a tappy screen reads as tappy not working, which is the opposite of
     // what happened — the check ran fine and found something on this computer.
     out.push(...r.step("Installed, but not starting", "what each one did"));
     for (const agent of buckets.broken) {
@@ -386,7 +386,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
       }
       if (failure.evidence) {
         // Quoted, so it is obvious which words are the agent's and which are
-        // ours. Without that, a cryptic `npm error 404` reads as pew2's own.
+        // ours. Without that, a cryptic `npm error 404` reads as tappy's own.
         for (const part of wrapDetail(`"${failure.evidence}"`, detailWidth(options))) {
           out.push(r.line(`  ${s.hex(PALETTE.faint, part)}`));
         }
@@ -396,7 +396,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
       const next =
         failure.kind === "outdated" && agent.install
           ? agent.install
-          : `pew2 providers verify ${agent.id}`;
+          : `tappy providers verify ${agent.id}`;
       out.push(r.line(`  ${s.hex(PALETTE.faint, next)}`));
     }
   }
@@ -411,7 +411,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
     for (const part of wrapDetail(names, detailWidth(options))) {
       out.push(r.line(s.hex(PALETTE.faint, part)));
     }
-    out.push(r.line(s.hex(PALETTE.faint, "pew2 providers list   shows how to add any of them")));
+    out.push(r.line(s.hex(PALETTE.faint, "tappy providers list   shows how to add any of them")));
   }
 
   return out;
@@ -433,7 +433,7 @@ export function agentSections(agents: AgentState[], options: RenderOptions = {})
  */
 function signinHint(agent: AgentState): string {
   const detail = agent.verify?.detail;
-  return detail ? detail.split("\n")[0]!.trim() : "finish this agent's own setup, then run pew2 setup again";
+  return detail ? detail.split("\n")[0]!.trim() : "finish this agent's own setup, then run tappy setup again";
 }
 
 /**
@@ -470,11 +470,11 @@ export function outroFor(
     // answering a question they did not ask.
     if (usable.length > 0) {
       return r.outro(
-        `${s.bold("No agents selected.")} ${s.hex(PALETTE.faint, "Run")} ${s.bold("pew2 setup")} ${s.hex(PALETTE.faint, "again to choose the ones your phone can use.")}`,
+        `${s.bold("No agents selected.")} ${s.hex(PALETTE.faint, "Run")} ${s.bold("tappy setup")} ${s.hex(PALETTE.faint, "again to choose the ones your phone can use.")}`,
       );
     }
     return r.outro(
-      `${s.bold("No agents yet.")} ${s.hex(PALETTE.faint, "Install one from the list above, then run")} ${s.bold("pew2 setup")} ${s.hex(PALETTE.faint, "again.")}`,
+      `${s.bold("No agents yet.")} ${s.hex(PALETTE.faint, "Install one from the list above, then run")} ${s.bold("tappy setup")} ${s.hex(PALETTE.faint, "again.")}`,
     );
   }
   // One working agent is the whole requirement. Anything else on the screen is
@@ -482,16 +482,16 @@ export function outroFor(
   // list of outstanding chores — nobody signs in to all thirteen.
   if (!ready) {
     return r.outro(
-      `${s.bold(`${plural(count, "agent")} ready.`)} ${s.hex(PALETTE.faint, "Sort the machine out above, then run")} ${s.bold("pew2 setup")}`,
+      `${s.bold(`${plural(count, "agent")} ready.`)} ${s.hex(PALETTE.faint, "Sort the machine out above, then run")} ${s.bold("tappy setup")}`,
     );
   }
   return r.outro(
-    `${s.bold(`${plural(count, "agent")} ready.`)} ${s.hex(PALETTE.faint, "That is all you need — run")} ${s.bold("pew2 pair")} ${s.hex(PALETTE.faint, "to connect your phone.")}`,
+    `${s.bold(`${plural(count, "agent")} ready.`)} ${s.hex(PALETTE.faint, "That is all you need — run")} ${s.bold("tappy pair")} ${s.hex(PALETTE.faint, "to connect your phone.")}`,
   );
 }
 
 /**
- * `pew2 providers list`, in the same visual language as `pew2 setup`.
+ * `tappy providers list`, in the same visual language as `tappy setup`.
  *
  * A different job to the setup screen, though: this is the catalogue. Setup
  * answers "am I ready", so it compresses the agents you do not have onto one
@@ -557,7 +557,7 @@ export function providerList(agents: AgentState[], options: RenderOptions = {}):
         ),
       );
       // A catalogue, so one sentence each and no evidence dump: the screen that
-      // exists to explain a single failure is `pew2 providers verify <id>`.
+      // exists to explain a single failure is `tappy providers verify <id>`.
       for (const part of wrapDetail(failure.explain, width - 2)) {
         out.push(r.line(`  ${s.hex(PALETTE.faint, part)}`));
       }
@@ -574,7 +574,7 @@ export function providerList(agents: AgentState[], options: RenderOptions = {}):
     }
     out.push(
       r.line(
-        `  ${s.hex(PALETTE.faint, "Show one again with")} ${s.bold("pew2 providers enable <id>")}`,
+        `  ${s.hex(PALETTE.faint, "Show one again with")} ${s.bold("tappy providers enable <id>")}`,
       ),
     );
   }

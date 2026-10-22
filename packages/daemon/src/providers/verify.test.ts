@@ -3,7 +3,7 @@
  *
  * Agents report failures as JSON-RPC error objects, and the useful sentence is
  * almost never in the field you would expect. What `describe` returns does not
- * just get printed — `pew2 setup` pattern-matches it to decide whether an agent
+ * just get printed — `tappy setup` pattern-matches it to decide whether an agent
  * merely needs signing in or is genuinely broken, so a vague string is not a
  * cosmetic problem. It puts a working agent in the wrong section.
  */

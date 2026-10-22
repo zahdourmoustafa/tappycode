@@ -7,7 +7,7 @@
  * switching conversations the same way a session row's `permission` does.
  * Every daemon field may be absent (older daemon): absent means say nothing.
  */
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 import { readAskEvent, readAskList, type AskRequest } from "./askUser";
 import type { QueuedMessage } from "./queue";
 import { readAutopilot, readPlan, type AutopilotInfo, type ChecklistItem, type PlanInfo } from "./ggReview";

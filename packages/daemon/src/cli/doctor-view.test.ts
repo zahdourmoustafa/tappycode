@@ -28,7 +28,7 @@ const problem = (over: Partial<Problem> = {}): Problem => ({
   id: "local-only",
   severity: "warning",
   detail: "No relay. Works on the same network only.",
-  fix: "pew2 relay wss://your-relay.workers.dev",
+  fix: "tappy relay wss://your-relay.workers.dev",
   ...over,
 });
 
@@ -57,7 +57,7 @@ test("a blocking problem leads with what to run", () => {
     report({
       ok: false,
       problems: [
-        problem({ id: "daemon-unreachable", severity: "error", detail: "Nothing serving.", fix: "pew2 setup" }),
+        problem({ id: "daemon-unreachable", severity: "error", detail: "Nothing serving.", fix: "tappy setup" }),
       ],
     }),
     plain,
@@ -67,7 +67,7 @@ test("a blocking problem leads with what to run", () => {
 
   expect(text).toContain("Stopping you");
   expect(text).toContain("Nothing serving.");
-  expect(text).toContain("pew2 setup");
+  expect(text).toContain("tappy setup");
   expect(text).toContain("1 thing to fix");
 });
 

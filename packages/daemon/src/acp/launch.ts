@@ -60,8 +60,8 @@ export function launchSpec(
 ): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
   // Same override the resolver honours, so the Windows path is reachable from a
   // Linux CI run — the only reason this behaviour is testable at all.
-  const windows = env.PEW2_FAKE_PLATFORM
-    ? env.PEW2_FAKE_PLATFORM === "win32"
+  const windows = env.TAPPY_FAKE_PLATFORM
+    ? env.TAPPY_FAKE_PLATFORM === "win32"
     : process.platform === "win32";
   if (!windows) return { command, args };
 

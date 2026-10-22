@@ -13,7 +13,7 @@ import { Sheet } from "./Sheet";
 import { FolderPicker } from "./FolderPicker";
 import { CHIP_LAYOUT, CONTEXT_MAX, ContextChips, Field, INSTRUCTIONS_MAX, INSTRUCTIONS_PLACEHOLDER, StageInput } from "./NewGoalSheet";
 import { dashedOutline } from "./stage/DashedRule";
-import { KEN_COLOR } from "../pew/palette";
+import { KEN_COLOR } from "../tappy/palette";
 import { withAlpha } from "../motion";
 import type { GoalResult, GoalState, GoalSummary } from "../ggState";
 import type { ConfigOption, WorkspaceBrowse } from "../useDaemon";

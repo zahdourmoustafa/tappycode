@@ -2,7 +2,7 @@
  * Keeping the daemon alive on Linux, via a systemd **user** unit.
  *
  * The launchd half of this lives in `service.ts`; this is the same idea in the
- * other dialect. A user unit rather than a system one because pew2 spawns coding
+ * other dialect. A user unit rather than a system one because tappy spawns coding
  * agents as the person using it: their `$HOME`, their ssh keys, their npm cache.
  * A root unit would run every agent as root, and nothing about a phone remote
  * needs that.
@@ -61,23 +61,23 @@ export function buildUnit(options: InstallOptions = {}): string {
   const program = programArguments(options.bunPath);
   const runtime = options.bunPath ?? process.execPath;
   const logs = logDir(options.env);
-  const port = options.port ?? Number(options.env?.PEW2_PORT ?? 8787);
+  const port = options.port ?? Number(options.env?.TAPPY_PORT ?? 8787);
   const path = options.env?.PATH ?? process.env.PATH ?? "/usr/bin:/bin";
 
   const environment = [
     environmentLine("PATH", `${dirname(runtime)}:${path}`),
-    environmentLine("PEW2_PORT", String(port)),
+    environmentLine("TAPPY_PORT", String(port)),
     environmentLine("HOME", options.home ?? homedir()),
   ];
-  if (options.experimental) environment.push(environmentLine("PEW2_EXPERIMENTAL", "1"));
-  if (options.env?.PEW2_HOME) environment.push(environmentLine("PEW2_HOME", options.env.PEW2_HOME));
-  if (options.env?.PEW2_RELAY) {
-    environment.push(environmentLine("PEW2_RELAY", options.env.PEW2_RELAY));
+  if (options.experimental) environment.push(environmentLine("TAPPY_EXPERIMENTAL", "1"));
+  if (options.env?.TAPPY_HOME) environment.push(environmentLine("TAPPY_HOME", options.env.TAPPY_HOME));
+  if (options.env?.TAPPY_RELAY) {
+    environment.push(environmentLine("TAPPY_RELAY", options.env.TAPPY_RELAY));
   }
 
   return `[Unit]
-Description=pew2 daemon
-Documentation=https://github.com/KenKaiii/pew2
+Description=tappy daemon
+Documentation=https://github.com/zahdourmoustafa/tappycode
 # The daemon dials out to the relay on start. Without this it races DNS on a
 # freshly booted machine and spends its first backoff cycle failing.
 After=network-online.target

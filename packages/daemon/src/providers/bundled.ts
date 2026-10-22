@@ -1,5 +1,5 @@
 /**
- * The manifests that ship with pew2, compiled into the binary.
+ * The manifests that ship with tappy, compiled into the binary.
  *
  * These used to be read from a `providers/` directory found by walking up from
  * this file. That works from a checkout and fails completely once the CLI is a
@@ -9,7 +9,7 @@
  * exactly like "you have nothing installed".
  *
  * Importing them makes the bundler inline the JSON, so the list travels with the
- * executable. A checkout still reads `~/.pew2/providers` for anything the user
+ * executable. A checkout still reads `~/.tappy/providers` for anything the user
  * writes themselves; only the built-in set is embedded.
  *
  * Adding a provider means adding it here as well as to `providers/`. The test
@@ -17,7 +17,7 @@
  * exists on disk but not in this list is one that works in development and
  * vanishes in the shipped binary.
  */
-import type { ProviderManifestInput } from "@pew2/protocol";
+import type { ProviderManifestInput } from "@tappy/protocol";
 
 import claude_code from "../../../../providers/claude-code.json" with { type: "json" };
 import cline from "../../../../providers/cline.json" with { type: "json" };

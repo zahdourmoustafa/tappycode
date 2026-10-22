@@ -1,14 +1,14 @@
 /**
  * Relay client tests.
  *
- * The relay is what makes pew2 usable from anywhere, and the failure that
+ * The relay is what makes tappy usable from anywhere, and the failure that
  * matters is not the first connection — it is the thousandth. Desktops sleep,
  * Wi-Fi changes, relays deploy. The user is not at the machine to restart
  * anything, so reconnection is the feature under test here.
  */
 import { test, expect } from "bun:test";
 import { RelayClient, backoffBounds, type RelayClientOptions } from "./relay-client.js";
-import { SecureChannel, e2e, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, wire } from "@tappy/protocol";
 
 const { WIRE_VERSION } = wire;
 import type { Daemon } from "./index.js";
@@ -45,7 +45,10 @@ function fakeDaemon({
         if (refreshFails) throw new Error("EMFILE: too many open files");
         return { providers: [], errors: [] };
       },
-      catchUp: (cursors: Record<string, number>) => {
+      // `greet` is what the client sends a joining phone: the catch-up, then
+      // the terminal list. Recorded under "catchUp" because that is the part
+      // these tests are about.
+      greet: (cursors: Record<string, number>) => {
         calls.push("catchUp");
         cursorsSeen.push(cursors);
         return catchUp(cursors);
@@ -351,7 +354,7 @@ test("a malformed or unsealed frame is dropped, not answered", async () => {
 
 test("rotating the pairing moves the daemon into the new relay room", () => {
   // The room id is derived from the token and fixed when the socket opens, so a
-  // rotation cannot be applied to a live connection. Before this, `pew2 pair`
+  // rotation cannot be applied to a live connection. Before this, `tappy pair`
   // left the daemon listening in the old room while the freshly paired phone
   // joined the new one, and only a restart cleared it.
   const { relay } = client();

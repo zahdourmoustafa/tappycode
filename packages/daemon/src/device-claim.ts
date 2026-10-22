@@ -30,7 +30,7 @@
 /**
  * The id every app used to call itself.
  *
- * `pew2 pair` bakes a literal `deviceId=phone` into the printed link so the URL
+ * `tappy pair` bakes a literal `deviceId=phone` into the printed link so the URL
  * is valid standalone, and apps built before the claim gate kept it rather than
  * substituting their own. So a phone paired on an older build claims its pairing
  * under this name — and once the user updates, their app introduces itself with
@@ -58,13 +58,13 @@ export function isRealClaim(claimedBy: string | undefined): claimedBy is string 
 }
 
 /**
- * The prefix `pew2 pair`'s own watching socket identifies itself with.
+ * The prefix `tappy pair`'s own watching socket identifies itself with.
  *
  * Lives here rather than in the CLI because both sides need it and they must
  * not disagree: the CLI decides what to send, the daemon decides what that
  * means, and a copy in each is a rule that can drift.
  */
-export const CLI_DEVICE_PREFIX = "pew2-cli@";
+export const CLI_DEVICE_PREFIX = "tappy-cli@";
 
 /**
  * Is this the local CLI watching, rather than a phone?
@@ -94,7 +94,7 @@ export type ClaimDecision =
  */
 export const REFUSED_MESSAGE =
   "This pairing is already in use by another device. A pairing link works once: " +
-  "if this is your phone and you reinstalled the app, run `pew2 pair --rotate` on " +
+  "if this is your phone and you reinstalled the app, run `tappy pair --rotate` on " +
   "your machine and scan the new code.";
 
 /**
@@ -109,11 +109,11 @@ export function decideClaim(claimedBy: string | undefined, deviceId: string): Cl
   // stored value must not become a wildcard that matches the next blank.
   if (!deviceId) return { ok: false, message: REFUSED_MESSAGE };
 
-  // `pew2 pair` opens a socket of its own to notice the phone arriving, and it
+  // `tappy pair` opens a socket of its own to notice the phone arriving, and it
   // has to prove itself or the daemon seals nothing to it. Proving made it a
   // *device*, so it took the very pairing it was printing — and the phone that
   // then scanned the QR was refused as the second device, told to run
-  // `pew2 pair --rotate`, which minted a fresh code and claimed that one too.
+  // `tappy pair --rotate`, which minted a fresh code and claimed that one too.
   // The user is locked out by the command whose only job is letting them in.
   //
   // Admitted, never recorded: this id watches, and ownership stays with

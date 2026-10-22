@@ -2,8 +2,8 @@
 
 What changed, in the words of someone running it rather than someone writing it.
 
-One version number ships: the `pew2` binary, tagged in this repository and
-published in [Releases](https://github.com/KenKaiii/pew2/releases). The phone app
+One version number ships: the `tappy` binary, tagged in this repository and
+published in [Releases](https://github.com/zahdourmoustafa/tappycode/releases). The phone app
 carries its own store version, which store rules forbid moving backwards. The
 `protocol` and `relay` packages are internal and now carry none at all — nothing
 installs them separately, and what an app and a daemon must agree on is
@@ -16,7 +16,7 @@ Dates are the day the tag was cut.
 ### Fixed
 
 - **Starting a new goal from the phone works.** GG Coder reports a brand-new
-  goal with no conversation yet, and pew2 read that as a broken answer, so
+  goal with no conversation yet, and tappy read that as a broken answer, so
   every new goal failed and the phone sat on "Launching". If your computer
   does not answer within 20 seconds, the phone now says so and lets you try
   again.
@@ -25,14 +25,14 @@ Dates are the day the tag was cut.
 
 ### Changed
 
-- **A new look for the installer and every `pew2` command.** The install line,
-  `pew2 setup`, `doctor`, `pair`, `providers` and `registry sync` share one
+- **A new look for the installer and every `tappy` command.** The install line,
+  `tappy setup`, `doctor`, `pair`, `providers` and `registry sync` share one
   style that matches the phone app: a dot-matrix mark opens each screen, its
   title is set in spaced capitals, and each line is marked done, worth a look,
-  or stopped. `pew2 --help` groups its commands into Setup, Run and Agents.
+  or stopped. `tappy --help` groups its commands into Setup, Run and Agents.
 - **Choosing a folder for a goal no longer sets off a run of macOS "Allow"
   prompts.** Suggestions now come only from folders you have already added, in
-  GG Coder or in pew2, instead of a search through your whole home folder.
+  GG Coder or in tappy, instead of a search through your whole home folder.
   Browsing to any other folder still works, and macOS asks only when you open it.
 
 ## 0.9.20 — 2026-10-13
@@ -44,9 +44,9 @@ Dates are the day the tag was cut.
   and change those instructions later from the goal's settings. Goals run on
   the computer exactly as they do from the desktop app.
 - **Files from your phone can go into a goal.** Pick them with the phone's own
-  file picker. pew2 saves a copy in its own folder on the computer
-  (`~/.pew2/goal-files`), not in your project, so they never end up in Git.
-  An older pew2 can't receive them yet; the phone then tells you the goal was
+  file picker. tappy saves a copy in its own folder on the computer
+  (`~/.tappy/goal-files`), not in your project, so they never end up in Git.
+  An older tappy can't receive them yet; the phone then tells you the goal was
   made without its files, rather than leaving that out silently.
 
 ### Fixed
@@ -97,7 +97,7 @@ Dates are the day the tag was cut.
 
 ### Fixed
 
-- **`pew2 pair` can always pair again.** A pairing admits one device, so once a
+- **`tappy pair` can always pair again.** A pairing admits one device, so once a
   phone had claimed it the printed code could not onboard anyone: the phone
   holding it never needs to scan again, and everyone else is refused — including
   that same phone after reinstalling the app, which clears its identity. The
@@ -109,7 +109,7 @@ Dates are the day the tag was cut.
   through scanning. `--rotate` remains for the case this cannot see: a code that
   leaked before it was ever used looks untouched, and still has to be replaced.
 
-  This closes a loop. The app's own refusal tells you to run `pew2 pair` on the
+  This closes a loop. The app's own refusal tells you to run `tappy pair` on the
   machine, which until now handed back the same code that had just been refused.
 
 ## 0.9.12 — 2026-08-08
@@ -124,11 +124,11 @@ Dates are the day the tag was cut.
   is worthless once it has.
 
   Rotation is still the only revocation, and it is still all-or-nothing: run
-  `pew2 pair --rotate` to move a pairing to a different phone. A link that leaked
+  `tappy pair --rotate` to move a pairing to a different phone. A link that leaked
   *before* it was ever used must be rotated, not merely re-scanned — whoever
   claims it first, wins.
 
-- **Every phone used to call itself `phone`.** `pew2 pair` prints a link
+- **Every phone used to call itself `phone`.** `tappy pair` prints a link
   containing `deviceId=phone` so the URL is valid on its own, and the app kept
   that name instead of using its own. Devices were indistinguishable, which would
   have made the claim above decorative. The app now always substitutes its own
@@ -153,7 +153,7 @@ Dates are the day the tag was cut.
   about fifteen seconds the app says so plainly and names what to check, while
   continuing to retry in the background — a sleeping laptop and a retired token
   are indistinguishable from the phone, and one of them comes back on its own.
-- **`pew2 pair` warns before you scan** when a pairing already belongs to a
+- **`tappy pair` warns before you scan** when a pairing already belongs to a
   device, rather than leaving you to discover it as a refusal on the phone.
 
 ### Upgrading
@@ -187,7 +187,7 @@ pairing properly the first time it connects from an updated app.
   which changes network may take up to 90 seconds to reclaim its room, rather
   than the second it used to, since the socket it left behind has to look dead
   first.
-- **`PEW2_TOKEN` is refused below 32 characters.** It is a single hash away from
+- **`TAPPY_TOKEN` is refused below 32 characters.** It is a single hash away from
   being the encryption key, with no salt and no stretching, so a short one can be
   brute-forced offline against a room id the relay already knows.
 - **Attachments and cached transcripts are written owner-only.** They landed at
@@ -239,7 +239,7 @@ next person does not assume otherwise:
 - `expo-updates` is installed and pinned to the app version, which is what a
   future update must not cross. It cannot deliver anything yet: that needs an
   `updates.url` from an EAS project this repository does not have.
-- The `pew2://` URL scheme is registered, which a build has to do before any link
+- The `tappy://` URL scheme is registered, which a build has to do before any link
   can reach the app. Nothing routes an incoming link yet — pairing is still
   camera-only — and a link that paired on arrival would let any app that can open
   a URL point your phone at someone else's daemon, so that handler needs a
@@ -271,4 +271,4 @@ next person does not assume otherwise:
 ## Earlier
 
 Releases before 0.9.6 predate this file. `git log` and the
-[Releases](https://github.com/KenKaiii/pew2/releases) page are the record.
+[Releases](https://github.com/zahdourmoustafa/tappycode/releases) page are the record.

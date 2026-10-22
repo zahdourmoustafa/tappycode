@@ -19,7 +19,7 @@
  * reachable, that it accepted this device, and that both ends hold the same
  * key. Anything less is a guess.
  */
-import { SecureChannel, e2e, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, wire } from "@tappy/protocol";
 import type { Pairing } from "./pairingLink";
 
 /**
@@ -41,8 +41,8 @@ export const VERIFY_TIMEOUT_MS = 8000;
  * read it looking in the wrong place.
  */
 export const UNREACHABLE_MESSAGE =
-  "That code did not connect. Check the machine is awake and running pew2 — " +
-  "and if the code is old, run `pew2 pair` there to get the current one.";
+  "That code did not connect. Check the machine is awake and running tappy — " +
+  "and if the code is old, run `tappy pair` there to get the current one.";
 
 export type VerifyResult = { ok: true } | { ok: false; message: string };
 
@@ -156,7 +156,7 @@ export function verifyPairing(
           ok: false,
           message:
             "That code did not work: the machine answered with a key this device cannot read. " +
-            "Run `pew2 pair` on the machine and scan the new code.",
+            "Run `tappy pair` on the machine and scan the new code.",
         });
         return;
       }

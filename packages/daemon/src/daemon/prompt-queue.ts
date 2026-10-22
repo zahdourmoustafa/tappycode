@@ -4,7 +4,7 @@
  */
 import type { PromptOptions } from "../acp/connect.js";
 import { attachmentLimitError, storeAttachments, type StoredAttachment } from "../attachments.js";
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 import { DaemonGg } from "./gg.js";
 import {
   agentQueueItems,

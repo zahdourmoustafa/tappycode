@@ -1,8 +1,8 @@
 /**
- * Home, "Spotlight": a pool of the agent's colour behind a large Pew, an LED
+ * Home, "Spotlight": a pool of the agent's colour behind a large Tappy, an LED
  * status line, the greeting on one line in the dot-matrix face, a dim hint,
  * and a swipeable row of the agent's most recent chats.
- * Pew is decorative to assistive tech unless `onPressPew` makes it a button.
+ * Tappy is decorative to assistive tech unless `onPressTappy` makes it a button.
  */
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -10,9 +10,9 @@ import Reanimated, { runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedVa
 import { theme } from "../theme";
 import { lastActiveLabel } from "../ggState";
 import { Dissolve } from "./motion/Dissolve";
-import { Pew } from "../pew/Pew";
-import { homeMood, pewInk } from "../pew/palette";
-import type { PewMood } from "../pew/engine";
+import { Tappy } from "../tappy/Tappy";
+import { homeMood, tappyInk } from "../tappy/palette";
+import type { TappyMood } from "../tappy/engine";
 import { Led } from "./stage/Led";
 import { PressScale } from "./stage/PressScale";
 import { dashedOutline } from "./stage/DashedRule";
@@ -27,33 +27,33 @@ export interface HomeChat {
 export interface HomeGreetingProps {
   /** Kept for callers; the colour carries the agent's identity. */
   providerId?: string | undefined;
-  /** The agent's brand colour; none is pew2's own coral. */
+  /** The agent's brand colour; none is tappy's own coral. */
   color?: string;
   busy: boolean;
   /** The machine answered. Asleep otherwise. Defaults to online. */
   online?: boolean;
-  /** Something nothing here can fix (a rotated key): Pew looks worried. */
+  /** Something nothing here can fix (a rotated key): Tappy looks worried. */
   failed?: boolean;
-  /** One line, dot-matrix. Omit to draw Pew alone. */
+  /** One line, dot-matrix. Omit to draw Tappy alone. */
   text?: string;
-  /** LED line under Pew, e.g. "READY · pew2 · 3 changed". */
+  /** LED line under Tappy, e.g. "READY · tappy · 3 changed". */
   status?: string;
-  /** Tapping Pew (the agent carousel). Shows the hint when set. */
-  onPressPew?: () => void;
+  /** Tapping Tappy (the agent carousel). Shows the hint when set. */
+  onPressTappy?: () => void;
   /** Most recent first; the first six are shown. */
   chats?: readonly HomeChat[];
   onOpenChat?: (id: string) => void;
   /**
    * The keyboard's progress, 0 closed to 1 open. While you type the screen is
-   * the sentence's: everything but Pew dissolves away, and Pew shrinks and
+   * the sentence's: everything but Tappy dissolves away, and Tappy shrinks and
    * settles into the middle of what is left.
    */
   typing?: SharedValue<number>;
-  /** Pew smiles (its tap is about to open the agent switcher, which carries the smile on). */
+  /** Tappy smiles (its tap is about to open the agent switcher, which carries the smile on). */
   smiling?: boolean;
 }
 
-/** Pew's size while typing, as a fraction of the hero. */
+/** Tappy's size while typing, as a fraction of the hero. */
 const TYPING_SCALE = 0.5;
 
 /** Big enough to be the screen's subject, small enough to leave the greeting room. */
@@ -61,16 +61,16 @@ const HERO = 200;
 const GLOW = 340;
 const MAX_CHATS = 6;
 
-export function HomeGreeting({ color, busy, online = true, failed = false, text, status, onPressPew, chats, onOpenChat, typing, smiling = false }: HomeGreetingProps) {
-  const mood: PewMood = smiling ? "happy" : failed ? "oops" : homeMood(online, busy);
-  const ink = pewInk(color);
+export function HomeGreeting({ color, busy, online = true, failed = false, text, status, onPressTappy, chats, onOpenChat, typing, smiling = false }: HomeGreetingProps) {
+  const mood: TappyMood = smiling ? "happy" : failed ? "oops" : homeMood(online, busy);
+  const ink = tappyInk(color);
   const shown = (chats ?? []).slice(0, MAX_CHATS);
-  // Height of everything under Pew, so a typing Pew can move down by half of
+  // Height of everything under Tappy, so a typing Tappy can move down by half of
   // it and sit in the middle of the block once the rest has gone.
   const below = useSharedValue(0);
   const still = useSharedValue(0);
   const k = typing ?? still;
-  const pewStyle = useAnimatedStyle(() => ({
+  const tappyStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: (below.value / 2) * k.value },
       { scale: 1 - (1 - TYPING_SCALE) * k.value },
@@ -92,10 +92,10 @@ export function HomeGreeting({ color, busy, online = true, failed = false, text,
   );
   return (
     <View style={styles.root}>
-      <Reanimated.View style={[styles.spot, pewStyle]}>
+      <Reanimated.View style={[styles.spot, tappyStyle]}>
         <AgentGlow color={ink} size={GLOW} />
         <Dissolve>
-          <Pew
+          <Tappy
             // Holds its pose while the keyboard slides, so the composer gets
             // every frame to track it.
             holdWhile={typing}
@@ -103,8 +103,8 @@ export function HomeGreeting({ color, busy, online = true, failed = false, text,
             mood={mood}
             color={color}
             interactive
-            onPress={onPressPew}
-            accessibilityLabel={onPressPew ? "Switch agent" : undefined}
+            onPress={onPressTappy}
+            accessibilityLabel={onPressTappy ? "Switch agent" : undefined}
           />
         </Dissolve>
       </Reanimated.View>
@@ -133,14 +133,14 @@ export function HomeGreeting({ color, busy, online = true, failed = false, text,
           </Dissolve>
         )}
       </View>
-      {onPressPew && (
+      {onPressTappy && (
         <Text style={styles.hint} numberOfLines={1}>
-          Tap Pew to switch agent
+          Tap Tappy to switch agent
         </Text>
       )}
       {/* The row's height is held from the first frame, empty or not: the
           history arrives a moment after launch, and adding the row then pushed
-          Pew and the greeting up the screen. Now the cards fade into a space
+          Tappy and the greeting up the screen. Now the cards fade into a space
           that was already there. (A brand-new install with no chats keeps the
           empty band; the layout never jumps.) */}
       {onOpenChat && shown.length === 0 && <View style={styles.cardsHold} />}

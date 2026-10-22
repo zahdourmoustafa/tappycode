@@ -1,12 +1,12 @@
 /**
- * What `pew2 registry sync` shows you.
+ * What `tappy registry sync` shows you.
  *
  * The registry holds around thirty agents, and the old screen gave each one its
  * own green tick — thirty lines that all said the same thing, with the two lines
  * that actually needed a decision buried underneath.
  *
  * Bulk outcomes belong in a count and a wrapped list of names. The exceptions —
- * a manifest pew2 will not overwrite — are what deserve rows, because they are
+ * a manifest tappy will not overwrite — are what deserve rows, because they are
  * the only part the user can act on.
  */
 import { PALETTE, styler, glyphs } from "./ui.js";
@@ -34,11 +34,11 @@ export function registryView(result: SyncResult, options: RegistryViewOptions = 
   const dryRun = options.dryRun ?? false;
 
   const out = [
-    ...r.intro("pew2 registry", `the public ACP registry, v${result.registryVersion}`),
+    ...r.intro("tappy registry", `the public ACP registry, v${result.registryVersion}`),
   ];
 
   if (result.written.length > 0) {
-    // The destination is named because it moves: it follows PEW2_HOME, and
+    // The destination is named because it moves: it follows TAPPY_HOME, and
     // "3 agents added" with no path leaves nowhere to go and look.
     out.push(
       ...r.step(
@@ -67,7 +67,7 @@ export function registryView(result: SyncResult, options: RegistryViewOptions = 
   const bundled = result.skipped.length - unavailable.length;
   const notes: string[] = [];
   if (result.unchanged.length > 0) notes.push(`${result.unchanged.length} already up to date`);
-  if (bundled > 0) notes.push(`${bundled} already ship with pew2`);
+  if (bundled > 0) notes.push(`${bundled} already ship with tappy`);
   if (unavailable.length > 0) notes.push(`${unavailable.length} not available on this platform`);
 
   if (notes.length > 0) {
@@ -84,7 +84,7 @@ export function registryView(result: SyncResult, options: RegistryViewOptions = 
     ...r.outro(
       dryRun
         ? `${s.bold(`${plural(result.written.length, "agent")} would be added.`)} ${s.hex(PALETTE.faint, "Run without --dry-run to do it.")}`
-        : `${s.bold(`${plural(result.written.length, "agent")} added.`)} ${s.hex(PALETTE.faint, "Run")} ${s.bold("pew2 providers list")} ${s.hex(PALETTE.faint, "to see them.")}`,
+        : `${s.bold(`${plural(result.written.length, "agent")} added.`)} ${s.hex(PALETTE.faint, "Run")} ${s.bold("tappy providers list")} ${s.hex(PALETTE.faint, "to see them.")}`,
       dryRun ? undefined : "ok",
     ),
   );

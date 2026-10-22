@@ -88,7 +88,7 @@ export interface UpdateStatus {
 export interface UpdateScheduler {
   /** What to tell the phone, or undefined when there is nothing to say. */
   status(): UpdateStatus | undefined;
-  /** Run one check-apply-maybe-exit cycle now. Exposed for tests and `pew2`. */
+  /** Run one check-apply-maybe-exit cycle now. Exposed for tests and `tappy`. */
   tick(): Promise<void>;
   /** Stop checking. The swapped binary, if any, stays on disk. */
   stop(): void;

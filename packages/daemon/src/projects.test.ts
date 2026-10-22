@@ -3,13 +3,13 @@ import { foldProjects, sessionsInProject } from "./projects.js";
 
 test("a project is counted once however many conversations it holds", () => {
   const projects = foldProjects([
-    { cwd: "/Users/x/code/pew2", updatedAt: "2026-08-01T10:00:00Z" },
-    { cwd: "/Users/x/code/pew2", updatedAt: "2026-07-30T10:00:00Z" },
+    { cwd: "/Users/x/code/tappy", updatedAt: "2026-08-01T10:00:00Z" },
+    { cwd: "/Users/x/code/tappy", updatedAt: "2026-07-30T10:00:00Z" },
     { cwd: "/Users/x/code/site", updatedAt: "2026-07-31T10:00:00Z" },
   ]);
 
   expect(projects.map((p) => [p.name, p.sessions])).toEqual([
-    ["pew2", 2],
+    ["tappy", 2],
     ["site", 1],
   ]);
 });

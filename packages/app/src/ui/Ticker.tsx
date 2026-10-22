@@ -19,7 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { theme } from "../theme";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { Led } from "./stage/Led";
 import { DotGrid } from "./stage/DotGrid";
 import { Pixel } from "./stage/Pixel";
@@ -30,7 +30,7 @@ import type { TurnReceipt } from "../activity";
 import { useStatusRowHeight } from "./useStatusRowHeight";
 import { SPRING } from "../motion";
 
-const PEW = 40;
+const TAPPY = 40;
 const STRIP = 34;
 /** Marquee pace, points per second. */
 const SPEED = 40;
@@ -100,7 +100,7 @@ function TickerView({ color, ...input }: Props) {
         style={styles.strip}
       >
         <DotGrid fine />
-        <Pew size={PEW} mood={line.mood} color={color} style={styles.pew} />
+        <Tappy size={TAPPY} mood={line.mood} color={color} style={styles.tappy} />
         <Marquee text={line.text} tone={line.tone} color={color} />
         <Animated.View style={chevron}>
           <Ionicons name="chevron-down" size={14} color={theme.color.textDim} />
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingRight: theme.space(3),
   },
   // The globe fills ~60% of its box; overhang instead of growing the strip.
-  pew: { marginVertical: -(PEW - STRIP) / 2 - 2 },
+  tappy: { marginVertical: -(TAPPY - STRIP) / 2 - 2 },
   marquee: { flex: 1, overflow: "hidden" },
   // Wide enough that the measured child keeps its natural one-line width.
   marqueeRun: { flexDirection: "row", width: 4000 },

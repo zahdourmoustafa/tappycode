@@ -37,7 +37,7 @@ const SCRATCH_TTL_MS = 60 * 60 * 1000;
  * reading them — and the OS may reclaim the cache directory regardless.
  */
 function scratchDirectory(): Directory {
-  const directory = new Directory(Paths.cache, "pew2-images");
+  const directory = new Directory(Paths.cache, "tappy-images");
   directory.create({ intermediates: true, idempotent: true });
   const cutoff = Date.now() - SCRATCH_TTL_MS;
   try {
@@ -83,7 +83,7 @@ async function materialise(image: ChatImage, resolvedSrc: string): Promise<File>
 /**
  * Save one picture, asking for permission if it has not been granted.
  *
- * Permission is requested write-only: pew2 puts pictures in, it never reads the
+ * Permission is requested write-only: tappy puts pictures in, it never reads the
  * user's library, and asking for full access to answer a save is a permission
  * prompt nobody should have to accept.
  */

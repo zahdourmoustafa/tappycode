@@ -10,8 +10,8 @@ import * as SecureStore from "expo-secure-store";
 import { fromCachedProviders, toCachedProviders } from "./providerCache";
 import type { Provider } from "./useDaemon";
 
-const LAST_PROVIDER_KEY = "pew2.lastProviderId";
-const PROVIDERS_KEY = "pew2.providers";
+const LAST_PROVIDER_KEY = "tappy.lastProviderId";
+const PROVIDERS_KEY = "tappy.providers";
 
 /** The agent last targeted on this device, or null if never chosen. */
 export async function loadLastProvider(): Promise<string | null> {

@@ -39,7 +39,7 @@ test("resumed history renders message count and retained working directory", () 
     turns: [],
     configOptions: [],
     agentSessionId: "disk-session",
-    cwd: "/Users/kenkai/gg-projects/pew2",
+    cwd: "/Users/kenkai/gg-projects/tappy",
   };
   const live: Session = {
     ...stub,
@@ -53,8 +53,8 @@ test("resumed history renders message count and retained working directory", () 
 
   const [resumed] = replaceAgentSessionStub([stub], live);
 
-  expect(resumed!.cwd).toBe("/Users/kenkai/gg-projects/pew2");
-  expect(formatHistoryMetadata(resumed!)).toBe("2 messages · pew2");
+  expect(resumed!.cwd).toBe("/Users/kenkai/gg-projects/tappy");
+  expect(formatHistoryMetadata(resumed!)).toBe("2 messages · tappy");
 });
 
 test("agent metadata renders a message count before the session is opened", () => {
@@ -67,10 +67,10 @@ test("agent metadata renders a message count before the session is opened", () =
     messageCount: 7,
     configOptions: [],
     agentSessionId: "disk-session",
-    cwd: "/Users/kenkai/gg-projects/pew2",
+    cwd: "/Users/kenkai/gg-projects/tappy",
   };
 
-  expect(formatHistoryMetadata(stub)).toBe("7 messages · pew2");
+  expect(formatHistoryMetadata(stub)).toBe("7 messages · tappy");
 });
 
 test("a session started from the phone is named by the folder the daemon stamped", () => {
@@ -86,8 +86,8 @@ test("a session started from the phone is named by the folder the daemon stamped
       { id: "live-session:1", role: "agent", text: "Done" },
     ],
     configOptions: [],
-    folder: "pew2",
+    folder: "tappy",
   };
 
-  expect(formatHistoryMetadata(session)).toBe("2 messages · pew2");
+  expect(formatHistoryMetadata(session)).toBe("2 messages · tappy");
 });

@@ -33,7 +33,7 @@ export abstract class DaemonConnectSession extends DaemonPromptQueue {
     provider: LoadedProvider,
     cwd: string,
   ) {
-    const dirs = provider.manifest.pew.commandDirs;
+    const dirs = provider.manifest.tappy.commandDirs;
     if (dirs.length === 0) return;
 
     const advertised = session.handle?.availableCommands ?? [];

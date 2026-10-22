@@ -27,7 +27,7 @@ import { haptics } from "./haptics";
  * they have to be changed together, and a drift means the store and the app
  * disagree about what the app does.
  */
-const PRIVACY_URL = "https://github.com/KenKaiii/pew2/blob/main/PRIVACY.md";
+const PRIVACY_URL = "https://github.com/zahdourmoustafa/tappycode/blob/main/PRIVACY.md";
 
 /** The rendered height of one line of this label, which the slop grows to 44. */
 const LINE = 19;
@@ -46,7 +46,7 @@ export function PrivacyLink({ style }: { style?: StyleProp<ViewStyle> }) {
         }).catch(() => {
           Alert.alert(
             "Could not open privacy policy",
-            "Please try again. You can also find the privacy policy on pew2's App Store page.",
+            "Please try again. You can also find the privacy policy on tappy's App Store page.",
           );
         });
       }}

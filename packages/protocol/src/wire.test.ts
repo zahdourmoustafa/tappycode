@@ -26,7 +26,7 @@ test("an outdated hello still parses, so its sender can be told why", () => {
 });
 
 test("a version mismatch names which side is behind", () => {
-  // "Update the app" and "update pew2 on your computer" are different actions,
+  // "Update the app" and "update tappy on your computer" are different actions,
   // and sending someone after the wrong one wastes their evening.
   expect(wireMismatch(WIRE_VERSION)).toBeUndefined();
 
@@ -34,7 +34,7 @@ test("a version mismatch names which side is behind", () => {
   expect(older).toContain("Update the app");
 
   const newer = wireMismatch(WIRE_VERSION + 1);
-  expect(newer).toContain("Update pew2 on your computer");
+  expect(newer).toContain("Update tappy on your computer");
 
   // Both quote the versions, so a bug report carries the numbers.
   expect(older).toContain(`v${WIRE_VERSION}`);

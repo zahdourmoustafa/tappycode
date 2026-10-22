@@ -12,7 +12,7 @@
   "repository": "https://github.com/openclaw/openclaw",
   "authors": ["OpenClaw"],
   "license": "MIT",
-  "pew": {
+  "tappy": {
     "transport": "acp",
     "color": "#c2410c",
     "env": [

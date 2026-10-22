@@ -6,7 +6,7 @@
  * calls `openConnection` and returns its cleanup. Sealed frames go to
  * `handleSealedFrame` (`daemonFrame.ts`).
  */
-import { SecureChannel, e2e, envelopeHeader, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, envelopeHeader, wire } from "@tappy/protocol";
 import { createStreamBatch, foldStreamBatch } from "./streamBatch";
 import { dropPendingSessions, isPendingSession } from "./pendingSession";
 import { markSent, partitionOutbox, queuedPendingSessions } from "./outbox";

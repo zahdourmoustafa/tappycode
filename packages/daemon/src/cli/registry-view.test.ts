@@ -16,7 +16,7 @@ function result(over: Partial<SyncResult> = {}): SyncResult {
     unchanged: [],
     conflicts: [],
     skipped: [],
-    targetDir: "/home/u/.pew2/providers",
+    targetDir: "/home/u/.tappy/providers",
     ...over,
   };
 }
@@ -62,7 +62,7 @@ test("one conflict is referred to in the singular", () => {
 
 test("nothing to do is said plainly rather than as an empty screen", () => {
   const text = registryView(
-    result({ unchanged: ["a", "b"], skipped: [{ id: "c", kind: "bundled", reason: "ships with pew2" }] }),
+    result({ unchanged: ["a", "b"], skipped: [{ id: "c", kind: "bundled", reason: "ships with tappy" }] }),
     plain,
   )
     .map(stripAnsi)
@@ -70,7 +70,7 @@ test("nothing to do is said plainly rather than as an empty screen", () => {
 
   expect(text).toContain("Nothing to do");
   expect(text).toContain("2 already up to date");
-  expect(text).toContain("1 already ship with pew2");
+  expect(text).toContain("1 already ship with tappy");
 });
 
 test("an agent that cannot run here is context, not a failure", () => {

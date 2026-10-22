@@ -37,7 +37,7 @@ async function testScript(): Promise<string> {
   };
   // Proves `repoRoot` is the root and not some directory that merely has a
   // package.json in it.
-  expect(manifest.name).toBe("pew2");
+  expect(manifest.name).toBe("tappy");
   const script = manifest.scripts?.test;
   if (!script) throw new Error("root package.json has no test script");
   return script;

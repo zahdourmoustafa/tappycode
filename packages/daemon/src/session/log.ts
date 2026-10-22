@@ -18,7 +18,7 @@
  * have long since been delivered, and anything older than the window is
  * recovered by reopening the conversation, which replays from the agent.
  */
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 
 /**
  * How many events one session keeps in memory.

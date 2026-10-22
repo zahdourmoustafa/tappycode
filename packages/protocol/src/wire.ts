@@ -48,7 +48,7 @@ export function readCursors(value: unknown): Record<string, number> {
  * Whether a peer speaking `wire` can be talked to, and what to tell the user.
  *
  * Returns a sentence rather than a boolean so both sides say the same thing, and
- * so the side that is *behind* is named: "update the app" and "update pew2 on
+ * so the side that is *behind* is named: "update the app" and "update tappy on
  * your computer" are different actions, and guessing wrong wastes an evening.
  */
 export function wireMismatch(peer: unknown): string | undefined {
@@ -58,7 +58,7 @@ export function wireMismatch(peer: unknown): string | undefined {
   }
   return peer < WIRE_VERSION
     ? `This app speaks protocol v${peer}, but this machine needs v${WIRE_VERSION}. Update the app and pair again.`
-    : `This app speaks protocol v${peer}, but this machine only has v${WIRE_VERSION}. Update pew2 on your computer.`;
+    : `This app speaks protocol v${peer}, but this machine only has v${WIRE_VERSION}. Update tappy on your computer.`;
 }
 
 export const Role = z.enum(["daemon", "app"]);
@@ -141,7 +141,7 @@ export const ProviderAnnounce = z.object({
    */
   activeSessions: z.array(z.string()).default([]),
   /**
-   * A newer pew2 has been published and this machine is not running it yet.
+   * A newer tappy has been published and this machine is not running it yet.
    *
    * Absent is the normal state, and deliberately means two different things:
    * either there is nothing newer, or this daemon predates the field. Both are
@@ -173,9 +173,9 @@ export const ProviderAnnounce = z.object({
 /**
  * A selector the agent advertises: model, thinking level, permission mode.
  *
- * pew2 never stores model names of its own. The list is whatever the connected
+ * tappy never stores model names of its own. The list is whatever the connected
  * app reports for its installed version, so upgrading that app changes the
- * options here with no release of pew2.
+ * options here with no release of tappy.
  */
 export const ConfigOption = z.object({
   id: z.string(),
@@ -199,7 +199,7 @@ export const ConfigOption = z.object({
 /**
  * A conversation the agent already holds on disk, from `session/list`.
  *
- * These are not pew2's sessions. Coding agents keep their own history, so work
+ * These are not tappy's sessions. Coding agents keep their own history, so work
  * begun at the desk must be reachable from the phone.
  */
 export const AgentSession = z.object({
@@ -557,7 +557,7 @@ export const Workspace = z.object({
 /**
  * Daemon -> relay -> app. An ordered, append-only event for a session.
  * `payload` mirrors the ACP `session/update` notification so the app renders
- * agent output without pew2 inventing a second content model.
+ * agent output without tappy inventing a second content model.
  */
 export const SessionEvent = z.object({
   t: z.literal("session.event"),
@@ -629,7 +629,7 @@ export const Replay = z.object({
  * Broadcast to every client, not just the one that prompted, because the phone
  * is very often not the device watching this session — and it is the only
  * signal a client has that a conversation it left running is done. The project
- * travels with it so a notification can name the work ("pew2") without the app
+ * travels with it so a notification can name the work ("tappy") without the app
  * holding a path for every session it has ever seen.
  */
 export const SessionIdle = z.object({
@@ -680,13 +680,21 @@ export const PushRegister = z.object({
    */
   token: z.string().min(1),
   platform: z.enum(["ios", "android"]),
+  /**
+   * Who delivers to `token`. `expo` (the default, and all an older app sends):
+   * an Expo push token, sent through Expo's service. `fcm`: a raw Firebase
+   * token, sent through this pairing's own relay, which holds the signing key
+   * — a build made without any Expo account. An older daemon ignores this and
+   * refuses the token as not Expo's, which leaves the phone on local banners.
+   */
+  service: z.enum(["expo", "fcm"]).optional(),
 });
 
 /**
  * Daemon -> every other client, when one of them says `hello`.
  *
  * The daemon is the only party that sees arrivals on both transports, so it is
- * the only party that can report them consistently. `pew2 pair` uses this to
+ * the only party that can report them consistently. `tappy pair` uses this to
  * turn a printed QR into a confirmed pairing; clients that do not care are
  * expected to ignore it.
  */
@@ -694,6 +702,168 @@ export const DeviceJoined = z.object({
   t: z.literal("device.joined"),
   deviceId: z.string(),
   at: z.number().int(),
+});
+
+// ── Terminals ──────────────────────────────────────────────
+//
+// An agent the user started the ordinary way, by typing `claude` in any
+// terminal, and that `tappy wrap` is running inside a PTY. The phone types into
+// it keystroke by keystroke; the bytes land in that PTY and nowhere else. See
+// docs/TERMINAL_BRIDGE_PLAN.md.
+//
+// Both messages are additive, with no WIRE_VERSION bump: an older app ignores
+// `terminals`, and an older daemon answers `terminal.input` with
+// `unknown_message`.
+
+/** The agents `tappy wrap` will run. Anything else is refused before spawning. */
+export const TERMINAL_AGENTS = ["claude", "codex", "ggcoder"] as const;
+export const TerminalAgent = z.enum(TERMINAL_AGENTS);
+
+/** One live wrapped agent, as the phone lists it. */
+export const TerminalInfo = z.object({
+  /** Opaque, minted by the daemon. The only handle input can be addressed to. */
+  id: z.string(),
+  agent: TerminalAgent,
+  /**
+   * The agent's working directory, as the agent itself sees it. What the phone
+   * matches against the project on screen — exactly, because two projects can
+   * share a folder name and typing into the wrong one is the mistake to avoid.
+   */
+  cwd: z.string(),
+  /** Last segment of `cwd`: the project as people say it, for labels. */
+  folder: z.string(),
+  startedAt: z.number().int(),
+  /**
+   * The permission mode the agent's own screen shows right now, as the agent's
+   * config value ("default", "acceptEdits", "plan", "auto"). Read off the
+   * terminal, so it is there for Claude only, and absent until the screen has
+   * shown it or from a wrapper too old to report it.
+   */
+  mode: z.string().max(40).optional(),
+  /**
+   * The agent's own id for the conversation the terminal is in, once known. How
+   * the phone tells that a conversation is already open, so picking it switches
+   * to that window instead of starting a second agent on the same transcript.
+   */
+  conversation: z.string().max(200).optional(),
+  /**
+   * A question the agent's screen is waiting on that no file records, so the
+   * phone can offer the answer. `trust`: Claude asking whether to trust a
+   * folder it has not opened before — its default answer is to exit.
+   */
+  prompt: z.enum(["trust"]).optional(),
+  /**
+   * What the agent is doing, as it reports it itself: `working` on a turn,
+   * `waiting` on the person (a permission, a question), or `idle` at its
+   * prompt. Absent until the agent has said, or for one that does not say.
+   */
+  activity: z.enum(["working", "waiting", "idle"]).optional(),
+  /**
+   * The question the agent is stopped on, read off its screen while it waits:
+   * what it asks and the numbered answers it offers. Answering is typing the
+   * number, exactly as at the desk.
+   */
+  question: z
+    .object({
+      text: z.string().max(400),
+      options: z.array(z.object({ key: z.string().max(4), label: z.string().max(200) })).max(9),
+    })
+    .optional(),
+});
+
+/** Daemon -> app. Every live terminal, sent on `hello` and on every change. */
+export const Terminals = z.object({
+  t: z.literal("terminals"),
+  terminals: z.array(TerminalInfo),
+});
+
+/**
+ * One frame of typing. A keystroke is a handful of bytes; the cap only exists so
+ * a paste cannot become an unbounded write into somebody's agent.
+ */
+export const MAX_TERMINAL_INPUT = 4096;
+
+/**
+ * One line of a terminal agent's conversation, as the phone shows it: what was
+ * typed, what the agent answered, and a short label for each step it took
+ * ("Ran npm test"). Read from the agent's own conversation file, so it is the
+ * conversation itself rather than whatever the screen happened to show.
+ */
+export const TerminalMessage = z.object({
+  role: z.enum(["user", "agent", "tool"]),
+  text: z.string(),
+});
+
+/**
+ * Daemon -> app. Messages in one terminal's conversation.
+ *
+ * `start` is the position of the first message in the whole conversation. An
+ * update carries only what is new and starts where the phone's copy ends; a
+ * `reset` replaces the phone's copy outright — sent to a phone that just
+ * connected, and when the agent moves to another conversation (`/clear`). A
+ * phone whose copy does not end at `start` ignores the update: the next
+ * connect resends everything.
+ */
+export const TerminalTranscript = z.object({
+  t: z.literal("terminal.transcript"),
+  terminalId: z.string(),
+  start: z.number().int().nonnegative(),
+  reset: z.boolean(),
+  messages: z.array(TerminalMessage),
+});
+
+/**
+ * Daemon -> app. What a terminal's agent is doing right now that its
+ * conversation file does not record yet — today GG Coder, which saves a turn
+ * only when it ends. The current turn as the screen shows it: the message, the
+ * replies so far, the steps run. Replaces the previous one; empty means none
+ * (the file has caught up, or there is nothing in progress). Never part of the
+ * transcript: the transcript is what the file says.
+ */
+export const TerminalLive = z.object({
+  t: z.literal("terminal.live"),
+  terminalId: z.string(),
+  messages: z.array(TerminalMessage).max(60),
+});
+
+/** An agent's conversation id, as the agents mint them: safe in an argv and a file name. */
+export const ConversationId = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/);
+
+/**
+ * App -> daemon. Open an agent in a terminal on the computer, in a project the
+ * daemon already knows — continuing one conversation, or a new one.
+ *
+ * Fixed choices only: the agent comes from the allowlist, the project must be
+ * one the daemon has published, the conversation id has the shape agents mint,
+ * and `bypass` is the agent's own skip-permissions flag. Nothing the phone sends
+ * is ever run as a command.
+ */
+export const TerminalLaunch = z.object({
+  t: z.literal("terminal.launch"),
+  agent: TerminalAgent,
+  cwd: z.string().min(1).max(4096),
+  resume: ConversationId.optional(),
+  bypass: z.boolean().optional(),
+});
+
+/** Daemon -> app. How a `terminal.launch` went. */
+export const TerminalLaunched = z.object({
+  t: z.literal("terminal.launched"),
+  ok: z.boolean(),
+  agent: TerminalAgent,
+  /** The project as the agent will see it (symlinks resolved), to recognise its terminal by. */
+  cwd: z.string(),
+  /** The app it opened in, for the phone to name: "cmux", "Terminal". */
+  app: z.string().optional(),
+  /** Why not, in words for a person, when `ok` is false. */
+  message: z.string().optional(),
+});
+
+/** App -> daemon. Keystrokes for one terminal, written into its PTY verbatim. */
+export const TerminalInput = z.object({
+  t: z.literal("terminal.input"),
+  terminalId: z.string().min(1).max(64),
+  data: z.string().min(1).max(MAX_TERMINAL_INPUT),
 });
 
 // ── Queued messages ────────────────────────────────────────
@@ -864,7 +1034,7 @@ export const GoalCreate = z.object({
   instructions: z.string().optional(),
   /**
    * Files picked on the *phone* (the desktop's disk is no place to hunt for a
-   * file from a phone). The daemon writes them to pew2's own folder on the
+   * file from a phone). The daemon writes them to tappy's own folder on the
    * computer, where they live as long as the goal, and adds their paths to
    * `context`. Same ceilings as a prompt's attachments. Absent = none; an
    * older daemon drops the field, which is why `GoalResult.files` exists.
@@ -1122,6 +1292,8 @@ export const ClientMessage = z.discriminatedUnion("t", [
   PlanDecide,
   AutopilotSet,
   ChecklistRequest,
+  TerminalInput,
+  TerminalLaunch,
 ]);
 
 export const ServerMessage = z.discriminatedUnion("t", [
@@ -1145,6 +1317,10 @@ export const ServerMessage = z.discriminatedUnion("t", [
   PlanState,
   AutopilotState,
   Checklist,
+  Terminals,
+  TerminalTranscript,
+  TerminalLive,
+  TerminalLaunched,
   ErrorMessage,
 ]);
 
@@ -1207,3 +1383,12 @@ export type ChecklistItemRow = z.output<typeof ChecklistItemRow>;
 export type ChecklistRequest = z.output<typeof ChecklistRequest>;
 export type Checklist = z.output<typeof Checklist>;
 export type ProviderExtensions = z.output<typeof ProviderExtensions>;
+export type TerminalAgent = z.output<typeof TerminalAgent>;
+export type TerminalInfo = z.output<typeof TerminalInfo>;
+export type Terminals = z.output<typeof Terminals>;
+export type TerminalInput = z.output<typeof TerminalInput>;
+export type TerminalMessage = z.output<typeof TerminalMessage>;
+export type TerminalTranscript = z.output<typeof TerminalTranscript>;
+export type TerminalLive = z.output<typeof TerminalLive>;
+export type TerminalLaunch = z.output<typeof TerminalLaunch>;
+export type TerminalLaunched = z.output<typeof TerminalLaunched>;

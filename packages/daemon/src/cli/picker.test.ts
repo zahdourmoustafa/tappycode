@@ -190,7 +190,7 @@ test("choosing none says so, rather than closing silently", () => {
   const text = stripAnsi(summary(state, plain).join("\n"));
 
   expect(text).toContain("No agents chosen");
-  expect(text).toContain("pew2 setup");
+  expect(text).toContain("tappy setup");
 });
 
 test("backing out is not reported as a change", () => {

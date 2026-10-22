@@ -1,20 +1,20 @@
 #!/usr/bin/env bun
 /**
- * pew2 CLI — the surface a coding agent uses to wire up a new provider.
+ * tappy CLI — the surface a coding agent uses to wire up a new provider.
  *
  * Deliberately small and verb-oriented:
- *   pew2 setup [--json]              detect, verify and diagnose in one call
- *   pew2 pair [--json] [--rotate] [--no-wait]
+ *   tappy setup [--json]              detect, verify and diagnose in one call
+ *   tappy pair [--json] [--rotate] [--no-wait]
  *                                    show the QR a phone scans, then wait for it
- *   pew2 relay <url|off>             reach this machine from anywhere
- *   pew2 service install|restart|uninstall
+ *   tappy relay <url|off>             reach this machine from anywhere
+ *   tappy service install|restart|uninstall
  *                                    keep the daemon running across reboots
- *   pew2 doctor [--json]             what is wrong, and the command that fixes it
- *   pew2 detect [--json]             find installed agents and configure them
- *   pew2 providers list              what is installed, and is it usable
- *   pew2 providers validate          static check of every manifest
- *   pew2 providers add <id>          scaffold a new manifest
- *   pew2 providers verify <id>       actually spawn it and prove it works
+ *   tappy doctor [--json]             what is wrong, and the command that fixes it
+ *   tappy detect [--json]             find installed agents and configure them
+ *   tappy providers list              what is installed, and is it usable
+ *   tappy providers validate          static check of every manifest
+ *   tappy providers add <id>          scaffold a new manifest
+ *   tappy providers verify <id>       actually spawn it and prove it works
  *
  * `verify` is the important one: it is the difference between "the JSON parsed"
  * and "this thing genuinely speaks ACP and answered me".
@@ -63,7 +63,7 @@ import { PALETTE, colorLevel, glyphs, statusLine, styler, unicodeOk } from "./ui
 import pkg from "../../package.json" with { type: "json" };
 import { helpView } from "./help-view.js";
 
-/** The version this build was cut from, for `pew2 --version`. */
+/** The version this build was cut from, for `tappy --version`. */
 const VERSION = (pkg as { version: string }).version;
 
 const GREEN = "\x1b[32m";
@@ -118,11 +118,11 @@ async function cmdList(flags: Set<string>) {
   const view = { style, glyph };
   const r = rail(view);
 
-  for (const line of r.intro("pew2 agents", "what this machine can run")) console.log(line);
+  for (const line of r.intro("tappy agents", "what this machine can run")) console.log(line);
 
   if (providers.length === 0 && errors.length === 0) {
     for (const line of r.step("Nothing configured")) console.log(line);
-    console.log(r.line(`${style.hex(PALETTE.faint, "Run")} ${BOLD}pew2 setup${RESET}`));
+    console.log(r.line(`${style.hex(PALETTE.faint, "Run")} ${BOLD}tappy setup${RESET}`));
     for (const line of r.outro(style.hex(PALETTE.faint, "It will find what you have."))) {
       console.log(line);
     }
@@ -150,8 +150,8 @@ async function cmdList(flags: Set<string>) {
   const ready = agents.filter((a) => !a.notInstalled && a.missingEnv.length === 0).length;
   for (const line of r.outro(
     ready > 0
-      ? `${style.bold(`${ready} ready.`)} ${style.hex(PALETTE.faint, "Run")} ${style.bold("pew2 setup")} ${style.hex(PALETTE.faint, "to check they start.")}`
-      : `${style.hex(PALETTE.faint, "Install one above, then run")} ${style.bold("pew2 setup")}`,
+      ? `${style.bold(`${ready} ready.`)} ${style.hex(PALETTE.faint, "Run")} ${style.bold("tappy setup")} ${style.hex(PALETTE.faint, "to check they start.")}`
+      : `${style.hex(PALETTE.faint, "Install one above, then run")} ${style.bold("tappy setup")}`,
   )) {
     console.log(line);
   }
@@ -172,20 +172,20 @@ async function cmdToggle(id: string | undefined, enabled: boolean): Promise<numb
   const verb = enabled ? "enable" : "disable";
 
   if (!id) {
-    console.error(`Which agent? Run 'pew2 providers ${verb} <id>'.`);
+    console.error(`Which agent? Run 'tappy providers ${verb} <id>'.`);
     return 1;
   }
 
   const { providers } = await loadProviders();
   const match = providers.find((p) => p.manifest.id === id);
   if (!match) {
-    console.error(`No agent called '${id}'. Run 'pew2 providers list' to see them.`);
+    console.error(`No agent called '${id}'. Run 'tappy providers list' to see them.`);
     return 1;
   }
 
   await setEnabled([id], enabled);
 
-  for (const line of r.intro("pew2 agents", enabled ? "turning one on" : "turning one off")) {
+  for (const line of r.intro("tappy agents", enabled ? "turning one on" : "turning one off")) {
     console.log(line);
   }
   const mark = enabled ? style.hex(PALETTE.success, glyph.tick) : style.hex(PALETTE.faint, glyph.dot);
@@ -196,7 +196,7 @@ async function cmdToggle(id: string | undefined, enabled: boolean): Promise<numb
     ),
   );
   for (const line of r.outro(
-    style.hex(PALETTE.faint, `Reverse it with ${style.bold(`pew2 providers ${enabled ? "disable" : "enable"} ${id}`)}.`),
+    style.hex(PALETTE.faint, `Reverse it with ${style.bold(`tappy providers ${enabled ? "disable" : "enable"} ${id}`)}.`),
   )) {
     console.log(line);
   }
@@ -211,7 +211,7 @@ async function cmdValidate() {
   const glyph = glyphs(unicodeOk());
   const r = rail({ style, glyph });
 
-  for (const line of r.intro("pew2 manifests", "checking every provider file")) console.log(line);
+  for (const line of r.intro("tappy manifests", "checking every provider file")) console.log(line);
 
   // Only the broken ones get a row. Thirteen identical ticks is not information,
   // and it buries the one line that is — this command exists to answer "is
@@ -256,7 +256,7 @@ async function cmdSetup(flags: Set<string>) {
   const view = { style, glyph };
   const r = rail(view);
 
-  for (const line of r.intro("pew2 setup", "looking at what you already have")) {
+  for (const line of r.intro("tappy setup", "looking at what you already have")) {
     console.log(line);
   }
 
@@ -305,7 +305,7 @@ async function cmdSetup(flags: Set<string>) {
   }
 
   // Interactive: ask which agents to offer, instead of printing a list and
-  // leaving the user to discover `pew2 providers disable`. Every agent found on
+  // leaving the user to discover `tappy providers disable`. Every agent found on
   // this machine gets spawned whenever the phone connects, so the answer here
   // is what stops unused agents costing memory and cluttering the drawer.
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY);
@@ -387,7 +387,7 @@ async function cmdSetup(flags: Set<string>) {
   return result.ok ? 0 : 1;
 }
 
-// `pew2 pair` lives in ./pair.ts: it is the one command with a real screen to
+// `tappy pair` lives in ./pair.ts: it is the one command with a real screen to
 // draw and a live state to track, and inlining that here would bury it.
 
 async function cmdRelay(arg: string | undefined, flags: Set<string>) {
@@ -401,7 +401,7 @@ async function cmdRelay(arg: string | undefined, flags: Set<string>) {
     console.log(
       current.relay
         ? `${ok(`Relay: ${current.relay}`)}\n${DIM}Reachable from anywhere.${RESET}`
-        : `${warn("No relay.")} ${DIM}Same network only.${RESET}\n\nSet one: ${BOLD}pew2 relay wss://your-relay.workers.dev${RESET}`,
+        : `${warn("No relay.")} ${DIM}Same network only.${RESET}\n\nSet one: ${BOLD}tappy relay wss://your-relay.workers.dev${RESET}`,
     );
     return 0;
   }
@@ -409,7 +409,7 @@ async function cmdRelay(arg: string | undefined, flags: Set<string>) {
   if (arg === "off") {
     await setRelay(undefined);
     console.log(ok("Relay cleared. Same network only."));
-    console.log(`${DIM}Re-pair: pew2 pair${RESET}`);
+    console.log(`${DIM}Re-pair: tappy pair${RESET}`);
     return 0;
   }
 
@@ -436,7 +436,7 @@ async function cmdRelay(arg: string | undefined, flags: Set<string>) {
   console.log(ok(`Relay set to ${arg}`));
   console.log(`\n${BOLD}Next:${RESET}`);
   console.log(`  1. Restart the daemon.`);
-  console.log(`  2. ${BOLD}pew2 pair${RESET}`);
+  console.log(`  2. ${BOLD}tappy pair${RESET}`);
   return 0;
 }
 
@@ -465,7 +465,7 @@ async function isExperimental(): Promise<boolean> {
   const status = await serviceStatus();
   if (!status.plistPath) return false;
   try {
-    return (await readFile(status.plistPath, "utf8")).includes("PEW2_EXPERIMENTAL");
+    return (await readFile(status.plistPath, "utf8")).includes("TAPPY_EXPERIMENTAL");
   } catch {
     return false;
   }
@@ -502,7 +502,7 @@ async function cmdService(action: string | undefined, flags: Set<string>) {
     renderService(status);
     if (status.state === "running") {
       console.log(`${DIM}Starts on login and restarts if it exits.${RESET}`);
-      if (action === "install") console.log(`\nNext: ${BOLD}pew2 pair${RESET}`);
+      if (action === "install") console.log(`\nNext: ${BOLD}tappy pair${RESET}`);
       return 0;
     }
     return 1;
@@ -525,7 +525,7 @@ async function cmdService(action: string | undefined, flags: Set<string>) {
   }
   renderService(status);
   if (status.state === "not-installed") {
-    console.log(`\nInstall it: ${BOLD}pew2 service install${RESET}`);
+    console.log(`\nInstall it: ${BOLD}tappy service install${RESET}`);
   }
   return status.state === "running" ? 0 : 1;
 }
@@ -582,13 +582,13 @@ async function cmdDetect(flags: Set<string>) {
     `\n${written.length} configured, ${result.detected.length - written.length - blocked.length} already present.`,
   );
   if (written.length > 0) console.log(`${DIM}Written to ${result.providersDir}${RESET}`);
-  console.log(`\nNext: ${BOLD}pew2 providers verify${RESET}`);
+  console.log(`\nNext: ${BOLD}tappy providers verify${RESET}`);
   return 0;
 }
 
 async function cmdAdd(id: string | undefined) {
   if (!id) {
-    console.error("Usage: pew2 providers add <id>");
+    console.error("Usage: tappy providers add <id>");
     return 1;
   }
   if (!/^[a-z][a-z0-9-]*$/.test(id)) {
@@ -616,14 +616,14 @@ async function cmdAdd(id: string | undefined) {
     version: "0.1.0",
     description: `TODO: what ${id} does.`,
     distribution: { type: "command", command: `${id}-acp`, args: [] },
-    pew: { transport: "acp", env: [] },
+    tappy: { transport: "acp", env: [] },
   };
 
   await writeFile(path, `${JSON.stringify(template, null, 2)}\n`, "utf8");
   console.log(ok(`Created ${path}`));
   console.log(`\nNext:`);
   console.log(`  1. Point ${BOLD}distribution${RESET} at your agent (npx / uvx / command).`);
-  console.log(`  2. Run ${BOLD}pew2 providers verify ${id}${RESET}`);
+  console.log(`  2. Run ${BOLD}tappy providers verify ${id}${RESET}`);
   return 0;
 }
 
@@ -662,8 +662,8 @@ async function cmdVerify(id: string | undefined, flags: Set<string>) {
 /**
  * Pull the public ACP registry.
  *
- * Reports conflicts rather than resolving them: a manifest pew2 did not write is
- * someone else's — hand-edited, or left by `pew2 detect` — and a routine refresh
+ * Reports conflicts rather than resolving them: a manifest tappy did not write is
+ * someone else's — hand-edited, or left by `tappy detect` — and a routine refresh
  * silently reverting an added API key or changed args is the kind of quiet loss
  * that stops people running a command at all. `--force` says otherwise.
  */
@@ -714,6 +714,15 @@ async function cmdServe(): Promise<number> {
 
 async function main() {
   const argv = process.argv.slice(2);
+
+  // What `claude`, `codex` and `ggcoder` run once `tappy pair` has installed the
+  // shell hook. First, before any flag is read: everything after the agent name
+  // belongs to the agent, so `claude --version` must reach Claude, not tappy.
+  if (argv[0] === "wrap") {
+    const { runWrap } = await import("../terminals/wrap.js");
+    return runWrap(argv.slice(1));
+  }
+
   const flags = new Set(argv.filter((a) => a.startsWith("--")));
   const [group, command, arg] = argv.filter((a) => !a.startsWith("--"));
 
@@ -721,6 +730,15 @@ async function main() {
   // which one they have, and it is the first thing worth asking in a bug report.
   if (flags.has("--version") || group === "version") {
     console.log(VERSION);
+    return 0;
+  }
+
+  // Removes the hook `tappy pair` added. Not in the help: nobody needs it to
+  // use tappy, only to stop.
+  if (group === "shell" && command === "uninstall") {
+    const { uninstallShellHook } = await import("../terminals/shell-hook.js");
+    const result = await uninstallShellHook();
+    console.log(result.changed ? `Removed the tappy hook from ${result.file}.` : "No tappy hook to remove.");
     return 0;
   }
 
@@ -732,7 +750,7 @@ async function main() {
   // only ever name a file that does not exist outside the process.
   //
   // `run` is accepted as well, and deliberately ignores its argument. Plists
-  // reading `pew2 run /$bunfs/server.ts` are already installed on users'
+  // reading `tappy run /$bunfs/server.ts` are already installed on users'
   // machines, crash-looping; treating that as `serve` means installing this
   // build repairs them on the next restart, with nothing for the user to run.
   // A binary is the only thing that can reach those machines — nobody can be

@@ -24,7 +24,7 @@ import { writeProbeCache } from "./probe-cache.js";
  * to them.
  */
 function scratchHome(): NodeJS.ProcessEnv {
-  return { ...process.env, PEW2_HOME: mkdtempSync(join(tmpdir(), "pew2-handler-")) };
+  return { ...process.env, TAPPY_HOME: mkdtempSync(join(tmpdir(), "tappy-handler-")) };
 }
 
 /**
@@ -58,7 +58,7 @@ function stubbed(env: NodeJS.ProcessEnv = scratchHome()) {
     probeProvider: async () => ({ canResume: true, configOptions: [], sessions: [] }),
     // `provider.capabilities` is answered through this instead: it is the probe
     // with the user's stored selectors folded over it. Stubbed at that seam
-    // rather than under it, so a handler test never reads the real `~/.pew2`.
+    // rather than under it, so a handler test never reads the real `~/.tappy`.
     capabilitiesFor: async () => ({ canResume: true, configOptions: [], sessions: [] }),
     lastWorkspace: async () => "/Users/someone/fallback",
     configOptions: () => [],
@@ -356,7 +356,7 @@ test("a push token is kept against the device that proved who it was", async () 
 
   expect(out).toEqual([]);
   expect(daemon.pushTargets.list()).toEqual([
-    { token: "ExponentPushToken[abc123]", platform: "ios" },
+    { token: "ExponentPushToken[abc123]", platform: "ios", service: "expo" },
   ]);
 });
 
@@ -394,5 +394,5 @@ test("reconnecting with a rotated token replaces the old one", async () => {
   await send(daemon, { t: "app.push", token: "ExponentPushToken[old]", platform: "ios" }, "phone-1");
   await send(daemon, { t: "app.push", token: "ExponentPushToken[new]", platform: "ios" }, "phone-1");
 
-  expect(daemon.pushTargets.list()).toEqual([{ token: "ExponentPushToken[new]", platform: "ios" }]);
+  expect(daemon.pushTargets.list()).toEqual([{ token: "ExponentPushToken[new]", platform: "ios", service: "expo" }]);
 });

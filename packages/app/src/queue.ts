@@ -4,7 +4,7 @@
  * The daemon owns the queue (`session.queue`, replace-list, broadcast); this
  * module is the app's reading of it. Expo-free so `bun test` can load it.
  */
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 
 export type QueuedMessage = wire.QueuedMessage;
 

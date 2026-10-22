@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { daemonLogPaths, rotateLog, startLogRotation } from "./logs.js";
 
 async function tempLog(contents: string): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pew2-logs-"));
+  const dir = await mkdtemp(join(tmpdir(), "tappy-logs-"));
   const path = join(dir, "daemon.log");
   await writeFile(path, contents);
   return path;
@@ -81,14 +81,14 @@ test("a writer already holding the file keeps appending correctly", async () => 
 
 test("a missing log is not an error", async () => {
   // First run on a new machine, and the only case that happens every install.
-  const result = await rotateLog(join(tmpdir(), "pew2-nonexistent", "daemon.log"));
+  const result = await rotateLog(join(tmpdir(), "tappy-nonexistent", "daemon.log"));
   expect(result).toEqual({ rotated: false, before: 0, after: 0 });
 });
 
 test("an unreadable log never stops the daemon starting", async () => {
   // Housekeeping must not become an outage: a directory where a file is
   // expected fails every read, and rotation still has to return.
-  const dir = await mkdtemp(join(tmpdir(), "pew2-logs-"));
+  const dir = await mkdtemp(join(tmpdir(), "tappy-logs-"));
   const result = await rotateLog(dir, 0, 10);
   expect(result.rotated).toBe(false);
 });
@@ -124,7 +124,7 @@ test("periodic rotation survives a log it cannot read", async () => {
   // Same rule as the startup pass, but the stakes are higher: a throw inside an
   // interval callback is an unhandled rejection, which kills a running daemon
   // and every session on it.
-  const dir = await mkdtemp(join(tmpdir(), "pew2-logs-"));
+  const dir = await mkdtemp(join(tmpdir(), "tappy-logs-"));
   const stop = startLogRotation({ paths: [dir], intervalMs: 5, max: 0, keep: 10 });
   try {
     await Bun.sleep(40);
@@ -168,16 +168,16 @@ test("a reporting callback that throws does not take the daemon with it", async 
   expect((await stat(path)).size).toBeLessThan(4096);
 });
 
-test("both streams are rotated, and PEW2_HOME is honoured", () => {
+test("both streams are rotated, and TAPPY_HOME is honoured", () => {
   // stderr is the one that runs away: a provider failing every probe writes a
   // stack trace each time, unwatched.
   // Both files, in order, under whatever home was given - asserted with `join`
   // so it is the same claim on either platform.
-  expect(daemonLogPaths({ PEW2_HOME: join("/tmp", "x") } as NodeJS.ProcessEnv)).toEqual([
+  expect(daemonLogPaths({ TAPPY_HOME: join("/tmp", "x") } as NodeJS.ProcessEnv)).toEqual([
     join("/tmp", "x", "logs", "daemon.log"),
     join("/tmp", "x", "logs", "daemon.error.log"),
   ]);
   expect(daemonLogPaths({} as NodeJS.ProcessEnv, join("/Users", "someone"))[0]).toBe(
-    join("/Users", "someone", ".pew2", "logs", "daemon.log"),
+    join("/Users", "someone", ".tappy", "logs", "daemon.log"),
   );
 });

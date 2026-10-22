@@ -1,5 +1,5 @@
 /**
- * The empty state: Pew, the greeting or the reason there is none, and the
+ * The empty state: Tappy, the greeting or the reason there is none, and the
  * agent's recent chats. Centred in what the keyboard leaves of the screen.
  */
 import type { ComponentProps } from "react";
@@ -18,7 +18,7 @@ export function HomeView({
   reduceMotion,
   homeStatus,
   openCarousel,
-  pewSmiling,
+  tappySmiling,
   homeChats,
   openSession,
   greeting,
@@ -31,7 +31,7 @@ export function HomeView({
   reduceMotion: boolean;
   homeStatus: string;
   openCarousel: () => void;
-  pewSmiling: boolean;
+  tappySmiling: boolean;
   homeChats: ComponentProps<typeof HomeGreeting>["chats"];
   openSession: (id: string) => void;
   greeting: string;
@@ -51,11 +51,11 @@ export function HomeView({
               onPress={Keyboard.dismiss}
             >
               {/* Not scaled as a whole any more: HomeGreeting dissolves its text
-                  away and shrinks only Pew while the keyboard is up.
+                  away and shrinks only Tappy while the keyboard is up.
 
                   Mounted only once an agent is known (from the machine or the
                   last-known list), and then all at once with a fade: before
-                  that, Pew burst in coral, with "Ready" and no greeting, then
+                  that, Tappy burst in coral, with "Ready" and no greeting, then
                   recoloured and the greeting arrived beneath it a beat later.
                   A launch with no agent at all (a fresh pairing, a machine
                   with none turned on) still shows after a short wait. */}
@@ -69,8 +69,8 @@ export function HomeView({
                   online={daemon.status === "online" && !daemon.unreachable}
                   failed={Boolean(daemon.fatal)}
                   status={homeStatus}
-                  onPressPew={active ? openCarousel : undefined}
-                  smiling={pewSmiling}
+                  onPressTappy={active ? openCarousel : undefined}
+                  smiling={tappySmiling}
                   chats={homeChats}
                   onOpenChat={openSession}
                   /* A refusal the daemon explained outranks the connecting

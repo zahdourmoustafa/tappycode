@@ -15,7 +15,7 @@ import { Daemon } from "./index.js";
 import { claimPairing, loadPairing, pairingPath, pairingUrl, qrCode, tokenMatches } from "./pairing.js";
 import { watchPairing } from "./pairing-watch.js";
 import { decideClaim, type ClaimDecision } from "./device-claim.js";
-import { SecureChannel, e2e, envelopeHeader, wire } from "@pew2/protocol";
+import { SecureChannel, e2e, envelopeHeader, wire } from "@tappy/protocol";
 import { handleMessage } from "./handler.js";
 import { RelayClient } from "./relay-client.js";
 import { hostname } from "node:os";
@@ -23,8 +23,9 @@ import { daemonLogPaths, rotateLog, startLogRotation } from "./logs.js";
 import { sweepOrphans } from "./children.js";
 import { startUpdateScheduler } from "./update/scheduler.js";
 import type { ServerWebSocket } from "bun";
+import { startTerminalSocket } from "./terminals/socket.js";
 
-const PORT = Number(process.env.PEW2_PORT ?? 8787);
+const PORT = Number(process.env.TAPPY_PORT ?? 8787);
 
 // Under launchd this process's stdout is an append-only file that nothing else
 // ever trims. Done here first, before anything is written.
@@ -50,10 +51,10 @@ if (reaped.length > 0) {
 // unpair the phone.
 const pairing = await loadPairing();
 
-// PEW2_EXPERIMENTAL=1 also surfaces test fixtures such as the echo agent.
+// TAPPY_EXPERIMENTAL=1 also surfaces test fixtures such as the echo agent.
 const daemon = new Daemon(
   { id: "local", name: "this machine" },
-  process.env.PEW2_EXPERIMENTAL === "1",
+  process.env.TAPPY_EXPERIMENTAL === "1",
 );
 /**
  * The pairing key, as bytes.
@@ -64,11 +65,11 @@ const daemon = new Daemon(
  * which is exactly the downgrade this is meant to remove.
  */
 if (!pairing.key) {
-  console.error("This pairing has no encryption key. Run `pew2 pair --rotate` and pair again.");
+  console.error("This pairing has no encryption key. Run `tappy pair --rotate` and pair again.");
   process.exit(1);
 }
 // Both transports read the pairing through these rather than closing over the
-// values loaded at startup, because `pew2 pair --rotate` changes them while the
+// values loaded at startup, because `tappy pair --rotate` changes them while the
 // daemon is running. See `watchPairing` at the bottom of this file.
 let currentToken = pairing.token;
 let rootKey = e2e.fromHex(pairing.key);
@@ -152,7 +153,7 @@ function broadcast(message: unknown, header: { sid?: string; seq?: number } = {}
 /**
  * Outbound relay connection, when one is configured.
  *
- * This is what lifts pew2 off the local network: the daemon dials out, so the
+ * This is what lifts tappy off the local network: the daemon dials out, so the
  * phone can be on a mobile network on the other side of the world and still
  * reach this machine. Without it, pairing only works on the same Wi-Fi.
  */
@@ -183,6 +184,16 @@ daemon.attach((message) => {
 });
 
 relay?.start();
+// Firebase pushes leave through the relay, which holds the key that signs them.
+if (relay) daemon.pushTargets.relay = (frame) => relay.sendToRelay(frame);
+
+// Where `tappy wrap` registers the agents the phone can type into. A failure
+// here costs only that feature, never the daemon: sessions and pairing work
+// without it.
+const terminalSocket = await startTerminalSocket(daemon.terminals).catch((error: unknown) => {
+  console.error("[terminals] could not open the local socket:", error);
+  return undefined;
+});
 
 const { errors } = await daemon.refreshProviders();
 for (const error of errors) console.error(error.message);
@@ -271,7 +282,7 @@ const server = Bun.serve({
           sendPlain(ws, {
             t: "error",
             code: "unpaired",
-            message: "This device is not paired with this machine. Run `pew2 pair` and scan again.",
+            message: "This device is not paired with this machine. Run `tappy pair` and scan again.",
           });
           ws.close(1008, "unpaired");
           return;
@@ -307,7 +318,7 @@ const server = Bun.serve({
         //
         // `refreshProviders` reads every manifest off disk, which is slow on a
         // cold cache and can throw outright on an unreadable file. Awaiting it
-        // here meant the phone was fully joined while `pew2 pair` still showed
+        // here meant the phone was fully joined while `tappy pair` still showed
         // "waiting for your phone" \u2014 and if the scan threw, that confirmation
         // never arrived at all. The join is a fact the moment the proof checks
         // out; the agent list is a separate thing that follows.
@@ -316,7 +327,7 @@ const server = Bun.serve({
         // Everything this client missed while its socket was down, before the
         // provider scan: a turn running right now is the thing it is waiting to
         // see, and `refreshProviders` touches the disk.
-        for (const catchUp of daemon.catchUp(wire.readCursors(hello.cursors))) send(ws, catchUp);
+        for (const frame of daemon.greet(wire.readCursors(hello.cursors))) send(ws, frame);
 
         // Announced only now: the provider list names every agent installed on
         // this machine, which is not something to hand to an unproven socket.
@@ -361,23 +372,23 @@ const url = pairingUrl({
 // writing a 27-line block of colour escapes there on every restart was both the
 // bulk of the log's growth and a copy of the pairing token in plain text on
 // disk. Four modules of quiet zone when it is drawn, because this banner is
-// scanned by a phone camera exactly as `pew2 pair` is.
+// scanned by a phone camera exactly as `tappy pair` is.
 const interactive = Boolean(process.stdout.isTTY);
 const qr = interactive ? await qrCode(url, 4) : undefined;
 
-console.log(`\npew2 daemon listening on port ${server.port}\n`);
+console.log(`\ntappy daemon listening on port ${server.port}\n`);
 if (trimmed > 0) console.log(`[logs] trimmed ${Math.round(trimmed / 1024)}KB of old log\n`);
 if (qr) console.log(`${qr}\n`);
 // The URL carries the token, so it follows the QR: shown to whoever ran this,
-// withheld from the log file. `pew2 pair` is where it belongs either way.
-console.log(interactive ? `Scan this, or paste into the app:\n  ${url}\n` : `Pair with: pew2 pair\n`);
+// withheld from the log file. `tappy pair` is where it belongs either way.
+console.log(interactive ? `Scan this, or paste into the app:\n  ${url}\n` : `Pair with: tappy pair\n`);
 console.log(
   pairing.relay
     ? `Works from anywhere via ${pairing.relay}\n`
-    : `Same network only. For anywhere: pew2 relay <url>\n`,
+    : `Same network only. For anywhere: tappy relay <url>\n`,
 );
 
-// `pew2 pair --rotate` rewrites this file while the daemon is running. Watching
+// `tappy pair --rotate` rewrites this file while the daemon is running. Watching
 // it is what stops a rotation from stranding the daemon in the old relay room,
 // where the newly paired phone can never reach it.
 const stopWatching = watchPairing(pairingPath(), pairing, () => loadPairing(), {
@@ -427,6 +438,7 @@ process.on("unhandledRejection", (error) => console.error("[unhandled]", error))
 function releaseEverything() {
   stopWatching();
   relay?.stop();
+  void terminalSocket?.stop();
   daemon.closeAll();
 }
 

@@ -17,8 +17,8 @@ import { Animated, StyleSheet, Text } from "react-native";
 import { theme } from "../theme";
 import { currentTool, queuedTools, type Activity } from "../activity";
 import { ShimmerText } from "./ShimmerText";
-import { Pew } from "../pew/Pew";
-import { activityMood } from "../pew/palette";
+import { Tappy } from "../tappy/Tappy";
+import { activityMood } from "../tappy/palette";
 import { activityOrbState } from "../activityOrb";
 import { Dissolve } from "./motion/Dissolve";
 import { useReducedMotion } from "./useReducedMotion";
@@ -75,9 +75,9 @@ function ActivityLineView({ activity, color }: { activity: Activity; color?: str
       accessibilityLiveRegion="polite"
       accessibilityLabel={queued > 0 ? `${title}, and ${queued} more` : title}
     >
-      {/* Pew at work, in the agent's colour: talking while it writes,
+      {/* Tappy at work, in the agent's colour: talking while it writes,
           busy on a tool, otherwise thinking. */}
-      <Pew size={28} mood={activityMood(orbState)} color={color} style={styles.pew} />
+      <Tappy size={28} mood={activityMood(orbState)} color={color} style={styles.tappy} />
       {/* The label dissolves in place on a tool change; the row stays mounted so
           ShimmerText's sweep never restarts. */}
       <Dissolve kind="swap" dissolveKey={tool?.id ?? "working"} style={styles.label}>
@@ -106,9 +106,9 @@ function ActivityLineView({ activity, color }: { activity: Activity; color?: str
 }
 
 const styles = StyleSheet.create({
-  // Pew's globe fills the middle of its box; the rest is room to bounce,
+  // Tappy's globe fills the middle of its box; the rest is room to bounce,
   // so the box overhangs the old icon's footprint instead of growing the row.
-  pew: { margin: -4 },
+  tappy: { margin: -4 },
   // Mirrors `ChatThread`'s dot row so replacing one with the other never moves
   // the transcript, horizontally or vertically.
   row: {

@@ -91,7 +91,7 @@ test("the pairing URL is printed on one unbroken line", () => {
 test("a stopped daemon is called out with the command that fixes it", () => {
   const rows = statusRows(view({ daemonRunning: false }), plain).map(stripAnsi).join("\n");
   expect(rows).toContain("not running");
-  expect(rows).toContain("pew2 service install");
+  expect(rows).toContain("tappy service install");
 });
 
 test("rotation warns that existing devices are now unpaired", () => {
@@ -102,7 +102,7 @@ test("rotation warns that existing devices are now unpaired", () => {
 });
 
 test("a code that replaced another phone names the one it unpaired", () => {
-  // `pew2 pair` re-mints a pairing that a phone already holds, because the old
+  // `tappy pair` re-mints a pairing that a phone already holds, because the old
   // code could not have onboarded anyone. The previous phone stops working the
   // moment this screen appears, so saying which one keeps that reading as a
   // consequence of what the user just did rather than the tool losing state.
@@ -232,7 +232,7 @@ test("a stopped daemon closes with the command that starts it, on the rail", () 
   const closing = lines.find((l) => l.startsWith("■"))!;
 
   expect(closing).toContain("Start the daemon before scanning");
-  expect(closing).toContain("pew2 service install");
+  expect(closing).toContain("tappy service install");
   for (const line of lines.filter((l) => l !== "")) {
     expect(/^(■|░|▓|▒|\s{2})/.test(line)).toBe(true);
   }

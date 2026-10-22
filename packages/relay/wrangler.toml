@@ -1,4 +1,4 @@
-name = "pew2-relay"
+name = "tappy-relay"
 main = "src/index.ts"
 
 # Must be >= 2026-04-07 so the runtime auto-replies to WebSocket Close frames.

@@ -2,7 +2,7 @@
  * GG Coder's `ask_user` questions: reading them off the wire and building the
  * answer. Ported from gg-app's `ask-user.ts` / `AskBand.tsx` rules. Expo-free.
  */
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 
 export type AskQuestion = wire.AskQuestion;
 export type AskOption = wire.AskOption;

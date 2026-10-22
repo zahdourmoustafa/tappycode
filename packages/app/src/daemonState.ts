@@ -20,6 +20,7 @@ import type {
   Workspace,
   WorkspaceBrowse,
 } from "./daemonTypes";
+import type { Terminal, TerminalMessage, TerminalTranscript } from "./terminalTyping";
 
 /**
  * Failed connection attempts before the app stops saying "connecting".
@@ -92,7 +93,7 @@ export interface State {
   unreachable?: boolean;
   providers: Provider[];
   /**
-   * A newer pew2 the paired computer has not got, when there is one.
+   * A newer tappy the paired computer has not got, when there is one.
    *
    * Not about this app: the App Store handles that. This is the daemon on the
    * desk, which has no screen to tell anyone with.
@@ -176,6 +177,42 @@ export interface State {
    */
   workspaceNonce: number;
   /**
+   * Agents running in a terminal on the laptop that the composer can type into,
+   * keystroke by keystroke. Empty until the daemon says otherwise, and from an
+   * older daemon that has never heard of them.
+   */
+  terminals: Terminal[];
+  /**
+   * Whether the daemon has sent its terminal list since this app started.
+   * Distinguishes "no terminals open" from "not told yet", which decides which
+   * terminals count as already open when the app arrived.
+   */
+  terminalsKnown: boolean;
+  /**
+   * Each terminal's conversation, as the agent wrote it: what was typed on
+   * either side, and what the agent answered. Keyed by terminal id.
+   */
+  terminalTranscripts: Record<string, TerminalTranscript>;
+  /**
+   * Each terminal's run in progress as its screen shows it, for an agent that
+   * writes its file only when the run ends (GG Coder). Shown after the
+   * transcript; the daemon empties it once the file has the turn.
+   */
+  terminalLive: Record<string, TerminalMessage[]>;
+  /**
+   * An agent the phone asked to open in a terminal on the computer: waiting for
+   * its window, opened, or refused with a reason. Cleared once the terminal it
+   * opened has arrived and been followed.
+   */
+  terminalLaunch?: {
+    agent: Terminal["agent"];
+    cwd: string;
+    status: "opening" | "opened" | "failed";
+    app?: string;
+    message?: string;
+    at: number;
+  };
+  /**
    * Every project each agent has worked in, keyed by provider id.
    *
    * Folded by the daemon from the agent's whole history, not from `sessions`:
@@ -196,7 +233,7 @@ export interface State {
    * `providerId:cwd` of the project whose conversations are being fetched.
    *
    * In state rather than a ref because it decides between the skeleton and
-   * "No conversations in pew2 yet" — a ref would be read during a render
+   * "No conversations in tappy yet" — a ref would be read during a render
    * nothing schedules, so the false empty state would show until the reply
    * landed, which is the flash this exists to prevent.
    */
@@ -282,7 +319,7 @@ export function firstUserText(turns: Turn[]): string | undefined {
  */
 export interface TurnFinished {
   sessionId: string;
-  /** Project folder as the daemon stamped it, e.g. "pew2". */
+  /** Project folder as the daemon stamped it, e.g. "tappy". */
   folder?: string;
   /** Display name of the agent that ran it. */
   agentName?: string;

@@ -3,7 +3,7 @@
  *
  * Unlike a prompt's attachments (`attachments.ts`), these are not scratch:
  * the goal's agent and its workers read them for as long as the goal runs, over
- * days and daemon restarts. So they go under pew2's own home directory, never
+ * days and daemon restarts. So they go under tappy's own home directory, never
  * the tempdir (which the OS clears) and never the project (where `git add .`
  * would commit them). Same limits and the same name sanitising as attachments:
  * a name off a phone is a label, not a path.
@@ -12,12 +12,12 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 import { attachmentFileName, attachmentLimitError } from "./attachments";
 
-/** `~/.pew2/goal-files`, or under `$PEW2_HOME`. */
+/** `~/.tappy/goal-files`, or under `$TAPPY_HOME`. */
 export function goalFilesRoot(env: NodeJS.ProcessEnv = process.env): string {
-  return join(env.PEW2_HOME ?? join(homedir(), ".pew2"), "goal-files");
+  return join(env.TAPPY_HOME ?? join(homedir(), ".tappy"), "goal-files");
 }
 
 /**

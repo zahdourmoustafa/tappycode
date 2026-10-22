@@ -72,7 +72,7 @@ export async function connectProvider(options: ConnectOptions): Promise<AcpSessi
   // Windows here would try to run cmd.exe on a Mac.
   const launch = launchSpec(provider.command, provider.args, {
     ...process.env,
-    PEW2_FAKE_PLATFORM: undefined,
+    TAPPY_FAKE_PLATFORM: undefined,
   });
 
   const child = spawn(launch.command, launch.args, {
@@ -217,7 +217,7 @@ export async function connectProvider(options: ConnectOptions): Promise<AcpSessi
   };
   const configHandlers = new Map<string, (options: ConfigOption[]) => void>();
 
-  const app = client({ name: "pew2-daemon" })
+  const app = client({ name: "tappy-daemon" })
     .onNotification("session/update", async (ctx: { params: unknown }) => {
       const params = ctx.params as {
         sessionId?: string;
@@ -377,7 +377,7 @@ export async function connectProvider(options: ConnectOptions): Promise<AcpSessi
         // it. Inert for every other agent: `_meta` is ACP's extension slot.
         _meta: { gg: { askUser: true, planReview: true } },
       },
-      clientInfo: { name: "pew2", title: "pew2", version: "0.1.0" },
+      clientInfo: { name: "tappy", title: "tappy", version: "0.1.0" },
     }),
     options.handshakeTimeoutMs ?? HANDSHAKE_TIMEOUT_MS,
     () => {
@@ -551,7 +551,7 @@ export async function connectProvider(options: ConnectOptions): Promise<AcpSessi
   // process. So a failure here has to kill it: there is no `close()` to call
   // when the call you would have got it from is the one that threw.
   //
-  // `pew2 setup` proved the cost. Every agent that answered the handshake and
+  // `tappy setup` proved the cost. Every agent that answered the handshake and
   // then failed to open a session — the ordinary not-signed-in case — left a
   // live process behind, one per agent per run, until the machine was rebooted.
   //

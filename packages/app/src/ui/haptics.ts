@@ -6,7 +6,7 @@
  * picking its own impact style. Changing how "something failed" feels is then
  * one edit here, not twenty.
  *
- * This matters more than usual for pew2: the agent runs for minutes on another
+ * This matters more than usual for tappy: the agent runs for minutes on another
  * machine while the phone is in a pocket. A pulse when a turn lands, an approval
  * is needed, or something breaks is the difference between a remote control and
  * a screen you have to keep watching.
@@ -53,7 +53,7 @@ export const haptics = {
   /** Something destructive or refused: unpairing, rejecting a permission. */
   warned: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
 
-  /** Pew was poked, or something small and alive answered a touch. Softer
+  /** Tappy was poked, or something small and alive answered a touch. Softer
    *  than a tap, so touching a mascot never feels like pressing a button. */
   poke: () => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft)),
 

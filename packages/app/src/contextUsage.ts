@@ -15,7 +15,7 @@
  *
  * Pure and Expo-free, so `bun test` can load it.
  */
-import { asRecord } from "@pew2/protocol";
+import { asRecord } from "@tappy/protocol";
 
 /** The tokens an agent reported. Absent for agents that never send it. */
 export interface ContextUsage {

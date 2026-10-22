@@ -24,7 +24,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { theme } from "../theme";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { Led } from "./stage/Led";
 import { haptics } from "./haptics";
 import { CircleButton } from "./controls";
@@ -196,7 +196,7 @@ export function QrScanner({ visible, onClose, onScan, error, busy }: Props) {
           )}
           {granted ? (
             <View style={[styles.footer, { paddingBottom: insets.bottom + theme.space(4) }]} pointerEvents="none">
-              <Pew size={56} mood={read || busy ? "happy" : "thinking"} style={styles.footerPew} accessibilityLabel="Pew" />
+              <Tappy size={56} mood={read || busy ? "happy" : "thinking"} style={styles.footerTappy} accessibilityLabel="Tappy" />
               {/* Progress outranks the error: a check in flight has already
                   superseded the last failure. */}
               {busy ? (
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   footer: { flexDirection: "row", alignItems: "center", gap: theme.space(2) },
   // The globe fills ~60% of its box.
-  footerPew: { margin: -theme.space(2) },
+  footerTappy: { margin: -theme.space(2) },
   footerText: { flex: 1 },
   error: { color: theme.color.danger, fontSize: theme.font.body },
   permissionTitle: {

@@ -32,9 +32,9 @@ import { DotGlyph } from "./stage/DotGlyph";
 import { FolderPicker } from "./FolderPicker";
 import { Led } from "./stage/Led";
 import { StageButton } from "./stage/StageButton";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { AgentColorProvider } from "./stage/agentColor";
-import { KEN_COLOR } from "../pew/palette";
+import { KEN_COLOR } from "../tappy/palette";
 import { suggestGoalName } from "../goalsAgent";
 import type { GoalResult, GoalSummary } from "../ggState";
 import type { WorkspaceBrowse } from "../useDaemon";
@@ -111,7 +111,7 @@ const STEP_TITLE: Record<Step, string> = {
 
 /**
  * One step at a time (the user's call: the single form was too cluttered).
- * Ken (GG Goals' own Pew) stays above every step, centred, keeping you
+ * Ken (GG Goals' own Tappy) stays above every step, centred, keeping you
  * company; each step is just a title and its field, no descriptions. Next
  * (top right) and Back (top left, beside Close) move between steps, clear of
  * the keyboard; the last step is the launch pad.
@@ -170,7 +170,7 @@ function NewGoalScreen({ visible, onClose, onCreate, results, onCreated, browse,
     // with a name and goal filled in, for checking it on the simulator.
     const devStep = __DEV__ ? (process.env.EXPO_PUBLIC_DEV_GOAL_STEP as Step | undefined) : undefined;
     setStep(devStep && STEPS.includes(devStep) ? devStep : "name");
-    setName(devStep ? "Pew2 polish" : prefill ? suggestGoalName(prefill) : "");
+    setName(devStep ? "Tappy polish" : prefill ? suggestGoalName(prefill) : "");
     setGoal(devStep ? "Make every screen feel alive." : (prefill ?? ""));
     setContext([]);
     setFiles([]);
@@ -212,7 +212,7 @@ function NewGoalScreen({ visible, onClose, onCreate, results, onCreated, browse,
 
   const result = pending ? results[pending] : undefined;
   // A launch that hears nothing back gives up rather than sitting on
-  // "Launching" for ever: a dropped connection or an older pew2 that never
+  // "Launching" for ever: a dropped connection or an older tappy that never
   // answers both used to leave this page with no way forward but closing it.
   useEffect(() => {
     if (!pending) return;
@@ -235,13 +235,13 @@ function NewGoalScreen({ visible, onClose, onCreate, results, onCreated, browse,
     setWaitingLong(false);
     setPending(undefined);
     if (result.ok) {
-      // An older pew2 on the computer drops `files` without a word and its
+      // An older tappy on the computer drops `files` without a word and its
       // reply carries no count: say so rather than let the goal run without
       // the files the user picked.
       if (sentFiles.current > 0 && result.files === undefined) {
         Alert.alert(
           "Files not attached",
-          "The goal was created, but pew2 on your computer is too old to receive files from your phone. Update it, then add them in goal settings.",
+          "The goal was created, but tappy on your computer is too old to receive files from your phone. Update it, then add them in goal settings.",
         );
       }
       const created = result.goal;
@@ -416,7 +416,7 @@ function NewGoalScreen({ visible, onClose, onCreate, results, onCreated, browse,
       >
         {/* Ken stays put across steps (not keyed): only the step below changes. */}
         <View style={styles.ken}>
-          <Pew size={112} mood={kenMood} color={KEN_COLOR} accessibilityLabel="Ken" />
+          <Tappy size={112} mood={kenMood} color={KEN_COLOR} accessibilityLabel="Ken" />
         </View>
         <Reanimated.View
           key={step}

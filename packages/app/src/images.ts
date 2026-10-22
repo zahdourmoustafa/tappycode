@@ -13,7 +13,7 @@
  *
  * Pure and React-free so both the extraction and the source rules are testable.
  */
-import { asRecord } from "@pew2/protocol";
+import { asRecord } from "@tappy/protocol";
 
 export interface ChatImage {
   /**
@@ -143,7 +143,7 @@ export function imagesFromContent(content: unknown): ChatImage[] {
 /**
  * Images produced by a tool call.
  *
- * Only images are taken. pew2 does not render tool calls as conversation, so
+ * Only images are taken. tappy does not render tool calls as conversation, so
  * lifting their text would put file contents and command output into the
  * transcript; a generated picture is the one part that is the answer itself.
  */

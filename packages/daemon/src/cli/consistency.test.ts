@@ -97,12 +97,12 @@ test("a section is never split by a blank line mid-section", () => {
 test("every full screen opens with the mark and names itself", () => {
   // agentSections and providerList are fragments of the setup screen, so only
   // the screens that own their whole output are checked for an opening. Style
-  // B spaces the screen's title, so pew2 reads as P E W 2 — the check accepts
+  // B spaces the screen's title, so tappy reads as T A P P Y — the check accepts
   // either spelling, and still requires a screen to say which tool it is.
   for (const name of ["doctor", "registry sync", "pair"]) {
     const first = screens[name]!.map(stripAnsi).filter((l) => l !== "")[0]!;
-    expect(first, name).toMatch(/^■\s+(pew2|P E W 2|[A-Z ]+)/);
-    expect(first, name).toMatch(/pew2|P E W 2|DOCTOR|REGISTRY|PAIR/i);
+    expect(first, name).toMatch(/^■\s+(tappy|T A P P Y|[A-Z ]+)/);
+    expect(first, name).toMatch(/tappy|T A P P Y|DOCTOR|REGISTRY|PAIR/i);
   }
 });
 
@@ -167,7 +167,7 @@ test("all screens degrade to ASCII together", () => {
             id: "daemon-unreachable",
             severity: "error",
             detail: "Nothing serving on http://127.0.0.1:8787.",
-            fix: "pew2 setup",
+            fix: "tappy setup",
           },
         ],
       },

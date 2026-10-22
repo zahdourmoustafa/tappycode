@@ -29,7 +29,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { SETTLE_MS, heightAction } from "../settledHeight";
 import type { PendingAttachment } from "../attachments";
 import type { ContextUsage } from "../contextUsage";
@@ -38,6 +38,8 @@ import type { Dictation } from "./useDictation";
 import { Composer, type ComposerHandle, type ComposerSelector } from "./Composer";
 import { ContextBar } from "./ContextBar";
 import { changesAccessibilityLabel } from "../workspaceLabel";
+import { ENTER, framesOf, keystrokesFor } from "../terminalTyping";
+import { theme } from "../theme";
 
 export interface ComposerDockHandle {
   /**
@@ -96,6 +98,19 @@ interface Props {
    * exact frames the animation needs. See `settledHeight.ts`.
    */
   onHeightSettled?: (height: number) => void;
+  /**
+   * An agent running in a terminal on the laptop, open in this same project.
+   *
+   * When present, the draft is mirrored into that terminal as it changes —
+   * every character appears there as it is typed — and Send presses Return
+   * there instead of sending a prompt. `type` answers whether the keystrokes
+   * went; ones that did not are retried as part of the next change.
+   */
+  live?: { id: string; label: string; type: (keys: string) => boolean };
+  /** A one-line status about the computer ("Opening Claude…"), shown when not typing live. */
+  notice?: string;
+  /** Answers to a question the terminal is waiting on, shown under the line above. */
+  actions?: Array<{ label: string; onPress: () => void; danger?: boolean }>;
 }
 
 function ComposerDockView(
@@ -120,6 +135,9 @@ function ComposerDockView(
     dictation,
     style,
     onHeightSettled,
+    live,
+    notice,
+    actions,
   }: Props,
   ref: React.Ref<ComposerDockHandle>,
 ) {
@@ -131,23 +149,70 @@ function ComposerDockView(
   draftRef.current = draft;
   const composer = useRef<ComposerHandle>(null);
 
+  // What the linked terminal's input line holds, as far as this phone has typed
+  // it. Advanced only once keystrokes have actually gone, so a change made while
+  // offline is caught up by the next one rather than lost.
+  const typed = useRef("");
+  const liveRef = useRef(live);
+  liveRef.current = live;
+
+  /** Type whatever the terminal is missing to match `text`. */
+  const mirror = useCallback((text: string): boolean => {
+    const target = liveRef.current;
+    if (!target) return false;
+    for (const frame of framesOf(keystrokesFor(typed.current, text))) {
+      if (!target.type(frame)) return false;
+    }
+    typed.current = text;
+    return true;
+  }, []);
+
+  // Every way the draft changes — typing, dictation, a slash command picked
+  // from the sheet — goes through here, so all of them reach the terminal.
+  const changeDraft = useCallback(
+    (text: string) => {
+      setDraft(text);
+      mirror(text);
+    },
+    [mirror],
+  );
+
+  // A different terminal (or none) starts from an empty input line. Whatever is
+  // already in the box is typed into the new one, so it matches what is shown.
+  const liveId = live?.id;
+  useEffect(() => {
+    typed.current = "";
+    if (liveId) mirror(draftRef.current);
+  }, [liveId, mirror]);
+
   useImperativeHandle(
     ref,
     () => ({
       getDraft: () => draftRef.current,
-      setDraft,
+      setDraft: changeDraft,
       focus: () => composer.current?.focus(),
     }),
-    [],
+    [changeDraft],
   );
 
   const send = useCallback(() => {
+    // Typing into a terminal, the message is already there: Send is the Return
+    // key. Nothing goes to a hidden agent, so the terminal on the laptop is the
+    // one place the work happens.
+    const target = liveRef.current;
+    if (target) {
+      if (mirror(draftRef.current) && target.type(ENTER)) {
+        typed.current = "";
+        setDraft("");
+      }
+      return;
+    }
     // Cleared here rather than by the parent, because the draft belongs to this
     // component now — but only once the message has actually gone. A send the
     // parent refuses leaves the words where they are, which is the difference
     // between a message that did not send and a message that was destroyed.
     if (onSend(draftRef.current.trim())) setDraft("");
-  }, [onSend]);
+  }, [onSend, mirror]);
 
   // The last height handed upwards, and the timer waiting to hand up the next.
   //
@@ -199,10 +264,32 @@ function ComposerDockView(
           planMode={planMode}
         />
       )}
+      {(live?.label ?? notice) && (
+        <Text style={styles.live} numberOfLines={1} accessibilityRole="text" accessibilityLiveRegion="polite">
+          {live?.label ?? notice}
+        </Text>
+      )}
+      {actions && actions.length > 0 && (
+        <View style={styles.actions}>
+          {actions.map((action) => (
+            <Pressable
+              key={action.label}
+              onPress={action.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              style={({ pressed }) => [styles.action, action.danger && styles.actionDanger, pressed && styles.actionPressed]}
+            >
+              <Text style={[styles.actionText, action.danger && styles.actionTextDanger]} numberOfLines={1}>
+                {action.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <Composer
         ref={composer}
         value={draft}
-        onChangeText={setDraft}
+        onChangeText={changeDraft}
         onSend={send}
         busy={busy}
         onStop={onStop}
@@ -224,3 +311,23 @@ function ComposerDockView(
 }
 
 export const ComposerDock = memo(forwardRef<ComposerDockHandle, Props>(ComposerDockView));
+
+const styles = StyleSheet.create({
+  live: {
+    color: theme.color.success,
+    fontSize: theme.font.tiny,
+    marginBottom: theme.space(2),
+    paddingHorizontal: theme.space(1),
+  },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.space(2), marginBottom: theme.space(2) },
+  action: {
+    paddingVertical: theme.space(2),
+    paddingHorizontal: theme.space(4),
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.color.success,
+  },
+  actionDanger: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.color.textDim },
+  actionPressed: { opacity: 0.7 },
+  actionText: { color: theme.color.onAccent, fontSize: theme.font.small, fontWeight: "600" },
+  actionTextDanger: { color: theme.color.text },
+});

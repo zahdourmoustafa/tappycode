@@ -7,7 +7,7 @@ none of those are committed to this repository.
 ----------------------------------------------------------------------
 
 WHAT THIS APP IS
-pew2 is a remote control for coding agents that run on your own computer. It is the phone half of a two part tool. The other half is a free command line program the user installs on their Mac, Windows or Linux machine with one command. The app has no accounts or hosted conversation database. An optional relay forwards encrypted session traffic, and remote notifications use Expo and Apple.
+tappy is a remote control for coding agents that run on your own computer. It is the phone half of a two part tool. The other half is a free command line program the user installs on their Mac, Windows or Linux machine with one command. The app has no accounts or hosted conversation database. An optional relay forwards encrypted session traffic, and remote notifications use Expo and Apple.
 
 WHY THE APP SHOWS A PAIRING SCREEN ON FIRST LAUNCH
 On launch the app asks you to scan a pairing code. That code is produced by the command line program on the user's own computer. Without a computer running it there is nothing for the app to connect to, in the same way a TV remote does nothing without a TV. This is the intended design and not a defect or a paywall.
@@ -16,11 +16,11 @@ HOW TO TEST IT
 The fastest path, on any Mac, takes about a minute:
 
 1. Open Terminal and run:
-     curl -fsSL https://raw.githubusercontent.com/KenKaiii/pew2/main/install.sh | sh
+     curl -fsSL https://raw.githubusercontent.com/zahdourmoustafa/tappycode/main/install.sh | sh
 2. Run:
-     pew2 setup
+     tappy setup
    It finds any coding agents already installed, starts a local service, and prints a QR code.
-3. Open pew2 on the device, tap Pair, and scan that QR code.
+3. Open tappy on the device, tap Pair, and scan that QR code.
 
 The app then shows the agents on that computer and you can start a conversation with one. If the computer has no coding agent installed, step 2 prints the command to install one.
 
@@ -33,4 +33,4 @@ PERMISSIONS
 Camera is for scanning the pairing code and for taking a photo to send to an agent. Photos is for attaching an image and saving one an agent returns. Microphone and speech recognition are for dictating a message, using the on device recogniser. Notifications tell the user when an agent has finished or needs an answer. Prompts and attachments go to the user's chosen agent through the encrypted connection. With remote push registered, the computer sends finished-turn notifications through Expo to APNs even while the app is open. Expo and Apple handle the project or agent name, a short excerpt from the final response, a session identifier, and a push delivery address; these payloads are not end to end encrypted. Agent providers have their own data practices. The privacy policy is accessible before pairing and in the connected app's sidebar.
 
 SOURCE CODE
-The entire app, command line tool and relay are open source under AGPL-3.0 at https://github.com/KenKaiii/pew2 if anything needs verifying.
+The entire app, command line tool and relay are open source under AGPL-3.0 at https://github.com/zahdourmoustafa/tappycode if anything needs verifying.

@@ -204,7 +204,7 @@ export async function pickPhotos(room: number = MAX_ATTACHMENTS): Promise<PickOu
     if (!permission.granted) {
       return {
         status: "denied",
-        message: "Photo access is off for pew2. Turn it on in Settings to attach pictures.",
+        message: "Photo access is off for tappy. Turn it on in Settings to attach pictures.",
       };
     }
 
@@ -237,7 +237,7 @@ export async function takePhoto(): Promise<PickOutcome> {
     if (!permission.granted) {
       return {
         status: "denied",
-        message: "Camera access is off for pew2. Turn it on in Settings to take a photo.",
+        message: "Camera access is off for tappy. Turn it on in Settings to take a photo.",
       };
     }
 

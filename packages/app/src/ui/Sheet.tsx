@@ -52,8 +52,8 @@ import { CircleButton } from "./controls";
 import { DotGlyph, type DotGlyphName } from "./stage/DotGlyph";
 import { haptics } from "./haptics";
 import { useReducedMotion } from "./useReducedMotion";
-import { Pew } from "../pew/Pew";
-import type { PewMood } from "../pew/engine";
+import { Tappy } from "../tappy/Tappy";
+import type { TappyMood } from "../tappy/engine";
 import { Led } from "./stage/Led";
 import { DotGrid } from "./stage/DotGrid";
 import { dashedOutline } from "./stage/DashedRule";
@@ -80,15 +80,15 @@ interface SheetProps {
   /** Accessible name for the scrim and close button. */
   dismissLabel?: string;
   /**
-   * Stage's Terminal header: an LED strip with a small Pew and this label in
+   * Stage's Terminal header: an LED strip with a small Tappy and this label in
    * dot-matrix type, and the title on its own line under it. Without a label
    * the strip carries the title itself, so every sheet gets the strip.
    */
   label?: string;
   /** The strip's LED tone: attention for a sheet that blocks the agent. */
   labelTone?: "agent" | "attention";
-  /** Pew's mood in the strip. Defaults to talking for a blocking sheet. */
-  pewMood?: PewMood;
+  /** Tappy's mood in the strip. Defaults to talking for a blocking sheet. */
+  tappyMood?: TappyMood;
   /**
    * Leave the keyboard up on open. For a picker opened mid-sentence (model,
    * thinking level): switching a setting is not leaving the draft. The card
@@ -158,10 +158,10 @@ const STRIP_INSET = theme.space(2);
 /** The sheet's inner rail: title, rows and buttons all start here. */
 const SHEET_PAD = theme.space(5);
 
-/** The strip's Pew: chip-sized, with room in its box to bounce. */
-const STRIP_PEW = 40;
+/** The strip's Tappy: chip-sized, with room in its box to bounce. */
+const STRIP_TAPPY = 40;
 
-function SheetView({ visible, title, onClose, onBack, dismissLabel, label, labelTone, pewMood, keepKeyboard = false, children }: SheetProps) {
+function SheetView({ visible, title, onClose, onBack, dismissLabel, label, labelTone, tappyMood, keepKeyboard = false, children }: SheetProps) {
   const insets = useSafeAreaInsets();
   const agentColor = useAgentColor();
   const reduceMotion = useReducedMotion();
@@ -358,7 +358,7 @@ function SheetView({ visible, title, onClose, onBack, dismissLabel, label, label
           <View collapsable={false}>
             <View style={styles.grabber} />
 
-            {/* The Terminal strip: Pew and an LED label on a dotted panel, the
+            {/* The Terminal strip: Tappy and an LED label on a dotted panel, the
                 way a machine labels its own displays. Full-bleed across the
                 card, ruled off with a dash. */}
             <View style={styles.strip}>
@@ -368,7 +368,7 @@ function SheetView({ visible, title, onClose, onBack, dismissLabel, label, label
                   <CrossfadeIcon name="back" />
                 </CircleButton>
               ) : null}
-              <Pew size={STRIP_PEW} mood={pewMood ?? (onClose ? "idle" : "talking")} color={agentColor} paused={!visible} style={styles.stripPew} />
+              <Tappy size={STRIP_TAPPY} mood={tappyMood ?? (onClose ? "idle" : "talking")} color={agentColor} paused={!visible} style={styles.stripTappy} />
               <View style={styles.stripLabel}>
                 <Led tone={labelTone === "attention" ? "attention" : "agent"}>{label ?? title}</Led>
               </View>
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     marginTop: theme.space(2),
     borderRadius: theme.radius.lg,
     ...dashedOutline,
-    // Pew's globe fills the middle ~60% of its box, so the box starts 8pt
+    // Tappy's globe fills the middle ~60% of its box, so the box starts 8pt
     // short of the rail and the globe's edge lands on it. The close button's
     // edge lands 4pt inside the right rail.
     paddingLeft: SHEET_PAD - 8 - STRIP_INSET,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.stage.strip,
     overflow: "hidden",
   },
-  stripPew: { marginVertical: -4 },
+  stripTappy: { marginVertical: -4 },
   stripLabel: { flex: 1, minWidth: 0 },
   header: {
     flexDirection: "row",

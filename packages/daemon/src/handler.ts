@@ -17,7 +17,7 @@ import { loadImage } from "./images.js";
 import { workspaceStatus } from "./git.js";
 import { resolveWorkspace } from "./workspace.js";
 import { suggestionRoots, discoverRepos, listDirectory } from "./workspaces.js";
-import { wire } from "@pew2/protocol";
+import { wire } from "@tappy/protocol";
 import { pushFinishedTurn } from "./push.js";
 import { storeGoalFiles } from "./goalFiles";
 import { readKnownProjects } from "./known-projects.js";
@@ -124,7 +124,7 @@ export async function handleMessage(raw: string, ctx: HandlerContext): Promise<v
         // Announcing is idempotent, so doing it on both paths is harmless.
         await daemon.refreshProviders();
 
-        // Announce the arrival to everyone else. `pew2 pair` listens for this
+        // Announce the arrival to everyone else. `tappy pair` listens for this
         // to turn "scan this" into "paired", and it belongs here rather than in
         // either transport for the same reason the rest of this switch does: a
         // phone may arrive over the relay while the CLI watches the LAN socket,
@@ -143,7 +143,7 @@ export async function handleMessage(raw: string, ctx: HandlerContext): Promise<v
       case "provider.capabilities": {
         // What does this app offer right now, and what has it already been used
         // for? Both come from the agent itself, so the reply reflects the
-        // installed version rather than anything baked into pew2.
+        // installed version rather than anything baked into tappy.
         const providerId = message.providerId;
         // `capabilitiesFor`, not `probeProvider`: the probe is the agent's own
         // answer, and what the app has to render is the state a new session will
@@ -253,12 +253,63 @@ export async function handleMessage(raw: string, ctx: HandlerContext): Promise<v
           reply(errorMessage("push_unidentified", "Say hello before registering for push."));
           break;
         }
-        if (!daemon.pushTargets.register(deviceId, message.token, message.platform)) {
+        if (!daemon.pushTargets.register(deviceId, message.token, message.platform, message.service)) {
           // Said out loud rather than ignored: a silently rejected token looks
           // exactly like a working one until someone waits for a notification
           // that never comes.
-          reply(errorMessage("push_token_invalid", "That is not an Expo push token."));
+          reply(errorMessage("push_token_invalid", "That is not a push token this computer can use."));
         }
+        break;
+      }
+
+      case "terminal.input": {
+        // Keystrokes into a program on this machine, so only from a device that
+        // has proved it holds the pairing key on this connection — the same
+        // gate push registration uses. Both transports already refuse sealed
+        // frames from unproved senders; this does not rely on that alone.
+        if (!ctx.deviceId) {
+          reply(errorMessage("terminal_unidentified", "Say hello before typing into a terminal."));
+          break;
+        }
+        // The registry is the only route to a PTY, and it only holds terminals
+        // a `tappy wrap` process offered: an id it does not know reaches nothing.
+        if (!daemon.terminals.write(message.terminalId, message.data)) {
+          reply(errorMessage("terminal_gone", "That terminal is no longer open."));
+          reply({ t: "terminals", terminals: daemon.terminals.list() });
+        }
+        break;
+      }
+
+      case "terminal.launch": {
+        // Opens a program on this machine, so only for a device that has proved
+        // it holds the pairing key on this connection, as typing requires.
+        const refuse = (text: string) =>
+          reply({ t: "terminal.launched", ok: false, agent: message.agent, cwd: message.cwd, message: text });
+        if (!ctx.deviceId) {
+          refuse("Say hello before opening a terminal.");
+          break;
+        }
+        // Only a project this daemon has already shown the phone, for this
+        // agent: a launch can never name an arbitrary directory.
+        const provider = message.agent === "claude" ? "claude-code" : message.agent;
+        const cwd = await daemon.knownProject(provider, message.cwd);
+        if (!cwd) {
+          refuse("That project isn't one this computer has offered.");
+          break;
+        }
+        // A conversation already open in a terminal is never opened twice: two
+        // agents writing one transcript is how a conversation gets corrupted.
+        if (message.resume && daemon.terminals.list().some((t) => t.conversation === message.resume)) {
+          refuse("That conversation is already open on your computer.");
+          break;
+        }
+        const result = await daemon.launchTerminal({
+          agent: message.agent,
+          cwd,
+          resume: message.resume,
+          bypass: message.bypass,
+        });
+        reply({ t: "terminal.launched", agent: message.agent, ...result });
         break;
       }
 
@@ -363,7 +414,7 @@ export async function handleMessage(raw: string, ctx: HandlerContext): Promise<v
         if (!message.path) {
           // Opening view: the good guesses. Walking down from home on a
           // touchscreen is the thing this exists to avoid.
-          // Only the folders the user has added (GG Coder's list and pew2's own),
+          // Only the folders the user has added (GG Coder's list and tappy's own),
           // so opening this never reaches into folders macOS guards.
           const suggestions = await discoverRepos({
             roots: await suggestionRoots(await readKnownProjects()),

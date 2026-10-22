@@ -24,13 +24,13 @@
 import { Component, type ReactNode } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
-import { Pew } from "../pew/Pew";
+import { Tappy } from "../tappy/Tappy";
 import { haptics } from "./haptics";
 import { StageButton } from "./stage/StageButton";
-import { pewInk } from "../pew/palette";
+import { tappyInk } from "../tappy/palette";
 
-/** pew2's own coral. */
-const PEW_CORAL = pewInk();
+/** tappy's own coral. */
+const TAPPY_CORAL = tappyInk();
 
 interface Props {
   children: ReactNode;
@@ -42,7 +42,7 @@ interface State {
   details: boolean;
 }
 
-/** Pew is decoration here: if it throws too, the screen must still draw. */
+/** Tappy is decoration here: if it throws too, the screen must still draw. */
 class Guard extends Component<{ children: ReactNode; fallback: ReactNode }, { broken: boolean }> {
   state = { broken: false };
   static getDerivedStateFromError() {
@@ -53,9 +53,9 @@ class Guard extends Component<{ children: ReactNode; fallback: ReactNode }, { br
   }
 }
 
-/** How long Pew stands back up before the tree is retried. */
+/** How long Tappy stands back up before the tree is retried. */
 const RECOVER_MS = 700;
-/** Amber "!" badge on the oops Pew. */
+/** Amber "!" badge on the oops Tappy. */
 const BADGE = 24;
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error) {
     // Also to the console, so `expo start` shows it during development. The
     // on-screen copy is for everyone who has no console attached.
-    console.error("[pew2] render crashed:", error);
+    console.error("[tappy] render crashed:", error);
     try {
       haptics.failed();
     } catch {
@@ -111,9 +111,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <View style={styles.screen}>
-        <Guard fallback={<View style={styles.pewSpace} />}>
-          <View style={styles.pewWrap}>
-            <Pew size={112} mood={recovering ? "happy" : "oops"} accessibilityLabel={recovering ? "Pew, recovering" : "Pew, hurt"} style={styles.pew} />
+        <Guard fallback={<View style={styles.tappySpace} />}>
+          <View style={styles.tappyWrap}>
+            <Tappy size={112} mood={recovering ? "happy" : "oops"} accessibilityLabel={recovering ? "Tappy, recovering" : "Tappy, hurt"} style={styles.tappy} />
             {!recovering && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>!</Text>
@@ -122,7 +122,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </View>
         </Guard>
         <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-          {recovering ? "Back on my feet" : "pew2 hit a problem"}
+          {recovering ? "Back on my feet" : "tappy hit a problem"}
         </Text>
         <Text style={styles.body} numberOfLines={2}>
           Something failed to draw. Trying again usually works.
@@ -131,7 +131,7 @@ export class ErrorBoundary extends Component<Props, State> {
         {/* The Stage button, guarded: this is the crash screen, so if the
             button itself can't draw, the plain one below still can. */}
         <Guard fallback={plainRetry}>
-          <StageButton label="Try again" color={PEW_CORAL} feel="none" onPress={retry} />
+          <StageButton label="Try again" color={TAPPY_CORAL} feel="none" onPress={retry} />
         </Guard>
 
         <Pressable
@@ -167,10 +167,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: theme.space(4),
   },
-  pewSpace: { height: theme.space(4) },
-  pewWrap: { alignSelf: "flex-start" },
+  tappySpace: { height: theme.space(4) },
+  tappyWrap: { alignSelf: "flex-start" },
   // The globe fills ~60% of its box: pull the heading up under it.
-  pew: { margin: -theme.space(5) },
+  tappy: { margin: -theme.space(5) },
   badge: {
     position: "absolute",
     right: theme.space(1),

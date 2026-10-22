@@ -13,7 +13,7 @@
  * open after that paints from disk while the agent reconnects behind it.
  *
  * Worth being explicit, because it is conversation content at rest: this writes
- * message text into `~/.pew2/cache/transcripts`. That is the same machine, the
+ * message text into `~/.tappy/cache/transcripts`. That is the same machine, the
  * same user and the same directory the agents already write their own history
  * to, and nothing here leaves the machine. Deleting the directory costs a
  * slower first open and nothing else.

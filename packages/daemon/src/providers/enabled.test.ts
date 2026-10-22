@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { readDisabled, retireLegacyDisabled, setEnabled, writeDisabled } from "./enabled.js";
 
 async function env() {
-  const home = await mkdtemp(join(tmpdir(), "pew2-enabled-"));
-  return { PEW2_HOME: home } as NodeJS.ProcessEnv;
+  const home = await mkdtemp(join(tmpdir(), "tappy-enabled-"));
+  return { TAPPY_HOME: home } as NodeJS.ProcessEnv;
 }
 
 test("everything is on until something is turned off", async () => {
@@ -50,20 +50,20 @@ test("a corrupt file leaves every agent visible", async () => {
   // Half-written or hand-edited. Reading it as "everything is off" would hide
   // the user's entire toolchain with no explanation.
   const e = await env();
-  await mkdir(e.PEW2_HOME!, { recursive: true });
-  await writeFile(join(e.PEW2_HOME!, "disabled.json"), "{ not json", "utf8");
+  await mkdir(e.TAPPY_HOME!, { recursive: true });
+  await writeFile(join(e.TAPPY_HOME!, "disabled.json"), "{ not json", "utf8");
 
   expect(await readDisabled(e)).toEqual(new Set());
 });
 
 test("a file from a future version is ignored rather than misread", async () => {
   // Version 2 is current, so the newer-than-us case is 3. A file written by a
-  // future pew2 may mean something this build cannot infer, and guessing at it
+  // future tappy may mean something this build cannot infer, and guessing at it
   // would hide agents on the strength of a format never seen.
   const e = await env();
-  await mkdir(e.PEW2_HOME!, { recursive: true });
+  await mkdir(e.TAPPY_HOME!, { recursive: true });
   await writeFile(
-    join(e.PEW2_HOME!, "disabled.json"),
+    join(e.TAPPY_HOME!, "disabled.json"),
     JSON.stringify({ version: 3, disabled: ["opencode"] }),
     "utf8",
   );
@@ -78,7 +78,7 @@ test("the list is written sorted, so the file does not churn", async () => {
   // It sits in a directory people back up and occasionally read.
   const e = await env();
   await writeDisabled(["goose", "codex", "opencode"], e);
-  const raw = await Bun.file(join(e.PEW2_HOME!, "disabled.json")).text();
+  const raw = await Bun.file(join(e.TAPPY_HOME!, "disabled.json")).text();
   expect(JSON.parse(raw).disabled).toEqual(["codex", "goose", "opencode"]);
 });
 
@@ -107,10 +107,10 @@ test("an agent that is not installed is never recorded as a choice", async () =>
  * cannot be trusted and is not migrated: it is backed up and dropped.
  */
 async function writeLegacy(e: NodeJS.ProcessEnv, disabled: string[]) {
-  const dir = join(e.PEW2_HOME!, "providers");
+  const dir = join(e.TAPPY_HOME!, "providers");
   await mkdir(dir, { recursive: true });
   await writeFile(
-    join(e.PEW2_HOME!, "disabled.json"),
+    join(e.TAPPY_HOME!, "disabled.json"),
     JSON.stringify({ version: 1, disabled }, null, 2),
   );
 }
@@ -136,7 +136,7 @@ test("retiring a version 1 list reports what it turned back on", async () => {
   // The old list is kept: it is the only record of what was in there, and the
   // whole premise is that we cannot be sure how much of it was meant.
   const backup = JSON.parse(
-    await readFile(join(e.PEW2_HOME!, "disabled.json.v1.bak"), "utf8"),
+    await readFile(join(e.TAPPY_HOME!, "disabled.json.v1.bak"), "utf8"),
   ) as { disabled: string[] };
   expect(backup.disabled.sort()).toEqual(["cline", "qwen-code"]);
 });
@@ -165,7 +165,7 @@ test("nothing to retire on a fresh machine or an already-current file", async ()
 });
 
 test("turning an agent off through the CLI backs up a legacy list first", async () => {
-  // `pew2 providers disable x` reads, mutates and rewrites. Without retiring
+  // `tappy providers disable x` reads, mutates and rewrites. Without retiring
   // first, that rewrite would silently drop the version 1 file instead of
   // keeping it — the same silent loss, just through a different door.
   const e = await env();
@@ -175,7 +175,7 @@ test("turning an agent off through the CLI backs up a legacy list first", async 
 
   expect(await readDisabled(e)).toEqual(new Set(["goose"]));
   const backup = JSON.parse(
-    await readFile(join(e.PEW2_HOME!, "disabled.json.v1.bak"), "utf8"),
+    await readFile(join(e.TAPPY_HOME!, "disabled.json.v1.bak"), "utf8"),
   ) as { disabled: string[] };
   expect(backup.disabled).toEqual(["cline"]);
 });

@@ -15,7 +15,7 @@ import { parse } from "node:path";
 /**
  * Resolve the working directory for a spawned agent.
  *
- * Order: an explicit request from the client, then `PEW2_WORKSPACE`, then the
+ * Order: an explicit request from the client, then `TAPPY_WORKSPACE`, then the
  * daemon's own cwd when it is a real directory, and finally the user's home.
  */
 export function resolveWorkspace(
@@ -24,7 +24,7 @@ export function resolveWorkspace(
   daemonCwd: string = process.cwd(),
   home: string = homedir(),
 ): string {
-  const explicit = requested ?? env.PEW2_WORKSPACE;
+  const explicit = requested ?? env.TAPPY_WORKSPACE;
   if (explicit) return explicit;
 
   // A filesystem root is never a sane project directory. It is exactly what
@@ -37,8 +37,8 @@ export function resolveWorkspace(
 /**
  * The project name people actually say: the last segment of a path.
  *
- * `/Users/kenkai/gg-projects/pew2` is unreadable in a notification banner;
- * `pew2` is the whole point of the message. Undefined for a root or an empty
+ * `/Users/kenkai/gg-projects/tappy` is unreadable in a notification banner;
+ * `tappy` is the whole point of the message. Undefined for a root or an empty
  * path, so a caller can leave the name out rather than print a slash.
  */
 export function folderName(cwd: string | undefined): string | undefined {

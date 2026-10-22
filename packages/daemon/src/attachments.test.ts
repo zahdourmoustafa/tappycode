@@ -84,7 +84,7 @@ describe("attachmentLimitError", () => {
 
 describe("storeAttachments", () => {
   test("writes the bytes and reports where", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     const stored = await storeAttachments(
       "sess-1",
       [{ name: "notes.txt", mimeType: "text/plain", data: b64("hello") }],
@@ -97,7 +97,7 @@ describe("storeAttachments", () => {
   });
 
   test("a hostile name stays inside the session directory", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     const stored = await storeAttachments(
       "sess-1",
       [{ name: "../../escaped.txt", mimeType: "text/plain", data: b64("nope") }],
@@ -107,7 +107,7 @@ describe("storeAttachments", () => {
   });
 
   test("refuses a set over the limits rather than truncating it", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     // Silently dropping one would leave a prompt referring to a file the agent
     // never received.
     await expect(
@@ -116,14 +116,14 @@ describe("storeAttachments", () => {
   });
 
   test("discard removes the session's files", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     await storeAttachments("sess-1", [{ name: "a.txt", mimeType: "text/plain", data: b64("a") }], root);
     await discardAttachments("sess-1", root);
     await expect(readdir(attachmentDir("sess-1", root))).rejects.toThrow();
   });
 
   test("discarding a session that never had attachments is not an error", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     await discardAttachments("never", root);
   });
 
@@ -132,7 +132,7 @@ describe("storeAttachments", () => {
     // id, and `image.fetch` allows that directory as a root. At the default
     // 0755/0644 a photo someone sent to their own machine was readable by every
     // other account on it.
-    const root = await mkdtemp(join(tmpdir(), "pew2-test-"));
+    const root = await mkdtemp(join(tmpdir(), "tappy-test-"));
     const stored = await storeAttachments(
       "sess-1",
       [{ name: "shot.png", mimeType: "image/png", data: b64("png") }],

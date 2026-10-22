@@ -23,13 +23,13 @@ test("the daemon's list is used as announced, newest project first", () => {
   const projects = projectsForProvider(
     [
       { path: "/a/site", name: "site", sessions: 2, updatedAt: "2026-07-01T00:00:00Z" },
-      { path: "/a/pew2", name: "pew2", sessions: 9, updatedAt: "2026-08-01T00:00:00Z" },
+      { path: "/a/tappy", name: "tappy", sessions: 9, updatedAt: "2026-08-01T00:00:00Z" },
     ],
     [],
     "claude-code",
   );
 
-  expect(projects.map((p) => p.name)).toEqual(["pew2", "site"]);
+  expect(projects.map((p) => p.name)).toEqual(["tappy", "site"]);
   expect(projects[0]!.sessions).toBe(9);
 });
 
@@ -67,8 +67,8 @@ test("another agent's projects are never offered under this one", () => {
 
 test("a project in both sources is listed once, keeping the daemon's count", () => {
   const projects = projectsForProvider(
-    [{ path: "/a/pew2", name: "pew2", sessions: 12 }],
-    [session({ id: "1", cwd: "/a/pew2" })],
+    [{ path: "/a/tappy", name: "tappy", sessions: 12 }],
+    [session({ id: "1", cwd: "/a/tappy" })],
     "claude-code",
   );
 
@@ -78,49 +78,49 @@ test("a project in both sources is listed once, keeping the daemon's count", () 
 
 test("choosing a project keeps only its conversations", () => {
   const sessions = [
-    session({ id: "1", cwd: "/a/pew2" }),
+    session({ id: "1", cwd: "/a/tappy" }),
     session({ id: "2", cwd: "/a/site" }),
   ];
 
-  const kept = sessionsInProject(sessions, { path: "/a/pew2", name: "pew2" });
+  const kept = sessionsInProject(sessions, { path: "/a/tappy", name: "tappy" });
   expect(kept.map((s) => s.id)).toEqual(["1"]);
 });
 
 test("a conversation started on this phone matches by the folder the daemon stamped", () => {
   // It never had a `cwd` of its own; without this fallback it would vanish out
   // of the very project it was started in.
-  const local = session({ id: "1", folder: "pew2" });
+  const local = session({ id: "1", folder: "tappy" });
 
-  expect(sessionsInProject([local], { path: "/a/pew2", name: "pew2" })).toHaveLength(1);
+  expect(sessionsInProject([local], { path: "/a/tappy", name: "tappy" })).toHaveLength(1);
   expect(sessionsInProject([local], { path: "/a/site", name: "site" })).toHaveLength(0);
 });
 
 test("a session with neither path nor folder is not claimed by a project", () => {
-  expect(sessionsInProject([session({ id: "1" })], { path: "/a/pew2", name: "pew2" })).toEqual([]);
+  expect(sessionsInProject([session({ id: "1" })], { path: "/a/tappy", name: "tappy" })).toEqual([]);
 });
 
 test("no choice shows everything", () => {
-  const sessions = [session({ id: "1", cwd: "/a/pew2" }), session({ id: "2" })];
+  const sessions = [session({ id: "1", cwd: "/a/tappy" }), session({ id: "2" })];
   expect(sessionsInProject(sessions, undefined)).toHaveLength(2);
 });
 
 test("the control always has a label", () => {
   expect(projectLabel(undefined)).toBe("All projects");
-  expect(projectLabel({ path: "/a/pew2", name: "pew2" })).toBe("pew2");
+  expect(projectLabel({ path: "/a/tappy", name: "tappy" })).toBe("tappy");
 });
 
 test("the memo key ignores a streamed chunk landing on a session's turns", () => {
   // The exact case this exists for: a chunk arrives, the sessions array is
   // rebuilt with new turns on the active session, and the project list is
   // unaffected. A changed key here would put the sort back on every chunk.
-  const before = [session({ id: "1", cwd: "/a/pew2" })];
-  const after = [session({ id: "1", cwd: "/a/pew2", turns: [{ id: "t1" }] as never })];
+  const before = [session({ id: "1", cwd: "/a/tappy" })];
+  const after = [session({ id: "1", cwd: "/a/tappy", turns: [{ id: "t1" }] as never })];
 
   expect(projectSourceKey(after, "claude-code")).toBe(projectSourceKey(before, "claude-code"));
 });
 
 test("the memo key changes when a session introduces a new project", () => {
-  const before = [session({ id: "1", cwd: "/a/pew2" })];
+  const before = [session({ id: "1", cwd: "/a/tappy" })];
   const after = [...before, session({ id: "2", cwd: "/a/site" })];
 
   expect(projectSourceKey(after, "claude-code")).not.toBe(
@@ -132,7 +132,7 @@ test("the memo key is scoped to one agent", () => {
   // Another agent's conversations cannot change this agent's project list, so
   // they must not invalidate it either.
   const sessions = [
-    session({ id: "1", cwd: "/a/pew2" }),
+    session({ id: "1", cwd: "/a/tappy" }),
     session({ id: "2", cwd: "/a/site", providerId: "codex" }),
   ];
 
@@ -168,5 +168,48 @@ describe("projectTabItems", () => {
     const items = projectTabItems(projects);
     expect(items).toHaveLength(1001);
     expect(items[1000]?.path).toBe("/p/999");
+  });
+});
+
+describe("projects open in a terminal", () => {
+  const terminal = (cwd: string, agent: "claude" | "codex" | "ggcoder" = "claude", startedAt = Date.parse("2026-10-16T20:00:00Z")) => ({
+    id: `t-${cwd}`,
+    agent,
+    cwd,
+    folder: cwd.split("/").pop() ?? cwd,
+    startedAt,
+  });
+
+  test("a project with no history appears the moment claude is opened in it", () => {
+    const projects = projectsForProvider([], [], "claude-code", [terminal("/Users/me/brand-new")]);
+    expect(projects).toEqual([
+      { path: "/Users/me/brand-new", name: "brand-new", live: true, updatedAt: "2026-10-16T20:00:00.000Z" },
+    ]);
+  });
+
+  test("a project already in the list is marked live, not duplicated, and comes first", () => {
+    const projects = projectsForProvider(
+      [
+        { path: "/p/new", name: "new", updatedAt: "2026-10-16T21:00:00.000Z" },
+        { path: "/p/old", name: "old", updatedAt: "2026-01-01T00:00:00.000Z" },
+      ],
+      [],
+      "claude-code",
+      [terminal("/p/old")],
+    );
+    expect(projects.map((p) => [p.name, p.live ?? false])).toEqual([
+      ["old", true],
+      ["new", false],
+    ]);
+  });
+
+  test("only the agent on screen counts: codex open in a folder is not a claude project", () => {
+    expect(projectsForProvider([], [], "claude-code", [terminal("/p/site", "codex")])).toEqual([]);
+    expect(projectsForProvider([], [], "codex", [terminal("/p/site", "codex")]).map((p) => p.name)).toEqual(["site"]);
+  });
+
+  test("a live project is marked in the strip, for the eye and for VoiceOver", () => {
+    const items = projectTabItems(projectsForProvider([], [], "claude-code", [terminal("/p/app")]));
+    expect(items[1]).toEqual({ path: "/p/app", label: "● app", a11y: "Project app, open in a terminal" });
   });
 });

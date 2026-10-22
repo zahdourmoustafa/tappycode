@@ -1,28 +1,28 @@
 /**
- * The thinking-level dial's light show, drawn round Pew in the model sheet.
+ * The thinking-level dial's light show, drawn round Tappy in the model sheet.
  *
  * The level is energy: an LED track sweeps round the arc to it with a bright
- * leading head, sparks orbit Pew (more, faster, on tilted orbits the higher it
+ * leading head, sparks orbit Tappy (more, faster, on tilted orbits the higher it
  * goes) and his aura swells. A change is an event: stepping up fires a shock
- * ring out of Pew to the arc and a burst of sparks from the stop that just lit;
+ * ring out of Tappy to the arc and a burst of sparks from the stop that just lit;
  * stepping down sucks a ring back in and the stop that went dark sheds sparks
  * that fall away. At the top the whole track shimmers.
  *
  * Pure and Expo-free (tested under bun); every frame is a function of the
  * moment. `ui/ThinkingDial.tsx` paints it with Skia on the UI thread in two
- * layers, behind and in front of Pew, so orbiting sparks pass round him rather
+ * layers, behind and in front of Tappy, so orbiting sparks pass round him rather
  * than across him. Helpers sit above their callers: a worklet cannot call a
  * function declared below it.
  */
 import type { FxPainter, FxPalette, FxRGB } from "./launchFx";
 
 export interface DialGeometry {
-  /** The box is size×size; Pew sits at its centre. */
+  /** The box is size×size; Tappy sits at its centre. */
   size: number;
   /** Radius of the arc through the level stops. */
   radius: number;
-  /** Pew's body radius (his box is about 1.7× this). */
-  pewR: number;
+  /** Tappy's body radius (his box is about 1.7× this). */
+  tappyR: number;
   /** Arc start, radians clockwise from +x (screen coordinates). */
   start: number;
   /** Arc span, radians. */
@@ -46,7 +46,7 @@ export interface DialMoment {
 
 /** Dots in the fine track between stops. */
 export const TRACK_DOTS = 54;
-/** Sparks orbiting Pew at full energy. */
+/** Sparks orbiting Tappy at full energy. */
 export const ORBITERS = 18;
 /** Sparks thrown by a change. */
 export const SPARKS = 22;
@@ -88,7 +88,7 @@ export function energy(level: number): number {
 }
 
 /**
- * Orbiting spark `i`: x, y, depth (-1 behind Pew .. 1 in front) and alpha.
+ * Orbiting spark `i`: x, y, depth (-1 behind Tappy .. 1 in front) and alpha.
  * Orbits are ellipses tilted per spark, so together they read as a sphere of
  * thought round him; the count and speed follow the energy.
  */
@@ -101,7 +101,7 @@ export function orbiter(g: DialGeometry, i: number, t: number, level: number, ou
     return;
   }
   const c = g.size / 2;
-  const r = g.pewR * (1.25 + 0.45 * dialRand(i, 1));
+  const r = g.tappyR * (1.25 + 0.45 * dialRand(i, 1));
   const tilt = (dialRand(i, 2) - 0.5) * 2.2;
   const flat = 0.28 + 0.3 * dialRand(i, 3);
   const speed = (0.6 + dialRand(i, 4) * 0.8) * (0.5 + 2.4 * e) * (dialRand(i, 5) < 0.5 ? 1 : -1);
@@ -154,7 +154,7 @@ function pulse(g: DialGeometry, m: DialMoment, pal: FxPalette, p: FxPainter): vo
   if (q < 0 || q > 1) return;
   const c = g.size / 2;
   const ease = 1 - (1 - q) * (1 - q) * (1 - q);
-  const from = g.pewR * 0.9;
+  const from = g.tappyR * 0.9;
   const to = g.radius + 10;
   const r = m.dir > 0 ? from + (to - from) * ease : to - (to - from) * ease;
   const a = (1 - q) * (m.dir > 0 ? 0.85 : 0.5);
@@ -162,13 +162,13 @@ function pulse(g: DialGeometry, m: DialMoment, pal: FxPalette, p: FxPainter): vo
   if (m.dir > 0) p.ring(c, c, r * 0.82, 1.2, WHITE, a * 0.5);
 }
 
-/** Behind Pew: aura, track, stops, the far side of the orbits, the pulse ring. */
+/** Behind Tappy: aura, track, stops, the far side of the orbits, the pulse ring. */
 export function paintDialBack(g: DialGeometry, m: DialMoment, pal: FxPalette, p: FxPainter, scratch: Float32Array): void {
   "worklet";
   const c = g.size / 2;
   const e = energy(m.level);
   const flare = m.since < PULSE_S && m.dir > 0 ? (1 - m.since / PULSE_S) * 0.35 : 0;
-  p.radial(c, c, g.pewR * (1.6 + 1.2 * e), pal.base, 0.06 + 0.42 * e + flare);
+  p.radial(c, c, g.tappyR * (1.6 + 1.2 * e), pal.base, 0.06 + 0.42 * e + flare);
   pulse(g, m, pal, p);
 
   // The fine track, lit to the level, with a bright head sweeping along it.
@@ -209,7 +209,7 @@ export function paintDialBack(g: DialGeometry, m: DialMoment, pal: FxPalette, p:
   }
 }
 
-/** In front of Pew: the near side of the orbits (with trails) and the change's sparks. */
+/** In front of Tappy: the near side of the orbits (with trails) and the change's sparks. */
 export function paintDialFront(g: DialGeometry, m: DialMoment, pal: FxPalette, p: FxPainter, scratch: Float32Array): void {
   "worklet";
   const e = energy(m.level);
@@ -235,8 +235,8 @@ export function paintDialFront(g: DialGeometry, m: DialMoment, pal: FxPalette, p
   }
 }
 
-/** Pew's own kick on a change: a scale for `since` seconds in, direction `dir`. */
-export function pewKick(since: number, dir: number): number {
+/** Tappy's own kick on a change: a scale for `since` seconds in, direction `dir`. */
+export function tappyKick(since: number, dir: number): number {
   "worklet";
   if (since < 0 || since > 0.45) return 1;
   const q = since / 0.45;

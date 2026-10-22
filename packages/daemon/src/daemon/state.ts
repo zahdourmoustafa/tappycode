@@ -8,7 +8,7 @@
 import type { LoadedProvider } from "../providers/registry.js";
 import type { AcpSessionHandle, AgentSession } from "../acp/connect.js";
 import { PushRegistry } from "../push.js";
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 import type { ActiveSession, ProviderCapabilities } from "./types.js";
 
 export abstract class DaemonState {
@@ -214,13 +214,13 @@ export abstract class DaemonState {
   /**
    * Where this daemon's files live, fixed at construction.
    *
-   * The probe cache path is derived from `PEW2_HOME`, and the background refresh
+   * The probe cache path is derived from `TAPPY_HOME`, and the background refresh
    * that follows a cache hit outlives the call that started it. Reading the
    * ambient environment when that write finally lands means it goes to whatever
    * home is installed *then* rather than the one this daemon was built for — so
    * a refresh could overwrite a cache belonging to something else entirely.
    *
-   * In production nothing ever moves `PEW2_HOME`, so this is the same value
+   * In production nothing ever moves `TAPPY_HOME`, so this is the same value
    * either way. It matters wherever more than one home exists in a process,
    * which is every test that works in a temporary directory.
    */

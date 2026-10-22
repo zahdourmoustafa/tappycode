@@ -1,6 +1,6 @@
 /**
  * Manual live check (not part of `npm test`), round 2: checklist, Autopilot
- * state and a real plan review through the real pew2 Daemon against a real GG
+ * state and a real plan review through the real tappy Daemon against a real GG
  * Coder ACP build. Works in a throwaway git repo in tempdir.
  *
  *   GG_CLI=/path/to/ggcoder/dist/cli.js bun run packages/daemon/src/testing/gg-live-review-check.ts
@@ -18,20 +18,20 @@ import type { LoadedProvider } from "../providers/registry.js";
 const cli = process.env.GG_CLI;
 if (!cli) throw new Error("set GG_CLI to ggcoder's dist/cli.js");
 
-const root = await mkdtemp(join(tmpdir(), "pew2-live2-"));
+const root = await mkdtemp(join(tmpdir(), "tappy-live2-"));
 const project = join(root, "proj");
 execFileSync("mkdir", ["-p", project]);
 await writeFile(join(project, "README.md"), "# tiny\n");
 execFileSync("git", ["init", "-q"], { cwd: project });
-process.env.PEW2_HOME = join(root, "home");
-process.env.PEW2_WORKSPACE = project;
+process.env.TAPPY_HOME = join(root, "home");
+process.env.TAPPY_WORKSPACE = project;
 
 const provider: LoadedProvider = {
   manifest: {
     id: "ggcoder",
     name: "GG Coder",
     description: "",
-    pew: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
+    tappy: { transport: "acp", requiresWorkspace: false, commandDirs: [] },
   } as unknown as LoadedProvider["manifest"],
   source: "<live-check>",
   command: "node",

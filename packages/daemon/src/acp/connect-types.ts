@@ -5,7 +5,7 @@
  */
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { ClientConnection } from "@agentclientprotocol/sdk";
-import { asRecord, asString } from "@pew2/protocol";
+import { asRecord, asString } from "@tappy/protocol";
 import type { LoadedProvider } from "../providers/registry.js";
 import type { StoredAttachment } from "../attachments.js";
 import type { PromptCapabilities } from "./promptBlocks.js";
@@ -13,7 +13,7 @@ import type { AgentProject } from "../projects.js";
 
 /**
  * A session-level selector advertised by the agent: model, thinking level, mode.
- * pew2 never hardcodes model names — each agent reports its own, so connecting a
+ * tappy never hardcodes model names — each agent reports its own, so connecting a
  * new app automatically brings its models and reasoning levels with it.
  * https://agentclientprotocol.com/protocol/v1/session-config-options
  */
@@ -58,7 +58,7 @@ export function normaliseConfigOptions(raw: unknown): ConfigOption[] {
  * The `models` block `session/new` may return, alongside or instead of
  * `configOptions`. Claude Code's adapter reports its live model list this way —
  * the set is whatever that install currently offers, so it tracks agent updates
- * on its own and pew2 must never carry a model list of its own.
+ * on its own and tappy must never carry a model list of its own.
  */
 export interface SessionModelState {
   availableModels?: { modelId: string; name: string; description?: string }[];

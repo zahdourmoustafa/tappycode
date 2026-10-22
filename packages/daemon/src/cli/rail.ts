@@ -1,5 +1,5 @@
 /**
- * The chrome every pew2 command is drawn with (style B: see `ui.ts`).
+ * The chrome every tappy command is drawn with (style B: see `ui.ts`).
  *
  * Five commands used to look like five tools: `setup` and `providers list` drew
  * a rail, `pair` drew a centred block under a rule, `doctor` and `registry sync`
@@ -118,7 +118,7 @@ export function plural(n: number, word: string): string {
  * ellipsis where the answer was.
  *
  * Only the first line of a multi-line error is kept: agents sometimes attach a
- * stack, and that belongs in `pew2 providers verify`, not on a summary screen.
+ * stack, and that belongs in `tappy providers verify`, not on a summary screen.
  */
 export function wrapDetail(text: string, width: number): string[] {
   const line = text.split("\n")[0]!.trim();

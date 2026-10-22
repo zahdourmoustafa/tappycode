@@ -40,7 +40,7 @@ test("the refusal names the way out", () => {
   // A phone that legitimately lost its id — a reinstall clears the keychain —
   // sees the identical refusal to an attacker's. Only the user can tell those
   // apart, so the message has to carry the fix rather than just the verdict.
-  expect(REFUSED_MESSAGE).toContain("pew2 pair --rotate");
+  expect(REFUSED_MESSAGE).toContain("tappy pair --rotate");
 });
 
 test("a blank device id never claims and never matches", () => {
@@ -60,7 +60,7 @@ test("ids are matched whole, not by prefix", () => {
 
 test("a phone still calling itself 'phone' is admitted, and claims nothing", () => {
   // Apps built before the gate kept the `deviceId=phone` placeholder that
-  // `pew2 pair` bakes into printed links. Refusing them would lock out everyone
+  // `tappy pair` bakes into printed links. Refusing them would lock out everyone
   // who has not updated yet, on pairings that were never single-device anyway.
   // Recording the claim would be worse: the placeholder would become the owner
   // and refuse that same user the moment they do update.
@@ -89,13 +89,13 @@ test("only the placeholder counts as unclaimed", () => {
 });
 
 test("the local CLI can watch a pairing without owning it", () => {
-  // `pew2 pair` opens its own socket to notice the phone arriving, and has to
+  // `tappy pair` opens its own socket to notice the phone arriving, and has to
   // prove itself or the daemon seals nothing to it. Proving made it a device,
   // so it claimed the very pairing it was printing - and the phone that then
   // scanned the QR was refused as a second device, told to run
-  // `pew2 pair --rotate`, which minted a new code and claimed that one too.
+  // `tappy pair --rotate`, which minted a new code and claimed that one too.
   // The command whose only job is letting you in was locking you out.
-  const cli = "pew2-cli@Kens-MacBook-Pro.local";
+  const cli = "tappy-cli@Kens-MacBook-Pro.local";
 
   // Admitted, and no claim recorded.
   expect(decideClaim(undefined, cli)).toEqual({ ok: true });
@@ -110,10 +110,10 @@ test("a phone cannot pass itself off as the local CLI", () => {
   // The prefix is a marker, not a credential - anything reaching this point
   // already proved it holds the pairing key, so this only decides bookkeeping.
   // Still, a name that merely mentions it must not skip the claim.
-  expect(decideClaim(undefined, "my-pew2-cli@phone")).toEqual({
+  expect(decideClaim(undefined, "my-tappy-cli@phone")).toEqual({
     ok: true,
-    claim: "my-pew2-cli@phone",
+    claim: "my-tappy-cli@phone",
   });
   expect(isLocalWatcher("iPhone-3f2a")).toBe(false);
-  expect(isLocalWatcher("pew2-cli@host")).toBe(true);
+  expect(isLocalWatcher("tappy-cli@host")).toBe(true);
 });

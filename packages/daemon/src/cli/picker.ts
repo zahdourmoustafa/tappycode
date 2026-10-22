@@ -1,7 +1,7 @@
 /**
  * Choosing which agents to use, with arrow keys.
  *
- * `pew2 setup` finds every agent on PATH and offers all of them. That is the
+ * `tappy setup` finds every agent on PATH and offers all of them. That is the
  * right default but the wrong ending: an installed agent nobody uses still gets
  * spawned every time the phone connects, still holds memory, and still fills a
  * row in the drawer. Turning one off was possible only by remembering a command
@@ -140,7 +140,7 @@ export function render(state: PickerState, options: RenderOptions = {}): string[
   const g: Glyphs = options.glyph ?? glyphs();
   const r = rail(options);
 
-  const out = [...r.intro("pew2 agents", "choose what your phone can use")];
+  const out = [...r.intro("tappy agents", "choose what your phone can use")];
   out.push(...r.step("Found on this computer", plural(state.items.length, "agent")));
 
   state.items.forEach((item, index) => {
@@ -194,7 +194,7 @@ export function summary(state: PickerState, options: RenderOptions = {}): string
   if (count === 0) {
     // Allowed, but said plainly: a phone with no agents is not obviously an
     // intentional state, and the way back should be on screen.
-    return r.outro(`${s.bold("No agents chosen.")} ${s.hex(PALETTE.faint, "Run pew2 setup again to pick some.")}`, "warn");
+    return r.outro(`${s.bold("No agents chosen.")} ${s.hex(PALETTE.faint, "Run tappy setup again to pick some.")}`, "warn");
   }
   return r.outro(s.bold(`${plural(count, "agent")} on your phone.`), "ok");
 }

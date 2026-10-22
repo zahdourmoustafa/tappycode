@@ -26,7 +26,7 @@ export abstract class DaemonProbes extends DaemonSpares {
    *
    * Selectors are a property of a live session, so the only honest way to learn
    * them is to open one and throw it away. That keeps the model list true after
-   * the connected app updates — pew2 stores no model names of its own — and lets
+   * the connected app updates — tappy stores no model names of its own — and lets
    * the empty state show real options instead of nothing.
    *
    * Cached per provider: spawning an agent is slow, and a live session's own
@@ -220,7 +220,7 @@ export abstract class DaemonProbes extends DaemonSpares {
           commands: booted.availableCommands.length
             ? booted.availableCommands
             : await readCommandDirs(
-                provider.manifest.pew.commandDirs,
+                provider.manifest.tappy.commandDirs,
                 // The agent's own most recent project, not the daemon's cwd.
                 // Under launchd that cwd is `/` and `resolveWorkspace()` falls
                 // back to home, which holds no project's commands — so the

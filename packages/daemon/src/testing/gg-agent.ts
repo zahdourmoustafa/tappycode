@@ -3,10 +3,10 @@
  * A test-only ACP agent that speaks GG Coder's `_gg/*` extensions.
  *
  * Not a shipped provider: tests point a `ggcoder` LoadedProvider at this file.
- * It advertises `agentCapabilities._meta.gg` (unless `PEW2_TEST_GG_OLD=1`,
+ * It advertises `agentCapabilities._meta.gg` (unless `TAPPY_TEST_GG_OLD=1`,
  * which plays an older ggcoder) and implements just enough of the contract to
  * exercise the daemon: a mid-run queue, ask_user, and a goals store kept in
- * memory with folders under `PEW2_TEST_GOALS_ROOT`.
+ * memory with folders under `TAPPY_TEST_GOALS_ROOT`.
  *
  * Prompt words that drive it:
  *  - `steer`: runs ~300ms, folding queued messages in at every beat (`drained`).
@@ -20,8 +20,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable, Writable } from "node:stream";
 
-const old = process.env.PEW2_TEST_GG_OLD === "1";
-const goalsRoot = process.env.PEW2_TEST_GOALS_ROOT ?? join(tmpdir(), "pew2-test-goals");
+const old = process.env.TAPPY_TEST_GG_OLD === "1";
+const goalsRoot = process.env.TAPPY_TEST_GOALS_ROOT ?? join(tmpdir(), "tappy-test-goals");
 
 interface Goal {
   id: string;
@@ -75,7 +75,7 @@ const summary = (goal: Goal) => ({
   lastActiveMs: goal.lastActiveMs,
   // Exactly as real ggcoder sends it: a goal whose coordinator has never run
   // has no conversation yet, and ggcoder says so with null rather than
-  // leaving the field out. pew2 once rejected every new goal over this.
+  // leaving the field out. tappy once rejected every new goal over this.
   agentSessionId: null,
   status: goal.paused ? "paused" : goal.status,
 });
@@ -96,7 +96,7 @@ function openSession(sessionId: string, cwd: string) {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const invalid = (message: string) => Object.assign(new Error(message), { code: -32602 });
 
-const app = agent({ name: "pew2-gg-test" })
+const app = agent({ name: "tappy-gg-test" })
   .onRequest("initialize", async () => ({
     protocolVersion: 1,
     agentCapabilities: {
@@ -104,7 +104,7 @@ const app = agent({ name: "pew2-gg-test" })
       sessionCapabilities: { list: {}, resume: {} },
       ...(old ? {} : { _meta: { gg: { queue: 1, askUser: 1, goals: 1, planReview: 1, autopilot: 1, checklist: 1 } } }),
     },
-    agentInfo: { name: "pew2-gg-test", version: "0.0.0" },
+    agentInfo: { name: "tappy-gg-test", version: "0.0.0" },
     authMethods: [],
   }))
   .onRequest("session/new", async (ctx) => {

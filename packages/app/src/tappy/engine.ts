@@ -1,18 +1,18 @@
 /**
- * Pew, pew2's mascot: the engine.
+ * Tappy, tappy's mascot: the engine.
  *
- * A ball of LED dots (the pew2 icon's dots wrapped round a sphere) whose face
+ * A ball of LED dots (the tappy icon's dots wrapped round a sphere) whose face
  * is made of lit dots. Every dot rides its own spring towards a target that
  * depends on the mood, so the body wobbles, ripples and settles on its own;
  * the face, the light patterns and the little extras around the head are all
- * computed per frame. Ported from the "Pew Matrix" prototype the user chose
- * (`~/.gg/goals/pew2-gg/mascot/pew.html`).
+ * computed per frame. Ported from the "Tappy Matrix" prototype the user chose
+ * (`~/.gg/goals/tappy-gg/mascot/tappy.html`).
  *
  * Pure and Expo-free: no React, no Skia. Drawing goes through a tiny
- * `PewPainter` interface (dots, glows, ovals, lines, polygons, a shadow), so
+ * `TappyPainter` interface (dots, glows, ovals, lines, polygons, a shadow), so
  * `bun test` can record a frame and the app can paint the same frame with
  * Skia. Every function carries the `"worklet"` directive because the app runs
- * this on the UI thread (`Pew.tsx`); to `bun` the directive is an inert
+ * this on the UI thread (`Tappy.tsx`); to `bun` the directive is an inert
  * string.
  *
  * Coordinates are in points inside an S×S box. Time `t` is in seconds.
@@ -21,27 +21,27 @@
 // painter that draws a frame of it (`enginePaint.ts`). This module is the
 // public face the app and the tests import, so neither has to know.
 export {
-  PEW_AMBER,
-  PEW_MOODS,
-  PEW_SLEEP_STYLES,
-  advancePew,
+  TAPPY_AMBER,
+  TAPPY_MOODS,
+  TAPPY_SLEEP_STYLES,
+  advanceTappy,
   blink,
   clamp,
-  dragPew,
+  dragTappy,
   gridPoints,
   hash,
-  makePewBody,
-  pewCount,
-  pewSleepSeed,
-  pewSleepStyle,
-  pokePew,
-  releasePew,
-  settlePew,
+  makeTappyBody,
+  tappyCount,
+  tappySleepSeed,
+  tappySleepStyle,
+  pokeTappy,
+  releaseTappy,
+  settleTappy,
   talkOpen,
-  type PewBody,
-  type PewMood,
-  type PewPainter,
-  type PewPalette,
+  type TappyBody,
+  type TappyMood,
+  type TappyPainter,
+  type TappyPalette,
   type RGB,
 } from "./engineBody";
-export { ledFace, paintPew } from "./enginePaint";
+export { ledFace, paintTappy } from "./enginePaint";

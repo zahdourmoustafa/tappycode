@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activityMood, pewInk, pewPalette, homeMood, PEW2_PEW, roleColor, workerMood } from "./palette";
+import { activityMood, tappyInk, tappyPalette, homeMood, TAPPY_TAPPY, roleColor, workerMood } from "./palette";
 
 const luminance = ([r, g, b]: number[]) => {
   const f = (c: number) => {
@@ -14,16 +14,16 @@ const contrast = (a: number[], b: number[]) => {
 };
 const CANVAS = [10, 10, 12];
 
-describe("pewPalette", () => {
-  test("no colour, or a bad one, is pew2's own coral", () => {
-    expect(pewPalette()).toBe(PEW2_PEW);
-    expect(pewPalette("not a colour")).toBe(PEW2_PEW);
+describe("tappyPalette", () => {
+  test("no colour, or a bad one, is tappy's own coral", () => {
+    expect(tappyPalette()).toBe(TAPPY_TAPPY);
+    expect(tappyPalette("not a colour")).toBe(TAPPY_TAPPY);
   });
 
   test("every agent's lit dots read on the canvas, and unlit ones stay dark", () => {
     // The manifest colours in providers/*.json, plus GG Goals.
     for (const brand of ["#4ade80", "#d97757", "#10a37f", "#4285f4", "#26c6da", "#e4e4e7", "#94a3b8", "#615ced", "#8b7cf6", "#000000", "#ffffff"]) {
-      const p = pewPalette(brand);
+      const p = tappyPalette(brand);
       expect(contrast(p.base, CANVAS)).toBeGreaterThan(4.5);
       expect(contrast(p.light, CANVAS)).toBeGreaterThan(contrast(p.base, CANVAS));
       expect(luminance(p.off)).toBeLessThan(luminance(p.base) / 4);
@@ -31,8 +31,8 @@ describe("pewPalette", () => {
   });
 
   test("each agent gets its own colour", () => {
-    const a = pewPalette("#d97757").base.join();
-    const b = pewPalette("#4285f4").base.join();
+    const a = tappyPalette("#d97757").base.join();
+    const b = tappyPalette("#4285f4").base.join();
     expect(a).not.toBe(b);
   });
 });
@@ -60,10 +60,10 @@ describe("moods", () => {
   });
 });
 
-describe("pewInk", () => {
+describe("tappyInk", () => {
   test("is a hex colour that reads on the canvas, coral by default", () => {
-    expect(pewInk("#4285f4")).toMatch(/^#[0-9a-f]{6}$/);
-    expect(pewInk()).toBe(pewInk(undefined));
-    expect(pewInk("#4285f4")).not.toBe(pewInk("#4ade80"));
+    expect(tappyInk("#4285f4")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(tappyInk()).toBe(tappyInk(undefined));
+    expect(tappyInk("#4285f4")).not.toBe(tappyInk("#4ade80"));
   });
 });

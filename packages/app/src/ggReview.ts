@@ -7,7 +7,7 @@
  * `Replay.autopilot`, never from replayed events (a logged decision is history,
  * and a replay must never open a sheet). Absent = an older daemon said nothing.
  */
-import type { wire } from "@pew2/protocol";
+import type { wire } from "@tappy/protocol";
 
 export type PendingPlan = NonNullable<wire.PlanState["pending"]>;
 export interface PlanInfo {

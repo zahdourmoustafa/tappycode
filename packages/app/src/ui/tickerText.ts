@@ -33,7 +33,8 @@ function targetOf(tool: ToolRun, verb: string): string {
   const title = tool.title.trim();
   const [first = "", ...rest] = title.split(/\s+/);
   const lead = first.toUpperCase();
-  if (rest.length > 0 && (lead === verb || lead.startsWith(verb.slice(0, 4)))) return rest.join(" ");
+  if (rest.length > 0 && (lead === verb || lead.startsWith(verb.slice(0, 4))))
+    return rest.join(" ");
   return title;
 }
 
@@ -53,6 +54,13 @@ export function tickerSteps(activity: Activity): TickerStep[] {
 export interface TickerInput {
   working: boolean;
   activity: Activity;
+  /**
+   * What a terminal the phone follows is doing, when it is that terminal
+   * working rather than one of the app's own chats: its latest step, as the
+   * terminal shows it ("Ran npm test · exit 0"). Steps of the app's own
+   * activity win when there are any.
+   */
+  step?: string;
   /** What a pending permission or question asks, when one is open. */
   needs?: string;
   offline: boolean;
@@ -75,7 +83,11 @@ const stepLabel = (step: TickerStep) => (step.target ? `${step.verb} ${step.targ
 export function tickerLine(input: TickerInput): TickerLine {
   if (input.needs !== undefined) {
     const what = input.needs.trim();
-    return { text: what ? `NEEDS YOU · ${what}` : "NEEDS YOU", tone: "attention", mood: "thinking" };
+    return {
+      text: what ? `NEEDS YOU · ${what}` : "NEEDS YOU",
+      tone: "attention",
+      mood: "thinking",
+    };
   }
   if (input.offline) return { text: "OFFLINE · MESSAGES WAIT", tone: "dim", mood: "sleepy" };
   if (input.working) {
@@ -83,7 +95,18 @@ export function tickerLine(input: TickerInput): TickerLine {
     const recent = steps.slice(-2).map(stepLabel);
     const live = steps.some((step) => step.state === "live");
     const mood: TickerMood = input.activity.speaking ? "talking" : live ? "working" : "thinking";
-    if (recent.length === 0) return { text: input.activity.speaking ? "WRITING …" : "THINKING …", tone: "agent", mood };
+    if (recent.length === 0) {
+      const step = input.step?.trim();
+      if (step) {
+        const running = step.endsWith("…");
+        return {
+          text: running ? `${step.slice(0, -1).trim()} …` : step,
+          tone: "agent",
+          mood: running ? "working" : "thinking",
+        };
+      }
+      return { text: input.activity.speaking ? "WRITING …" : "THINKING …", tone: "agent", mood };
+    }
     return { text: `${recent.join(" · ")}${live ? " …" : ""}`, tone: "agent", mood };
   }
   const said = input.say?.trim();
@@ -102,7 +125,8 @@ export interface ReceiptPart {
 /** The finished turn as LED segments: what it touched, what failed, how long. */
 export function receiptParts(receipt: TurnReceipt): ReceiptPart[] {
   const parts: ReceiptPart[] = [];
-  if (receipt.tools > 0) parts.push({ text: `${receipt.tools} ${receipt.tools === 1 ? "STEP" : "STEPS"}`, tone: "dim" });
+  if (receipt.tools > 0)
+    parts.push({ text: `${receipt.tools} ${receipt.tools === 1 ? "STEP" : "STEPS"}`, tone: "dim" });
   // Not "+ok −failed": in a coding app a plus and a minus read as lines added
   // and removed, which the receipt doesn't know. Failures are named instead.
   if (receipt.failed > 0) parts.push({ text: `${receipt.failed} FAILED`, tone: "minus" });
@@ -129,4 +153,6 @@ export const receiptLength = (parts: ReceiptPart[]) =>
 
 /** The receipt read aloud. */
 export const receiptText = (receipt: TurnReceipt) =>
-  receiptParts(receipt).map((part) => part.text).join(" ");
+  receiptParts(receipt)
+    .map((part) => part.text)
+    .join(" ");

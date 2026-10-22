@@ -7,7 +7,7 @@
  * result, so identities are stable and nothing here is state of its own.
  */
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import type { SecureChannel } from "@pew2/protocol";
+import type { SecureChannel } from "@tappy/protocol";
 import type { RestoreTarget } from "./restoreState";
 import type { OutboxEntry } from "./outbox";
 import type { Cursors } from "./cursors";

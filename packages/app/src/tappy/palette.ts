@@ -1,15 +1,15 @@
 /**
- * Pew's colours and moods. Pure and Expo-free (tested with `bun`).
+ * Tappy's colours and moods. Pure and Expo-free (tested with `bun`).
  *
- * pew2's own Pew is coral, the pew2 icon's dots. Every agent gets its own
- * Pew in its brand colour (the `color` in its provider manifest), worked
+ * tappy's own Tappy is coral, the tappy icon's dots. Every agent gets its own
+ * Tappy in its brand colour (the `color` in its provider manifest), worked
  * out here so a new agent needs no artwork: a lit LED in the brand hue, a
  * deep unlit body in the same hue, and a pale glow.
  */
-import type { PewMood, PewPalette, RGB } from "./engine";
+import type { TappyMood, TappyPalette, RGB } from "./engine";
 
-/** pew2 itself: the coral of the app icon. */
-export const PEW2_PEW: PewPalette = {
+/** tappy itself: the coral of the app icon. */
+export const TAPPY_TAPPY: TappyPalette = {
   light: [255, 202, 182],
   base: [224, 122, 90],
   dark: [107, 42, 26],
@@ -82,23 +82,23 @@ function fromHsl(h: number, s: number, l: number): RGB {
 }
 
 /**
- * A Pew in `color`. No colour (or an unreadable one) is pew2's own coral.
- * Greys stay grey (a silver Pew) rather than being forced into a hue.
+ * A Tappy in `color`. No colour (or an unreadable one) is tappy's own coral.
+ * Greys stay grey (a silver Tappy) rather than being forced into a hue.
  */
 /**
  * An agent's colour for lit UI (LED labels, outlines, a sheet's strip): its
- * Pew's lit-dot colour as a CSS string, so it clears the same contrast bar on
- * the canvas. No colour is pew2's coral.
+ * Tappy's lit-dot colour as a CSS string, so it clears the same contrast bar on
+ * the canvas. No colour is tappy's coral.
  */
-export function pewInk(color?: string): string {
-  const [r, g, b] = pewPalette(color).base;
+export function tappyInk(color?: string): string {
+  const [r, g, b] = tappyPalette(color).base;
   const hex = (n: number) => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, "0");
   return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
-export function pewPalette(color?: string): PewPalette {
+export function tappyPalette(color?: string): TappyPalette {
   const rgb = color ? hexToRgb(color) : undefined;
-  if (!rgb) return PEW2_PEW;
+  if (!rgb) return TAPPY_TAPPY;
   const [h, s0] = toHsl(rgb);
   const s = Math.min(s0, 0.9);
   // Lit LEDs must read on the near-black canvas whatever the brand. Lightness
@@ -135,14 +135,14 @@ type ActivityState =
   | "shaping";
 
 /** The agent's turn: writing a reply is talking, a tool is working, otherwise thinking. */
-export function activityMood(state: ActivityState): PewMood {
+export function activityMood(state: ActivityState): TappyMood {
   if (state === "composing") return "talking";
   if (state === "breathing") return "thinking";
   return "working";
 }
 
 /** One of GG Goals' workers. */
-export function workerMood(state: string): PewMood {
+export function workerMood(state: string): TappyMood {
   switch (state) {
     case "running":
       return "working";
@@ -158,7 +158,7 @@ export function workerMood(state: string): PewMood {
 }
 
 /** The home screen: asleep while the computer is away, otherwise awake. */
-export function homeMood(online: boolean, busy: boolean): PewMood {
+export function homeMood(online: boolean, busy: boolean): TappyMood {
   if (!online) return "sleepy";
   return busy ? "working" : "idle";
 }

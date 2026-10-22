@@ -53,7 +53,7 @@ config.transformer.getTransformOptions = async () => ({
 /**
  * Let the app import the shared protocol package.
  *
- * `@pew2/protocol` is TypeScript compiled under NodeNext, where a relative
+ * `@tappy/protocol` is TypeScript compiled under NodeNext, where a relative
  * import must carry a `.js` suffix even though the file on disk is `.ts`. Metro
  * takes that suffix literally, looks for a `.js` that was never emitted, and
  * fails the bundle — so the two toolchains disagree about the same correct

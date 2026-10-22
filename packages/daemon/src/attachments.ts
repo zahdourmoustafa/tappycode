@@ -23,14 +23,14 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
-import { wire } from "@pew2/protocol";
+import { wire } from "@tappy/protocol";
 
 const { MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_TOTAL_BYTES } = wire;
 type PromptAttachment = wire.PromptAttachment;
 
 /** Where a session's attachments live. One directory per session, so closing one cleans up. */
 export function attachmentDir(sessionId: string, root: string = tmpdir()): string {
-  return join(root, "pew2-attachments", safeSegment(sessionId, "session"));
+  return join(root, "tappy-attachments", safeSegment(sessionId, "session"));
 }
 
 /**

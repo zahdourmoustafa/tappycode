@@ -1,7 +1,7 @@
 /**
  * Which agents this machine actually offers.
  *
- * `pew2 setup` writes a manifest for every agent it finds on PATH, which is the
+ * `tappy setup` writes a manifest for every agent it finds on PATH, which is the
  * right default — it means a working setup with nothing to configure. But every
  * agent in that list then gets spawned: the app asks each one what it supports
  * as soon as it connects, and each answer costs a real process. An agent that
@@ -144,7 +144,7 @@ export async function setEnabled(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<Set<string>> {
   // Before reading, or a legacy list would be silently discarded by the write
-  // below rather than backed up — `pew2 providers disable x` must not be the
+  // below rather than backed up — `tappy providers disable x` must not be the
   // thing that quietly drops the old file.
   await retireLegacyDisabled(env);
   const disabled = await readDisabled(env);

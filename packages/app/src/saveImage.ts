@@ -86,5 +86,5 @@ export function saveFileName(
   // Colons are legal in neither iOS album names nor Android file names, so the
   // timestamp is flattened rather than ISO.
   const stamp = now.toISOString().replace(/[:.]/g, "-").replace("T", "-").slice(0, 19);
-  return `pew2-${stamp}.${extension}`;
+  return `tappy-${stamp}.${extension}`;
 }

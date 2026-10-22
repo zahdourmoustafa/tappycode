@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { asRecord } from "@pew2/protocol";
+import { asRecord } from "@tappy/protocol";
 import type { AgentSession } from "./connect.js";
 import { historyImages, historyToolImages, type HistoryImage } from "../images.js";
 import { historyThoughts } from "./history-content.js";
@@ -25,7 +25,8 @@ const LOCAL_COMMAND_TAGS = [
   "local-command-stderr",
 ];
 
-function encodeCwd(cwd: string): string {
+/** The folder name Claude files a project's conversations under. */
+export function encodeCwd(cwd: string): string {
   return cwd.replace(/[^a-zA-Z0-9]/g, "-");
 }
 
@@ -50,6 +51,60 @@ function visibleText(content: unknown, role: "user" | "assistant"): string {
   return role === "user" ? stripLocalCommandTags(text) : text;
 }
 
+/**
+ * The top-level conversation entry on one line of a Claude transcript, or
+ * undefined for a line that is not one: bad JSON, a tool's bookkeeping, a
+ * subagent's side conversation.
+ */
+export function conversationEntry(
+  line: string,
+): { role: "user" | "assistant"; content: unknown } | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(line);
+  } catch {
+    return undefined;
+  }
+  const entry = asRecord(parsed);
+  // Claude also files records that carry a user-role `message` but are not the
+  // conversation: an `api-request-blob` is the context it sent the model —
+  // CLAUDE.md, the account's email, git status — and showed up as a message
+  // the person "typed". A conversation line is typed `user` or `assistant`.
+  if (typeof entry?.type === "string" && entry.type !== "user" && entry.type !== "assistant") {
+    return undefined;
+  }
+  const message = asRecord(entry?.message);
+  const role = message?.role;
+  if (role !== "user" && role !== "assistant") return undefined;
+  // Match the official adapter: local-command metadata and subagent text are
+  // not part of the top-level ACP conversation replay.
+  if (entry?.isMeta === true || entry?.isSidechain === true) return undefined;
+  return { role, content: message?.content };
+}
+
+/** What one line of a Claude transcript adds to the conversation on screen. */
+export function displayMessagesFromLine(line: string): ClaudeDisplayMessage[] {
+  const entry = conversationEntry(line);
+  if (!entry) return [];
+  const { role, content } = entry;
+  const messages: ClaudeDisplayMessage[] = [];
+  const text = visibleText(content, role).trim();
+  if (role === "assistant" && text.includes("Please run /login")) return [];
+  // Claude stores tool results under the user role, but a generated image
+  // is the agent's output, not a new prompt. Never replay the tool's text.
+  const toolImages = historyToolImages(content);
+  if (toolImages.length > 0) messages.push({ role: "assistant", text: "", images: toolImages });
+  if (role === "assistant") {
+    const thought = historyThoughts(content);
+    if (thought) messages.push({ role: "thought", text: thought, images: [] });
+  }
+  const images = historyImages(content);
+  // A message may be nothing but an image, so emptiness is judged on both.
+  if (!text && images.length === 0) return messages;
+  messages.push({ role, text, images });
+  return messages;
+}
+
 async function readDisplayMessages(filePath: string): Promise<ClaudeDisplayMessage[]> {
   const lines = readline.createInterface({
     input: createReadStream(filePath),
@@ -58,35 +113,7 @@ async function readDisplayMessages(filePath: string): Promise<ClaudeDisplayMessa
   const messages: ClaudeDisplayMessage[] = [];
 
   try {
-    for await (const line of lines) {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(line);
-      } catch {
-        continue;
-      }
-      const entry = asRecord(parsed);
-      const message = asRecord(entry?.message);
-      const role = message?.role;
-      if (role !== "user" && role !== "assistant") continue;
-      // Match the official adapter: local-command metadata and subagent text are
-      // not part of the top-level ACP conversation replay.
-      if (entry?.isMeta === true || entry?.isSidechain === true) continue;
-      const text = visibleText(message?.content, role).trim();
-      if (role === "assistant" && text.includes("Please run /login")) continue;
-      // Claude stores tool results under the user role, but a generated image
-      // is the agent's output, not a new prompt. Never replay the tool's text.
-      const toolImages = historyToolImages(message?.content);
-      if (toolImages.length > 0) messages.push({ role: "assistant", text: "", images: toolImages });
-      if (role === "assistant") {
-        const thought = historyThoughts(message?.content);
-        if (thought) messages.push({ role: "thought", text: thought, images: [] });
-      }
-      const images = historyImages(message?.content);
-      // A message may be nothing but an image, so emptiness is judged on both.
-      if (!text && images.length === 0) continue;
-      messages.push({ role, text, images });
-    }
+    for await (const line of lines) messages.push(...displayMessagesFromLine(line));
   } finally {
     lines.close();
   }

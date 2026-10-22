@@ -11,7 +11,7 @@ afterEach(async () => {
 });
 
 test("counts the unopened GG Coder lineage exactly as ACP replay renders it", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-gg-history-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-gg-history-"));
   roots.push(root);
   const cwd = "/Users/test/my-project";
   const directory = path.join(root, "Users_test_my-project");
@@ -60,7 +60,7 @@ test("counts the unopened GG Coder lineage exactly as ACP replay renders it", as
 });
 
 test("loads a compacted GG Coder chain locally without the child summary or overlap", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-gg-display-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-gg-display-"));
   roots.push(root);
   const cwd = "/Users/test/my-project";
   const directory = path.join(root, "Users_test_my-project");
@@ -113,7 +113,7 @@ test("loads a compacted GG Coder chain locally without the child summary or over
 });
 
 test("replays Ken's persisted Autopilot verdicts where they were written", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "pew2-gg-ken-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tappy-gg-ken-"));
   roots.push(root);
   const cwd = "/Users/test/ken-project";
   const directory = path.join(root, "Users_test_ken-project");

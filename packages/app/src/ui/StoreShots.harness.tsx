@@ -53,7 +53,7 @@ const PROVIDERS: Provider[] = [
 
 const PROJECTS: Project[] = [
   { path: "/Users/k/code/storefront", name: "storefront", sessions: 18 },
-  { path: "/Users/k/code/pew2", name: "pew2", sessions: 24 },
+  { path: "/Users/k/code/tappy", name: "tappy", sessions: 24 },
   { path: "/Users/k/code/notes-api", name: "notes-api", sessions: 6 },
 ];
 

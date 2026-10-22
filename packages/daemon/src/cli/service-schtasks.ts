@@ -56,7 +56,7 @@ export const TASK_NAME = LABEL;
  * the question being asked.
  */
 export function taskXmlPath(home = homedir()): string {
-  return join(home, ".pew2", "service", `${TASK_NAME}.xml`);
+  return join(home, ".tappy", "service", `${TASK_NAME}.xml`);
 }
 
 function escapeXml(value: string): string {
@@ -81,16 +81,16 @@ function quoteArgument(value: string): string {
 export function buildTaskXml(options: InstallOptions = {}): string {
   const program = programArguments(options.bunPath);
   const logs = logDir(options.env);
-  const port = options.port ?? Number(options.env?.PEW2_PORT ?? 8787);
+  const port = options.port ?? Number(options.env?.TAPPY_PORT ?? 8787);
 
   // A task carries no environment of its own, and unlike launchd and systemd
   // there is no per-variable field to set. So the daemon is started through
   // `cmd /c` with the variables assigned inline, which is also what lets stdout
   // be redirected to the log files the daemon rotates.
-  const assignments = [`set "PEW2_PORT=${port}"`];
-  if (options.experimental) assignments.push(`set "PEW2_EXPERIMENTAL=1"`);
-  if (options.env?.PEW2_HOME) assignments.push(`set "PEW2_HOME=${options.env.PEW2_HOME}"`);
-  if (options.env?.PEW2_RELAY) assignments.push(`set "PEW2_RELAY=${options.env.PEW2_RELAY}"`);
+  const assignments = [`set "TAPPY_PORT=${port}"`];
+  if (options.experimental) assignments.push(`set "TAPPY_EXPERIMENTAL=1"`);
+  if (options.env?.TAPPY_HOME) assignments.push(`set "TAPPY_HOME=${options.env.TAPPY_HOME}"`);
+  if (options.env?.TAPPY_RELAY) assignments.push(`set "TAPPY_RELAY=${options.env.TAPPY_RELAY}"`);
 
   const start = program.map(quoteArgument).join(" ");
   const line =
@@ -103,7 +103,7 @@ export function buildTaskXml(options: InstallOptions = {}): string {
   return `<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>pew2 daemon — remote control for desktop coding agents</Description>
+    <Description>tappy daemon — remote control for desktop coding agents</Description>
     <URI>\\${escapeXml(TASK_NAME)}</URI>
   </RegistrationInfo>
   <Triggers>
@@ -201,7 +201,7 @@ export async function installScheduledTask(
   }
 
   // A logon trigger does not fire until the next logon, so the first run is
-  // started by hand — otherwise `pew2 setup` reports success on a daemon that
+  // started by hand — otherwise `tappy setup` reports success on a daemon that
   // will not exist until the user signs out and back in.
   await deps.runCommand("schtasks", ["/run", "/tn", TASK_NAME]);
 

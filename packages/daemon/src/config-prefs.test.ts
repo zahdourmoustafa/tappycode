@@ -6,8 +6,8 @@ import { readConfigPrefs, writeConfigPref } from "./config-prefs.js";
 import { POSIX_MODES } from "./testing/platform.js";
 
 async function tempEnv() {
-  const home = await mkdtemp(join(tmpdir(), "pew2-prefs-"));
-  return { PEW2_HOME: home } as NodeJS.ProcessEnv;
+  const home = await mkdtemp(join(tmpdir(), "tappy-prefs-"));
+  return { TAPPY_HOME: home } as NodeJS.ProcessEnv;
 }
 
 test("a chosen selector reads back for that provider", async () => {
@@ -68,8 +68,8 @@ test("an unknown provider has no preferences, not an error", async () => {
 
 test("a corrupt file is a miss, so a session still starts", async () => {
   const env = await tempEnv();
-  await mkdir(env.PEW2_HOME!, { recursive: true });
-  await writeFile(join(env.PEW2_HOME!, "config-prefs.json"), "{not json");
+  await mkdir(env.TAPPY_HOME!, { recursive: true });
+  await writeFile(join(env.TAPPY_HOME!, "config-prefs.json"), "{not json");
 
   expect(await readConfigPrefs("claude-code", env)).toEqual({});
   // And it recovers: the next write replaces the unreadable file.
@@ -87,12 +87,12 @@ test("the file is written whole, and readable only by its owner", async () => {
   const env = await tempEnv();
   await writeConfigPref("claude-code", "__acp_model", "opus", env);
 
-  const path = join(env.PEW2_HOME!, "config-prefs.json");
+  const path = join(env.TAPPY_HOME!, "config-prefs.json");
   // Windows has no permission bits to check - see POSIX_MODES.
   if (POSIX_MODES) expect((await stat(path)).mode & 0o077).toBe(0);
 
   // Nothing left behind: a temp file that survives is a file the next reader
   // may find instead of the real one.
-  const stray = (await readdir(env.PEW2_HOME!)).filter((name) => name.endsWith(".tmp"));
+  const stray = (await readdir(env.TAPPY_HOME!)).filter((name) => name.endsWith(".tmp"));
   expect(stray).toEqual([]);
 });
