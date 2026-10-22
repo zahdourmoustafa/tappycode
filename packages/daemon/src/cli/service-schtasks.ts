@@ -163,6 +163,11 @@ export function buildTaskXml(options: InstallOptions = {}): string {
 `;
 }
 
+/** The bytes schtasks accepts: a UTF-16LE BOM, then the XML in UTF-16LE. */
+export function taskXmlBytes(xml: string): Buffer {
+  return Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(xml, "utf16le")]);
+}
+
 export interface SchtasksDeps {
   runCommand: (command: string, args: string[]) => Promise<CommandResult>;
   home?: string;
@@ -178,9 +183,12 @@ export async function installScheduledTask(
   const path = taskXmlPath(home);
   await mkdir(dirname(path), { recursive: true });
   await mkdir(logDir(options.env), { recursive: true });
-  // A BOM, because schtasks reads the file as UTF-16/Unicode and rejects a
-  // plain UTF-8 one with a bare "The task XML is malformed".
-  await writeFile(path, `\ufeff${buildTaskXml(options)}`, "utf8");
+  // Real UTF-16LE with its BOM, matching the `encoding="UTF-16"` declaration.
+  // It used to be UTF-8 with a BOM, and schtasks rejected that on every
+  // machine with "The task XML is malformed. (1,2) incorrect document syntax",
+  // so the background service never installed and the daemon only ran while a
+  // `tappy serve` window stayed open.
+  await writeFile(path, taskXmlBytes(buildTaskXml(options)));
 
   // `/f` overwrites an existing registration, so re-running install picks up a
   // changed definition instead of failing on a name clash.

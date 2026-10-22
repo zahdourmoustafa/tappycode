@@ -61,15 +61,24 @@ jobs:
           "--- serve.log"; Get-Content $log | Select-String -NotMatch "[█▀▄]"
           "--- serve.err.log"; Get-Content $err
 
-      - name: What the daemon logged
+      - name: Background service (what tappy setup installs), then pair against it
         if: always()
         shell: pwsh
         run: |
-          "--- serve.log"; Get-Content "$env:RUNNER_TEMP\serve.log" -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
-          "--- serve.err.log"; Get-Content "$env:RUNNER_TEMP\serve.err.log" -ErrorAction SilentlyContinue
-          "--- doctor"; & "$env:LOCALAPPDATA\tappy\tappy.exe" doctor
-          "--- background service install + its error log"
+          Get-Process tappy -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
           & "$env:LOCALAPPDATA\tappy\tappy.exe" service install
-          Start-Sleep -Seconds 20
-          Get-Content "$env:USERPROFILE\.tappy\logs\daemon.error.log" -Tail 40 -ErrorAction SilentlyContinue
-          Get-Content "$env:USERPROFILE\.tappy\logs\daemon.log" -Tail 20 -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try { if ((Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/health -TimeoutSec 2).StatusCode -eq 200) { $ok = $true; break } } catch {}
+            Start-Sleep -Seconds 1
+          }
+          "service health ok=$ok after ${i}s"
+          Start-Sleep -Seconds 5
+          $env:PROBE_DEVICE = "phone-ci-service"
+          bun run packages/daemon/src/testing/phone-pair-probe.ts
+          $probe = $LASTEXITCODE
+          "--- doctor"; & "$env:LOCALAPPDATA\tappy\tappy.exe" doctor
+          "--- daemon.error.log"; Get-Content "$env:USERPROFILE\.tappy\logs\daemon.error.log" -Tail 40 -ErrorAction SilentlyContinue
+          "--- daemon.log"; Get-Content "$env:USERPROFILE\.tappy\logs\daemon.log" -Tail 20 -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
+          if (-not $ok -or $probe -ne 0) { exit 1 }

@@ -23,6 +23,7 @@ import {
   installScheduledTask,
   scheduledTaskStatus,
   taskXmlPath,
+  taskXmlBytes,
 } from "./service-schtasks.js";
 import { supervisorPath, supervisorInstalled } from "./service.js";
 import type { CommandResult } from "./service-shared.js";
@@ -219,10 +220,11 @@ test("the task file is written as Unicode, which schtasks requires", async () =>
   const home = await mkdtemp(join(tmpdir(), "tappy-task-"));
   await installScheduledTask({ home }, recorder());
 
-  // A plain UTF-8 file is rejected with a bare "The task XML is malformed".
+  // UTF-16LE with its BOM, matching the declaration. UTF-8 (with or without a
+  // BOM) is rejected on real Windows: "The task XML is malformed. (1,2)".
   // Read as bytes: `.text()` decodes and strips the very mark being asserted.
   const bytes = new Uint8Array(await Bun.file(taskXmlPath(home)).arrayBuffer());
-  expect([bytes[0], bytes[1], bytes[2]]).toEqual([0xef, 0xbb, 0xbf]);
+  expect([bytes[0], bytes[1]]).toEqual([0xff, 0xfe]);
 });
 
 test("a task that was never created reads as not-installed", async () => {
@@ -296,4 +298,14 @@ test("a sleeping machine is not woken to run the daemon", () => {
   // It would drain a closed laptop for a daemon nobody is talking to; the logon
   // trigger picks it up when the machine is next in use.
   expect(buildTaskXml()).toContain("<WakeToRun>false</WakeToRun>");
+});
+
+test("the task file is real UTF-16LE, matching its encoding declaration", () => {
+  // UTF-8 bytes under an `encoding="UTF-16"` declaration made schtasks reject
+  // every install: "The task XML is malformed. (1,2) incorrect document syntax".
+  const bytes = taskXmlBytes(buildTaskXml({}));
+  expect([...bytes.subarray(0, 2)]).toEqual([0xff, 0xfe]);
+  const text = bytes.subarray(2).toString("utf16le");
+  expect(text.startsWith('<?xml version="1.0" encoding="UTF-16"?>')).toBe(true);
+  expect(text).toContain("<Task version=");
 });
