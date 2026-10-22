@@ -310,16 +310,6 @@ export class RelayClient {
         }
         this.channel.acceptHandshake(deviceId);
 
-        // The app may have been waiting here long before this machine woke up,
-        // so re-announce rather than assume it saw the last list.
-        //
-        // Caught, like the call in `onopen`. This one was missed when that was
-        // fixed, and it is the worse of the two: it runs the moment a phone
-        // arrives, so a transient scan failure took the daemon down at exactly
-        // the moment someone was watching `tappy pair` for confirmation.
-        void this.options.daemon.refreshProviders().catch(() => {
-          // The phone is joined either way; the next refresh carries the list.
-        });
         const joined = { t: "device.joined", deviceId, at: Date.now() };
         this.send(joined);
         this.options.onBroadcast?.(joined);
@@ -335,6 +325,22 @@ export class RelayClient {
         for (const frame of this.options.daemon.greet(wire.readCursors(hello.cursors))) {
           this.send(frame);
         }
+
+        // The app may have been waiting here long before this machine woke up,
+        // so re-announce rather than assume it saw the last list.
+        //
+        // Last, after the join is confirmed. The provider scan stats every
+        // PATH entry against every PATHEXT suffix for every agent, synchronously,
+        // and on Windows that can hold the event loop for seconds. Started first,
+        // it delayed the sealed `device.joined` past the phone's pairing check,
+        // so the PC printed "paired" while the phone said the code did not
+        // connect.
+        //
+        // Caught, like the call in `onopen`: a transient scan failure must not
+        // take the daemon down at the moment a phone arrives.
+        void this.options.daemon.refreshProviders().catch(() => {
+          // The phone is joined either way; the next refresh carries the list.
+        });
         return;
       }
 

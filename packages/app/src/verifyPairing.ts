@@ -29,7 +29,9 @@ import type { Pairing } from "./pairingLink";
  * Durable Object, short enough that a dead code is not mistaken for a slow one.
  * The user is watching a spinner for this whole time, so it cannot grow much.
  */
-export const VERIFY_TIMEOUT_MS = 8000;
+// 20s, not 8s: a Windows machine can spend seconds scanning PATH for agents
+// as the phone arrives, and timing out there reported a working code as dead.
+export const VERIFY_TIMEOUT_MS = 20_000;
 
 /**
  * What the user sees when the handshake never happens.
