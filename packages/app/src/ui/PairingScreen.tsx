@@ -26,6 +26,7 @@ import { QrScanner } from "./QrScanner";
 import { CircleButton } from "./controls";
 import { Glass } from "./Glass";
 import { PrivacyLink } from "./PrivacyLink";
+import { APP_VERSION_LABEL } from "../appVersion";
 import { verifyPairing } from "../verifyPairing";
 import { Handshake, type HandshakePhase } from "./Handshake";
 import { Led } from "./stage/Led";
@@ -241,6 +242,9 @@ export function PairingScreen({ onPaired, onBack, notice }: Props) {
           running — would otherwise never reach the policy at all. */}
       <PrivacyLink style={styles.privacy} />
 
+      {/* Which APK is installed, readable in a screenshot of a failure. */}
+      <Text style={styles.version}>{APP_VERSION_LABEL}</Text>
+
       <QrScanner
         visible={scanning}
         error={scanError}
@@ -346,4 +350,9 @@ const styles = StyleSheet.create({
     marginTop: theme.space(8),
   },
   privacy: { marginTop: theme.space(4), alignSelf: "flex-start" },
+  version: {
+    marginTop: theme.space(3),
+    color: theme.color.textDim,
+    fontSize: 12,
+  },
 });
