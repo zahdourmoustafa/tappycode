@@ -44,13 +44,25 @@ $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("tappy-" + [guid]::NewGuid()
 New-Item -ItemType Directory -Path $tmp -Force | Out-Null
 $exe = Join-Path $tmp 'tappy.exe'
 
-try {
-  # Invoke-WebRequest shows a progress bar that is slower than the download on
-  # a fast connection. Silencing it is a real speedup, not cosmetics.
-  $ProgressPreference = 'SilentlyContinue'
-  Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
-} catch {
-  Die "Download failed. Check your connection, or grab it by hand from github.com/$Repo/releases"
+# The binary is about 100 MB. curl.exe (built into Windows 10 1803 and later)
+# downloads it far faster than Invoke-WebRequest and shows a progress bar, so a
+# long download no longer looks like a frozen window. Invoke-WebRequest stays
+# as the fallback for older systems, with its own progress bar silenced: in
+# Windows PowerShell that bar is slower than the download itself.
+$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue
+$downloaded = $false
+if ($curl) {
+  Write-Host "  About 100 MB - progress below." -ForegroundColor DarkGray
+  & $curl.Source --fail --location --progress-bar --retry 3 --output $exe $url
+  $downloaded = ($LASTEXITCODE -eq 0)
+}
+if (-not $downloaded) {
+  try {
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
+  } catch {
+    Die "Download failed. Check your connection, or grab it by hand from github.com/$Repo/releases"
+  }
 }
 
 if (-not (Test-Path $exe) -or (Get-Item $exe).Length -eq 0) {
