@@ -59,6 +59,12 @@ function loopbackBase(host: string, port: number): string | undefined {
 export interface DiscoverOptions {
   dir?: string;
   alive?: (pid: number) => boolean;
+  /**
+   * Also return files whose pid looks dead. The pid test is only a fast path:
+   * on Windows it can misreport a live app, so a caller that can ask the app
+   * directly (the bridge does) should not throw a working connection away.
+   */
+  includeUnverified?: boolean;
 }
 
 /**
@@ -83,7 +89,8 @@ export async function discoverApps(options: DiscoverOptions = {}): Promise<AppCo
       continue;
     }
     const parsed = ConnectionFile.safeParse(raw);
-    if (!parsed.success || !alive(parsed.data.pid)) continue;
+    if (!parsed.success) continue;
+    if (!options.includeUnverified && !alive(parsed.data.pid)) continue;
     const baseUrl = loopbackBase(parsed.data.host, parsed.data.port);
     if (!baseUrl) continue;
     found.push({

@@ -22,6 +22,7 @@
  *   run_end         → the open `session/prompt` resolves with its stop reason
  */
 import { agent, ndJsonStream } from "@agentclientprotocol/sdk";
+import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Readable, Writable } from "node:stream";
@@ -170,23 +171,53 @@ interface Joined {
   turn?: Turn;
 }
 
+/**
+ * The running app, confirmed by asking it rather than trusting a pid check:
+ * the newest connection file whose app answers `/windows` with its token.
+ */
+export async function findLiveApp(
+  options: { dir?: string; fetchImpl?: typeof fetch } = {},
+): Promise<AppClient | undefined> {
+  const candidates = await discoverApps({
+    ...(options.dir ? { dir: options.dir } : {}),
+    includeUnverified: true,
+  });
+  for (const candidate of candidates) {
+    const api = new AppClient(candidate, options.fetchImpl);
+    try {
+      await api.windows(AbortSignal.timeout(3000));
+      return api;
+    } catch {
+      // Stale file from a crashed app, or an app without `/windows`.
+    }
+  }
+  return undefined;
+}
+
 /** Run the bridge on stdio. Exits with the parent, like every ACP agent. */
 export async function runBridge(): Promise<void> {
   // Keyed by the id tappy uses. A stored chat keeps its GG conversation id on
   // the phone for good, while the app hands out a fresh session id each time
   // it reopens one, so every request is translated through this map.
   const joined = new Map<string, Joined>();
+  // New conversations not yet opened in the app, by tappy id → project.
+  // `session/new` answers without touching the app: tappy opens a session on
+  // every probe, purely to read the agent's capabilities and its chat list,
+  // and making that need the app meant a closed (or unreachable) app wiped
+  // the phone's whole chat and project list. The app conversation is created
+  // when the first message is sent, which is when the app is really needed.
+  const unopened = new Map<string, string>();
   let client: AppClient | undefined;
 
   async function app(): Promise<AppClient> {
-    const [found] = await discoverApps();
+    const found = await findLiveApp();
     if (!found) {
       throw new Error(
         "GG Coder app is not running. Open it on this computer, then try again. " +
           "(It needs the build from github.com/zahdourmoustafa/gg-coder.)",
       );
     }
-    client = new AppClient(found);
+    client = found;
     return client;
   }
 
@@ -278,7 +309,10 @@ export async function runBridge(): Promise<void> {
 
   const app_ = connection
     .onRequest("initialize", async () => {
-      await app();
+      // No app lookup here. Listing chats only reads ~/.gg/sessions, so a
+      // closed app — or one tappy cannot find — must not make the whole
+      // provider fail, which left the phone with no chats and no projects.
+      // Opening or sending is what needs the app, and says so when it is gone.
       return {
         protocolVersion: 1,
         agentCapabilities: {
@@ -295,8 +329,8 @@ export async function runBridge(): Promise<void> {
     })
     .onRequest("session/new", async (ctx) => {
       const { cwd } = ctx.params as { cwd: string };
-      const sessionId = await openFor(cwd);
-      await join(ctx, sessionId);
+      const sessionId = `gg-app-${randomUUID()}`;
+      unopened.set(sessionId, cwd);
       return { sessionId };
     })
     .onRequest("session/list", async () => ({
@@ -331,7 +365,9 @@ export async function runBridge(): Promise<void> {
     })
     .onNotification("session/cancel", async (ctx) => {
       const { sessionId } = (ctx.params ?? {}) as { sessionId?: string };
-      if (sessionId && client) await client.cancel(appIdFor(sessionId)).catch(() => {});
+      if (sessionId && client && joined.has(sessionId)) {
+        await client.cancel(appIdFor(sessionId)).catch(() => {});
+      }
     })
     .onRequest("session/prompt", async (ctx) => {
       const { sessionId, prompt } = ctx.params as {
@@ -343,7 +379,13 @@ export async function runBridge(): Promise<void> {
         .map((block) => block.text ?? "")
         .join("\n")
         .trim();
-      const entry = joined.get(sessionId) ?? (await join(ctx, sessionId));
+      const pendingCwd = unopened.get(sessionId);
+      const entry =
+        joined.get(sessionId) ??
+        (pendingCwd !== undefined
+          ? await join(ctx, sessionId, await openFor(pendingCwd))
+          : await join(ctx, sessionId));
+      unopened.delete(sessionId);
       const api = client ?? (await app());
       const done = new Promise<StopReason>((resolveTurn) => {
         entry.turn = { resolve: resolveTurn };
@@ -357,15 +399,18 @@ export async function runBridge(): Promise<void> {
       return { stopReason: await done };
     });
 
-  app_.connect(
+  const connected = app_.connect(
     ndJsonStream(
       Writable.toWeb(process.stdout) as unknown as WritableStream<Uint8Array>,
       Readable.toWeb(process.stdin) as unknown as ReadableStream<Uint8Array>,
     ),
   );
-  // The daemon closing stdin is the only end of life an ACP agent gets.
-  process.stdin.once("end", () => {
-    for (const entry of joined.values()) entry.stream.abort();
-    process.exit(0);
-  });
+  // Held open until the ACP connection itself closes. A web-stream wrapper
+  // over stdin does not always keep the event loop alive, and the bridge used
+  // to exit the instant it started — before answering the handshake — so the
+  // provider failed and the phone showed GG Coder App with no chats at all.
+  const keepAlive = setInterval(() => {}, 60_000);
+  await connected.closed.catch(() => {});
+  clearInterval(keepAlive);
+  for (const entry of joined.values()) entry.stream.abort();
 }

@@ -59,8 +59,8 @@ export class AppClient {
   }
 
   /** The conversations open in the app's windows; empty on an app without `/windows`. */
-  async windows(): Promise<AppWindow[]> {
-    const result = await this.json<{ windows?: AppWindow[] }>("/windows");
+  async windows(signal?: AbortSignal): Promise<AppWindow[]> {
+    const result = await this.json<{ windows?: AppWindow[] }>("/windows", signal ? { signal } : {});
     return result.windows ?? [];
   }
 

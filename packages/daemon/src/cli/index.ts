@@ -727,8 +727,9 @@ async function main() {
   // this. It owns stdio for the rest of the process, so it never returns.
   if (argv[0] === "gg-app-bridge") {
     const { runBridge } = await import("../gg-app/bridge.js");
+    // Resolves when the daemon closes the connection.
     await runBridge();
-    return new Promise<number>(() => {});
+    return 0;
   }
 
   const flags = new Set(argv.filter((a) => a.startsWith("--")));
