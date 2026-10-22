@@ -53,7 +53,7 @@
           "//": "Without this the generated splash is pure white while the app's own background is #111111 with userInterfaceStyle dark, so every cold launch flashed white before painting. No `dark` variant: the app is dark-only, and declaring one conflicts with the app-wide userInterfaceStyle. The colour is theme.color.bg, kept in step by hand because app.json cannot import it.",
           "backgroundColor": "#111111",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 160
+          "imageWidth": 220
         }
       ],
       "expo-secure-store",
