@@ -34,6 +34,7 @@ import { resolve } from "node:path";
 import { Readable, Writable } from "node:stream";
 
 import { AppClient, type AppEvent, type AppWindow } from "./client.js";
+import { readProbeCache } from "../probe-cache.js";
 import {
   buildCommands,
   buildConfigOptions,
@@ -235,6 +236,39 @@ export function referenceSession(windows: AppWindow[], cwd: string): string | un
     ranked.find((w) => w.viewers > 0) ??
     ranked[0]
   )?.sessionId;
+}
+
+/**
+ * Model and thinking pickers for when no GG Coder window is open to ask.
+ *
+ * The app and the GG Coder CLI share one engine, one model registry and one
+ * sign-in, so the CLI's last probe (cached on disk by this daemon) names the
+ * same models by the same ids. Without this the phone showed no model button
+ * at all for GG Coder App unless a window happened to be open at that moment.
+ * A pick made against it is held and applied when the app session opens.
+ */
+export async function fallbackConfigOptions(): Promise<BridgeConfigOption[]> {
+  const cached = await readProbeCache("ggcoder").catch(() => undefined);
+  return (cached?.configOptions ?? []).flatMap((option) => {
+    if (option.id !== MODEL_OPTION_ID && option.id !== THINKING_OPTION_ID) return [];
+    if (option.type !== "select" || !Array.isArray(option.options) || option.options.length === 0)
+      return [];
+    return [
+      {
+        id: option.id,
+        name: option.name,
+        ...(option.description ? { description: option.description } : {}),
+        category: option.id === MODEL_OPTION_ID ? "model" : "thought_level",
+        type: "select" as const,
+        currentValue: String(option.currentValue),
+        options: option.options.map((choice) => ({
+          value: String(choice.value),
+          name: choice.name,
+          ...(choice.description ? { description: choice.description } : {}),
+        })),
+      },
+    ];
+  });
 }
 
 /**
@@ -567,6 +601,7 @@ export async function runBridge(): Promise<void> {
           announce(ctx, sessionId, controls, { config: false, commands: true });
         }
       }
+      if (pending.configOptions.length === 0) pending.configOptions = await fallbackConfigOptions();
       return { sessionId, configOptions: pending.configOptions };
     })
     .onRequest("session/list", async () => ({

@@ -11,7 +11,7 @@ import { readConfigPrefs } from "../config-prefs.js";
 import { readCommandDirs } from "../commands/from-disk.js";
 import { DaemonSpares } from "./spares.js";
 import { listConversations } from "../gg-app/sessions.js";
-import { liveGgAppControls } from "../gg-app/bridge.js";
+import { fallbackConfigOptions, liveGgAppControls } from "../gg-app/bridge.js";
 import { hydrateMessageCounts } from "../acp/messageCounts.js";
 import { foldProjects } from "../projects.js";
 import { SESSION_HISTORY_LIMIT } from "../session-history.js";
@@ -107,7 +107,9 @@ export abstract class DaemonProbes extends DaemonSpares {
       // closed app leaves the start screen with the commands on disk.
       const live = await liveGgAppControls(cwd);
       const capabilities: ProviderCapabilities = {
-        configOptions: live?.configOptions ?? [],
+        configOptions: live?.configOptions.length
+          ? live.configOptions
+          : await fallbackConfigOptions(),
         sessions,
         canResume: true,
         projects: foldProjects(all),
