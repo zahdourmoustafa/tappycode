@@ -26,7 +26,7 @@ import {
   taskXmlBytes,
 } from "./service-schtasks.js";
 import { supervisorPath, supervisorInstalled } from "./service.js";
-import { isCompiledModuleUrl, type CommandResult } from "./service-shared.js";
+import { isBunRuntime, isCompiled, isCompiledModuleUrl, type CommandResult } from "./service-shared.js";
 
 /** Records every command a backend would have run, and answers as told. */
 function recorder(answers: Record<string, CommandResult> = {}) {
@@ -320,4 +320,20 @@ test("a compiled binary is recognised on every platform, a checkout never", () =
   // A source checkout, on either platform.
   expect(isCompiledModuleUrl("file:///Users/me/tappy/packages/daemon/src/cli/service-shared.ts")).toBe(false);
   expect(isCompiledModuleUrl("file:///C:/Users/me/tappy/packages/daemon/src/cli/service-shared.ts")).toBe(false);
+});
+
+test("Windows module URLs are recognised however they are spelled", () => {
+  expect(isCompiledModuleUrl("B:\\~BUN\\root\\tappy.exe")).toBe(true);
+  expect(isCompiledModuleUrl("file:///B:/%7EBUN/root/tappy.exe")).toBe(true);
+});
+
+test("a compiled tappy is recognised by its own executable, whatever the URL says", () => {
+  expect(isBunRuntime("/Users/me/.bun/bin/bun")).toBe(true);
+  expect(isBunRuntime("C:\\Users\\me\\.bun\\bin\\bun.exe")).toBe(true);
+  expect(isBunRuntime("C:\\Users\\me\\AppData\\Local\\tappy\\tappy.exe")).toBe(false);
+  expect(isBunRuntime("/usr/local/bin/tappy")).toBe(false);
+  // An unrecognised URL from a tappy.exe is still a compiled binary.
+  expect(isCompiled("file:///somewhere/new/tappy.exe", "C:\\tappy\\tappy.exe")).toBe(true);
+  // This test run is a source checkout under bun.
+  expect(isCompiled()).toBe(false);
 });

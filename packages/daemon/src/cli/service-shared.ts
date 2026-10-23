@@ -63,13 +63,37 @@ export type RunCommand = (command: string, args: string[]) => Promise<CommandRes
  * Coder App bridge was launched as `tappy.exe <missing .ts file>`, so the phone
  * showed it with no chats and no projects, and self-update refused to run.
  */
-export function isCompiled(url: string = import.meta.url): boolean {
-  return isCompiledModuleUrl(url);
+export function isCompiled(
+  url: string = import.meta.url,
+  execPath: string = process.execPath,
+): boolean {
+  return isCompiledModuleUrl(url) || !isBunRuntime(execPath);
 }
 
-/** The test behind `isCompiled`, on any module URL. */
+/**
+ * The module-URL half of `isCompiled`. Either separator, any case, encoded or
+ * not: the Windows form is not documented, and assuming one spelling is how
+ * every Windows install came to believe it was a source checkout.
+ */
 export function isCompiledModuleUrl(url: string): boolean {
-  return url.includes("/$bunfs/") || /\/~BUN\//i.test(url);
+  let text = url;
+  try {
+    text = decodeURIComponent(url);
+  } catch {
+    // A malformed escape: test the raw string.
+  }
+  return /[\\/](\$bunfs|~BUN)[\\/]/i.test(text);
+}
+
+/**
+ * Whether this process is the Bun runtime itself (a source checkout run with
+ * `bun run …`). A compiled tappy is its own executable — `tappy` or
+ * `tappy.exe` — never `bun`. Independent of how Bun spells module URLs, so it
+ * holds even where that spelling changes.
+ */
+export function isBunRuntime(execPath: string): boolean {
+  const name = execPath.split(/[\\/]/).pop() ?? "";
+  return /^bun(-debug|-profile)?(\.exe)?$/i.test(name);
 }
 
 /**
