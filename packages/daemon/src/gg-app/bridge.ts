@@ -131,6 +131,32 @@ async function samePath(a: string, b: string): Promise<boolean> {
   return (await canon(a)) === (await canon(b));
 }
 
+/**
+ * Put a conversation in an open app window, and return that window's session.
+ *
+ * The phone's prompts should run where the user can see them. The window does
+ * the switching (only its webview can re-point itself), so this asks, then
+ * waits until a window is on the conversation. `match` says which window state
+ * counts: the stored file for a resumed chat, the project for a new one.
+ * Undefined when no window took it in time — the caller then runs the
+ * conversation without a window, which still works, just off screen.
+ */
+export async function openInAppWindow(
+  api: AppClient,
+  request: { cwd: string; sessionPath?: string },
+  match: (win: AppWindow) => boolean,
+  { timeoutMs = 15_000, pollMs = 250 }: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<string | undefined> {
+  if (!(await api.openInWindow(request.cwd, request.sessionPath))) return undefined;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((resolveWait) => setTimeout(resolveWait, pollMs));
+    const win = (await api.windows().catch(() => [])).find((w) => w.viewers > 0 && match(w));
+    if (win) return win.sessionId;
+  }
+  return undefined;
+}
+
 /** Same file, ignoring separator style and (on Windows) letter case. */
 export function samePathSync(a: string, b: string): boolean {
   const norm = (p: string) => {
@@ -295,8 +321,19 @@ export async function runBridge(): Promise<void> {
   /** The window for this project, or a new conversation in the app's engine. */
   async function openFor(cwd: string, sessionPath?: string): Promise<string> {
     const api = client ?? (await app());
-    const win = sessionPath ? undefined : await pickWindow(await api.windows(), cwd);
-    return win?.sessionId ?? (await api.createSession(cwd, sessionPath));
+    const before = await api.windows();
+    const win = sessionPath ? undefined : await pickWindow(before.filter((w) => w.viewers > 0), cwd);
+    if (win) return win.sessionId;
+    // A new chat from the phone: ask a window to start one for the project, so
+    // it runs on screen. A window counts once it is on the project with a
+    // session it did not have before.
+    const known = new Set(before.map((w) => w.sessionId));
+    const opened = await openInAppWindow(
+      api,
+      { cwd, ...(sessionPath ? { sessionPath } : {}) },
+      (w) => !known.has(w.sessionId) && samePathSync(w.cwd, cwd),
+    );
+    return opened ?? (await api.createSession(cwd, sessionPath));
   }
 
   function appIdFor(externalId: string): string {
@@ -357,8 +394,12 @@ export async function runBridge(): Promise<void> {
       if (!stored) {
         throw new Error(`GG Coder has no chat '${sessionId}' on this computer (${cwd}).`);
       }
-      const open = windows.find((w) => w.sessionPath !== null && samePathSync(w.sessionPath, stored.path));
-      const appSessionId = open?.sessionId ?? (await api.createSession(stored.cwd, stored.path));
+      const isStored = (w: AppWindow) => w.sessionPath !== null && samePathSync(w.sessionPath, stored.path);
+      const open = windows.find((w) => w.viewers > 0 && isStored(w)) ?? windows.find(isStored);
+      const appSessionId =
+        open?.sessionId ??
+        (await openInAppWindow(api, { cwd: stored.cwd, sessionPath: stored.path }, isStored)) ??
+        (await api.createSession(stored.cwd, stored.path));
       await replay(ctx, sessionId, appSessionId);
       await join(ctx, sessionId, appSessionId);
       return {};

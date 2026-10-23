@@ -26,6 +26,7 @@ import type { ServerWebSocket } from "bun";
 import { startTerminalSocket } from "./terminals/socket.js";
 import { CURRENT_VERSION } from "./update/check.js";
 import { runningDaemon } from "./daemon-health.js";
+import { watchSessions } from "./gg-app/watch.js";
 
 const PORT = Number(process.env.TAPPY_PORT ?? 8787);
 
@@ -216,6 +217,13 @@ const terminalSocket = await startTerminalSocket(daemon.terminals).catch((error:
 
 const { errors } = await daemon.refreshProviders();
 for (const error of errors) console.error(error.message);
+
+// New GG Coder App projects and chats reach the phone as they are written.
+watchSessions(() => {
+  void daemon.announceGgAppHistory().catch((error: unknown) => {
+    console.error("[ggcoder-app] could not announce new chats:", error);
+  });
+});
 
 /** Send one sealed message to one client. */
 function send(ws: ServerWebSocket<unknown>, message: unknown) {

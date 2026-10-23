@@ -123,6 +123,17 @@ export abstract class DaemonProbes extends DaemonSpares {
     }
   }
 
+  /**
+   * Push GG Coder App's current chats and projects to every phone. Called when
+   * the app writes to `~/.gg/sessions`, so a project or chat started in the app
+   * shows up on the phone within seconds instead of on its next request.
+   */
+  async announceGgAppHistory(): Promise<void> {
+    const capabilities = await this.capabilitiesFor(GG_APP_PROVIDER_ID);
+    if (capabilities === EMPTY_CAPABILITIES) return;
+    this.send({ t: "provider.capabilities", providerId: GG_APP_PROVIDER_ID, ...capabilities });
+  }
+
   /** A directory directly inside the goals root, or a path from the last goals list. */
   isGoalFolder(cwd: string): boolean {
     const abs = __resolve(cwd);

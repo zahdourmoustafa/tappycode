@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { AppWindow } from "./client.js";
-import { pickWindow, stopReason, toolTitle, translateEvent } from "./bridge.js";
+import { openInAppWindow, pickWindow, stopReason, toolTitle, translateEvent } from "./bridge.js";
 
 test("streamed text and thinking become ACP chunks", () => {
   expect(translateEvent({ type: "text_delta", data: { text: "Hi" } })).toEqual({
@@ -99,4 +99,39 @@ test("matches a project reached through a symlink", async () => {
   await mkdir(real);
   await symlink(real, join(root, "link"));
   expect((await pickWindow([win("w", real)], join(root, "link")))?.sessionId).toBe("w");
+});
+
+function fakeApp(script: { accepts: boolean; windowsAfter: AppWindow[]; afterPolls?: number }) {
+  let polls = 0;
+  const calls: string[] = [];
+  const api = {
+    async openInWindow(cwd: string, sessionPath?: string) {
+      calls.push(`open ${cwd} ${sessionPath ?? "-"}`);
+      return script.accepts;
+    },
+    async windows() {
+      polls += 1;
+      return polls > (script.afterPolls ?? 0) ? script.windowsAfter : [];
+    },
+  };
+  return { api: api as unknown as import("./client.js").AppClient, calls };
+}
+
+test("a phone chat opens in a window and joins that window's session", async () => {
+  const { api, calls } = fakeApp({
+    accepts: true,
+    afterPolls: 2,
+    windowsAfter: [win("hidden", "/p", { viewers: 0 }), win("shown", "/p", { viewers: 1, sessionPath: "/s/a.jsonl" })],
+  });
+  const id = await openInAppWindow(api, { cwd: "/p", sessionPath: "/s/a.jsonl" }, (w) => w.sessionPath === "/s/a.jsonl", {
+    pollMs: 1,
+  });
+  expect(id).toBe("shown");
+  expect(calls).toEqual(["open /p /s/a.jsonl"]);
+});
+
+test("no window to open it means no window session, so the caller runs it off screen", async () => {
+  expect(await openInAppWindow(fakeApp({ accepts: false, windowsAfter: [] }).api, { cwd: "/p" }, () => true)).toBeUndefined();
+  const stuck = fakeApp({ accepts: true, windowsAfter: [] });
+  expect(await openInAppWindow(stuck.api, { cwd: "/p" }, () => true, { timeoutMs: 20, pollMs: 2 })).toBeUndefined();
 });

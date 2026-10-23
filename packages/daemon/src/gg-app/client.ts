@@ -64,6 +64,24 @@ export class AppClient {
     return result.windows ?? [];
   }
 
+  /**
+   * Ask an open window to show a conversation (`POST /windows/open`). True
+   * when a window took it; false when none could (all busy, none open, or an
+   * app build without the route), in which case the caller runs it without a
+   * window as before.
+   */
+  async openInWindow(cwd: string, sessionPath?: string): Promise<boolean> {
+    try {
+      await this.json("/windows/open", {
+        method: "POST",
+        body: JSON.stringify({ cwd, ...(sessionPath ? { sessionPath } : {}) }),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Open a conversation in the app's engine, as a new window would. */
   async createSession(cwd: string, sessionPath?: string): Promise<string> {
     const result = await this.json<{ sessionId: string }>("/session", {
