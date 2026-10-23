@@ -76,6 +76,11 @@ const trace = await new Promise<string[]>((resolve) => {
         lines.push(`${at()} asked ${askProvider} for its chats`);
         return;
       }
+      if (opened?.t === "providers" && askProvider) {
+        const list = (opened as unknown as { providers?: { id?: string }[] }).providers ?? [];
+        const entry = list.find((p) => p.id === askProvider);
+        lines.push(`${at()} announced ${askProvider}: ${entry ? JSON.stringify(entry).slice(0, 400) : "NOT ANNOUNCED"}`);
+      }
       if (opened?.t === "provider.capabilities") {
         const caps = opened as unknown as { providerId?: string; sessions?: { title?: string | null }[]; projects?: unknown[] };
         if (caps.providerId === askProvider) {

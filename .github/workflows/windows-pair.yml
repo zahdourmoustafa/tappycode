@@ -137,6 +137,22 @@ jobs:
           [IO.File]::WriteAllLines("$dir\2026-10-22T10-00-00-000Z_abcd1234.jsonl", $lines)
           Get-ChildItem -Recurse "$env:USERPROFILE\.gg\sessions" | Select-Object FullName, Length
 
+      - name: The GG Coder App helper on its own (tappy.exe gg-app-bridge)
+        shell: pwsh
+        run: |
+          $req = @(
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}',
+            '{"jsonrpc":"2.0","id":2,"method":"session/list","params":{}}'
+          ) -join "`n"
+          $psi = New-Object Diagnostics.ProcessStartInfo "$env:LOCALAPPDATA\tappy\tappy.exe", "gg-app-bridge"
+          $psi.RedirectStandardInput = $true; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true; $psi.UseShellExecute = $false
+          $proc = [Diagnostics.Process]::Start($psi)
+          $proc.StandardInput.WriteLine($req); $proc.StandardInput.Flush()
+          Start-Sleep -Seconds 4
+          $proc.Kill()
+          "stdout:"; $proc.StandardOutput.ReadToEnd()
+          "stderr:"; $proc.StandardError.ReadToEnd()
+
       - name: Serve, pair like a phone, ask GG Coder App for its chats
         shell: pwsh
         run: |
