@@ -10,10 +10,16 @@ import { readProbeCache, writeProbeCache } from "../probe-cache.js";
 import { readConfigPrefs } from "../config-prefs.js";
 import { readCommandDirs } from "../commands/from-disk.js";
 import { DaemonSpares } from "./spares.js";
+import { listConversations } from "../gg-app/sessions.js";
+import { hydrateMessageCounts } from "../acp/messageCounts.js";
+import { foldProjects } from "../projects.js";
+import { SESSION_HISTORY_LIMIT } from "../session-history.js";
+import type { AgentSession } from "../acp/connect.js";
 import {
   EMPTY_CAPABILITIES,
   GG_GOALS_ID,
   GG_PROVIDER_ID,
+  GG_APP_PROVIDER_ID,
   goalsRoot,
   readExtensions,
   withStoredPrefs,
@@ -60,6 +66,7 @@ export abstract class DaemonProbes extends DaemonSpares {
         },
       };
     }
+    if (providerId === GG_APP_PROVIDER_ID) return this.probeGgApp();
     const raw = await this.probeRaw(providerId, { refresh });
     if (providerId !== GG_PROVIDER_ID || raw === EMPTY_CAPABILITIES) return raw;
     return {
@@ -67,6 +74,53 @@ export abstract class DaemonProbes extends DaemonSpares {
       sessions: raw.sessions.filter((s) => !this.isGoalFolder(s.cwd)),
       ...(raw.projects ? { projects: raw.projects.filter((p) => !this.isGoalFolder(p.path)) } : {}),
     };
+  }
+
+  /**
+   * The GG Coder desktop app's chats and projects, read straight from
+   * `~/.gg/sessions` inside this process.
+   *
+   * Every other agent is asked by spawning it, because only it knows where its
+   * history lives. This one's history is files tappy can read itself, and its
+   * agent is tappy — spawning `tappy.exe gg-app-bridge` just to read them cost a
+   * cold start of a ~100 MB unsigned binary, which Windows Defender scans before
+   * it runs. On real Windows machines that took minutes, and a start that
+   * stalled sat out the full three-minute handshake timeout before anything was
+   * shown. The bridge is still what runs a conversation; listing needs none of it.
+   */
+  protected async probeGgApp(): Promise<ProviderCapabilities> {
+    if (!this.isEnabled(GG_APP_PROVIDER_ID)) return EMPTY_CAPABILITIES;
+    const provider = this.providers.find((p) => p.manifest.id === GG_APP_PROVIDER_ID);
+    if (!provider || !isAvailable(provider)) return EMPTY_CAPABILITIES;
+    const started = Date.now();
+    try {
+      const all: AgentSession[] = (await listConversations()).map((entry) => ({
+        sessionId: entry.sessionId,
+        cwd: entry.cwd,
+        ...(entry.title ? { title: entry.title } : {}),
+        updatedAt: entry.updatedAt,
+      }));
+      this.projectHistory.set(GG_APP_PROVIDER_ID, all);
+      const sessions = all.slice(0, SESSION_HISTORY_LIMIT);
+      await hydrateMessageCounts(GG_APP_PROVIDER_ID, sessions);
+      const capabilities: ProviderCapabilities = {
+        configOptions: [],
+        sessions,
+        canResume: true,
+        projects: foldProjects(all),
+        commands: await readCommandDirs(
+          provider.manifest.tappy.commandDirs,
+          sessions[0]?.cwd ?? resolveWorkspace(),
+        ),
+      };
+      console.log(
+        `[${GG_APP_PROVIDER_ID}] listed ${all.length} chats from disk in ${Date.now() - started}ms`,
+      );
+      return capabilities;
+    } catch (error) {
+      console.error(`[${GG_APP_PROVIDER_ID}] could not read ~/.gg/sessions:`, error);
+      return EMPTY_CAPABILITIES;
+    }
   }
 
   /** A directory directly inside the goals root, or a path from the last goals list. */

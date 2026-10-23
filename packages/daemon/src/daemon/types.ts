@@ -134,6 +134,8 @@ export interface QueueEntry {
 
 /** The provider whose ACP connection carries GG Coder's goals extension. */
 export const GG_PROVIDER_ID = "ggcoder";
+/** The GG Coder desktop app, reached through `tappy gg-app-bridge`. */
+export const GG_APP_PROVIDER_ID = "ggcoder-app";
 /** GG Goals: the ggcoder command, offered as its own agent for goal folders only. */
 export const GG_GOALS_ID = "gg-goals";
 
