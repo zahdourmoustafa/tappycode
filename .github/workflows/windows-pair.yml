@@ -103,7 +103,8 @@ jobs:
         env:
           TAPPY_NO_PAIR: "1"
         run: |
-          $exe = "$env:LOCALAPPDATA\tappy\tappy.exe"
+          # Not $exe: install.ps1 runs in this scope and sets its own $exe.
+          $tappyExe = "$env:LOCALAPPDATA\tappy\tappy.exe"
           $before = (Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" | Where-Object { $_.CommandLine -match ' serve' }).ProcessId
           "daemon pid before: $before"
           if (-not $before) { "no background daemon to update over"; exit 1 }
@@ -115,7 +116,7 @@ jobs:
           }
           $after = (Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" | Where-Object { $_.CommandLine -match ' serve' }).ProcessId
           "daemon pid after: $after  health ok=$ok  version=$($h.version)"
-          "installed: $(& $exe --version)"
+          "installed: $(& $tappyExe --version)"
           Get-ChildItem "$env:LOCALAPPDATA\tappy" | Select-Object Name, Length
           if (-not $ok -or -not $after -or $after -eq $before) { "the update did not replace the running daemon"; exit 1 }
 
