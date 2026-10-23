@@ -1,0 +1,110 @@
+name: Windows Defender and install check
+
+# What a Windows user's machine does with our downloads: Microsoft Defender's
+# verdict on each file, then the GG Coder installer run silently and the app
+# launched, to see whether it installs and starts at all.
+on:
+  workflow_dispatch:
+    inputs:
+      gg_version:
+        description: "GG Coder release tag (default: latest)"
+        required: false
+      tappy_version:
+        description: "tappy release tag (default: latest)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download what users download
+        shell: pwsh
+        run: |
+          $gg = "${{ inputs.gg_version }}"; if (-not $gg) { $gg = (gh release view -R zahdourmoustafa/gg-coder --json tagName --jq .tagName) }
+          $tp = "${{ inputs.tappy_version }}"; if (-not $tp) { $tp = (gh release view -R $env:GITHUB_REPOSITORY --json tagName --jq .tagName) }
+          New-Item -ItemType Directory -Force dl | Out-Null
+          gh release download $gg -R zahdourmoustafa/gg-coder -p "*x64-setup.exe" -D dl
+          gh release download $tp -R $env:GITHUB_REPOSITORY -p tappy-windows-x64.exe -D dl
+          Get-ChildItem dl | ForEach-Object {
+            $sig = Get-AuthenticodeSignature $_.FullName
+            "{0}  {1:N0} bytes  signature={2}" -f $_.Name, $_.Length, $sig.Status
+          }
+
+      - name: Defender status and fresh signatures
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-MpComputerStatus | Select-Object AMServiceEnabled, AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureVersion | Format-List
+          Update-MpSignature -ErrorAction Continue
+          (Get-MpComputerStatus).AntivirusSignatureVersion
+
+      - name: Defender verdict on each download
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $mp = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+          foreach ($f in Get-ChildItem dl) {
+            "=== $($f.Name)"
+            & $mp -Scan -ScanType 3 -File $f.FullName -DisableRemediation
+            "exit=$LASTEXITCODE  (0 = clean, 2 = threat found)"
+          }
+
+      - name: Install GG Coder silently, as a user would
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $setup = Get-ChildItem dl -Filter "*setup.exe" | Select-Object -First 1
+          $p = Start-Process $setup.FullName -ArgumentList "/S" -PassThru -Wait
+          "installer exit=$($p.ExitCode)"
+          $dir = "$env:LOCALAPPDATA\GG Coder"
+          "--- $dir"; Get-ChildItem -Recurse $dir -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer } |
+            Select-Object @{n='File';e={$_.FullName.Replace($dir,'')}}, Length | Format-Table -AutoSize | Out-String -Width 200
+          foreach ($exe in Get-ChildItem $dir -Filter *.exe -ErrorAction SilentlyContinue) {
+            "{0}: signature={1}" -f $exe.Name, (Get-AuthenticodeSignature $exe.FullName).Status
+          }
+          $mp = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+          "=== Defender on the installed app"
+          & $mp -Scan -ScanType 3 -File $dir -DisableRemediation
+          "exit=$LASTEXITCODE"
+
+      - name: Launch GG Coder and check its engine starts
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $app = "$env:LOCALAPPDATA\GG Coder\gg-app.exe"
+          if (-not (Test-Path $app)) { "gg-app.exe is not installed"; exit 1 }
+          Start-Process $app
+          Start-Sleep -Seconds 25
+          "--- processes"
+          Get-Process | Where-Object { $_.ProcessName -match 'gg|node|WebView' } | Select-Object ProcessName, Id, StartTime | Format-Table -AutoSize
+          "--- connection files (written by the engine once it listens)"
+          Get-ChildItem "$env:USERPROFILE\.gg\app-connections" -ErrorAction SilentlyContinue
+          $c = Get-ChildItem "$env:USERPROFILE\.gg\app-connections\*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($c) {
+            $j = Get-Content $c.FullName | ConvertFrom-Json
+            try {
+              $w = Invoke-RestMethod "http://127.0.0.1:$($j.port)/windows" -Headers @{ "x-gg-token" = $j.token } -TimeoutSec 5
+              "windows: $($w.windows | ConvertTo-Json -Compress)"
+            } catch { "windows request failed: $($_.Exception.Message)" }
+          }
+          "--- app logs"
+          Get-Content "$env:USERPROFILE\.gg\gg-app-sidecar.log" -Tail 25 -ErrorAction SilentlyContinue
+          Get-ChildItem "$env:LOCALAPPDATA\com.ggcoder.app\logs" -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Tail 25 }
+
+      - name: Everything Defender detected during this run
+        if: always()
+        shell: pwsh
+        run: |
+          $d = Get-MpThreatDetection -ErrorAction SilentlyContinue
+          if (-not $d) { "no detections" } else {
+            $d | ForEach-Object {
+              $t = Get-MpThreat -ThreatID $_.ThreatID -ErrorAction SilentlyContinue
+              "{0} | {1} | {2}" -f $t.ThreatName, ($_.Resources -join ', '), $_.ActionSuccess
+            }
+          }
