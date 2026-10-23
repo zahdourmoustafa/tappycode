@@ -49,11 +49,19 @@ $exe = Join-Path $tmp 'tappy.exe'
 # long download no longer looks like a frozen window. Invoke-WebRequest stays
 # as the fallback for older systems, with its own progress bar silenced: in
 # Windows PowerShell that bar is slower than the download itself.
-$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue
+#
+# Windows' own copy first, by full path: Git for Windows puts a second
+# curl.exe on PATH, `Get-Command` then returns both, and calling that pair as
+# one command failed with "not recognized" before anything downloaded.
+$curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+if (-not (Test-Path $curl)) {
+  $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue |
+    Select-Object -First 1 -ExpandProperty Source
+}
 $downloaded = $false
 if ($curl) {
   Write-Host "  About 100 MB - progress below." -ForegroundColor DarkGray
-  & $curl.Source --fail --location --progress-bar --retry 3 --output $exe $url
+  & $curl --fail --location --progress-bar --retry 3 --output $exe $url
   $downloaded = ($LASTEXITCODE -eq 0)
 }
 if (-not $downloaded) {
