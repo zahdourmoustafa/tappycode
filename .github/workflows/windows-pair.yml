@@ -137,6 +137,10 @@ jobs:
           [IO.File]::WriteAllLines("$dir\2026-10-22T10-00-00-000Z_abcd1234.jsonl", $lines)
           Get-ChildItem -Recurse "$env:USERPROFILE\.gg\sessions" | Select-Object FullName, Length
 
+      - name: Read the stored chats step by step (from source)
+        shell: pwsh
+        run: bun run packages/daemon/src/testing/gg-sessions-debug.ts
+
       - name: The GG Coder App helper on its own (tappy.exe gg-app-bridge)
         shell: pwsh
         run: |
