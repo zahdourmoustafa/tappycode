@@ -24,8 +24,27 @@ import { sweepOrphans } from "./children.js";
 import { startUpdateScheduler } from "./update/scheduler.js";
 import type { ServerWebSocket } from "bun";
 import { startTerminalSocket } from "./terminals/socket.js";
+import { CURRENT_VERSION } from "./update/check.js";
+import { runningDaemon } from "./daemon-health.js";
 
 const PORT = Number(process.env.TAPPY_PORT ?? 8787);
+
+// One daemon per machine. A second one — `tappy serve` typed while the
+// background service is already running — used to start anyway: it could not
+// take the port or the relay room, so the phone stayed on the first daemon.
+// After an update that first daemon is the OLD version, which is how fixes
+// looked like they had not landed. Say so and stop, before touching anything.
+const existing = await runningDaemon(PORT);
+if (existing) {
+  const same = existing.version === CURRENT_VERSION;
+  console.error(
+    same
+      ? `tappy ${existing.version} is already running in the background. Nothing to do: close this window.`
+      : `An older tappy (${existing.version ?? "unknown version"}) is already running in the background, ` +
+          `so this one (${CURRENT_VERSION}) will not start. Run: tappy service restart`,
+  );
+  process.exit(same ? 0 : 1);
+}
 
 // Under launchd this process's stdout is an append-only file that nothing else
 // ever trims. Done here first, before anything is written.
@@ -219,7 +238,9 @@ const server = Bun.serve({
 
     // Unauthenticated on purpose: `doctor` uses it to tell "not running" from
     // "running but unpaired", and it reveals nothing.
-    if (url.pathname === "/health") return Response.json({ ok: true });
+    // The version lets a second `tappy serve` and `doctor` tell an outdated
+    // daemon from a current one.
+    if (url.pathname === "/health") return Response.json({ ok: true, version: CURRENT_VERSION });
 
     // The token is the only thing standing between the open network and every
     // agent on this machine, so it is checked before the upgrade rather than in

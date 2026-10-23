@@ -110,12 +110,44 @@ if ($expected) {
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 $target = Join-Path $InstallDir 'tappy.exe'
 
+# An update has to replace a tappy that is running: the background service
+# (the scheduled task `tappy setup` installs) keeps one alive all the time, and
+# terminal wrappers may be running too. Windows cannot overwrite a running .exe,
+# which made updates fail or, worse, leave the OLD daemon answering the phone
+# while the new file sat unused. It can rename one, so the running copy is
+# parked aside, the new one takes its name, and only the daemon is restarted —
+# wrappers keep running on the parked file until their agent exits.
+$TaskName = 'dev.tappy.daemon'
+schtasks /query /tn $TaskName 2>$null | Out-Null
+$hadTask = ($LASTEXITCODE -eq 0)
+
+# Copies parked by earlier updates, now unused. Best effort: one still running
+# stays locked and is removed by a later update.
+Get-ChildItem -Path $InstallDir -Filter 'tappy.exe.old-*' -ErrorAction SilentlyContinue |
+  ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
+
+$daemons = @(Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" -ErrorAction SilentlyContinue |
+  Where-Object { $_.ExecutablePath -ieq $target -and $_.CommandLine -match '\s(serve|run)(\s|$)' })
+if ($hadTask) { schtasks /end /tn $TaskName 2>$null | Out-Null }
+foreach ($d in $daemons) { Stop-Process -Id $d.ProcessId -Force -ErrorAction SilentlyContinue }
+if ($hadTask -or $daemons.Count -gt 0) { Start-Sleep -Milliseconds 800 }
+
 try {
-  # A running daemon holds a lock on its own executable, so overwriting fails
-  # with a message about the file being in use. Saying what to do beats that.
+  if (Test-Path $target) {
+    Move-Item -Path $target -Destination "$target.old-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" -Force
+  }
   Move-Item -Path $exe -Destination $target -Force
 } catch {
-  Die "Could not write to $InstallDir. If tappy is already running, close it and try again."
+  Die "Could not write to $InstallDir. Close any window running tappy, then try again."
+}
+
+if ($daemons.Count -gt 0 -and -not $hadTask) {
+  Step "tappy was running in a window and has been stopped. It now runs in the background."
+}
+if ($hadTask) {
+  # Back on the new binary straight away, rather than at the next login.
+  schtasks /run /tn $TaskName 2>$null | Out-Null
+  Ok "Restarted tappy in the background"
 }
 
 Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue

@@ -97,6 +97,36 @@ jobs:
           "--- daemon.log"; Get-Content "$env:USERPROFILE\.tappy\logs\daemon.log" -Tail 20 -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
           if (-not $ok -or $probe -ne 0) { exit 1 }
 
+      - name: Update while tappy runs in the background (what every user does)
+        if: always()
+        shell: powershell
+        env:
+          TAPPY_NO_PAIR: "1"
+        run: |
+          $exe = "$env:LOCALAPPDATA\tappy\tappy.exe"
+          $before = (Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" | Where-Object { $_.CommandLine -match ' serve' }).ProcessId
+          "daemon pid before: $before"
+          if (-not $before) { "no background daemon to update over"; exit 1 }
+          Get-Content -Raw .\install.ps1 | Invoke-Expression
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try { $h = Invoke-RestMethod http://127.0.0.1:8787/health -TimeoutSec 2; if ($h.ok) { $ok = $true; break } } catch {}
+            Start-Sleep -Seconds 1
+          }
+          $after = (Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" | Where-Object { $_.CommandLine -match ' serve' }).ProcessId
+          "daemon pid after: $after  health ok=$ok  version=$($h.version)"
+          "installed: $(& $exe --version)"
+          Get-ChildItem "$env:LOCALAPPDATA\tappy" | Select-Object Name, Length
+          if (-not $ok -or -not $after -or $after -eq $before) { "the update did not replace the running daemon"; exit 1 }
+
+      - name: A second tappy serve refuses to start beside the running one
+        if: always()
+        shell: pwsh
+        run: |
+          $out = & "$env:LOCALAPPDATA\tappy\tappy.exe" serve 2>&1 | Out-String
+          "exit=$LASTEXITCODE"; $out
+          if ($out -notmatch 'already running') { "a second daemon started"; exit 1 }
+
   # The GG Coder App provider, through a tappy.exe compiled from this commit —
   # the path every Windows user is on, and the one no source-checkout test can
   # reach: the provider launches tappy itself, which only works if the binary
