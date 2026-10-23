@@ -118,7 +118,11 @@ $target = Join-Path $InstallDir 'tappy.exe'
 # parked aside, the new one takes its name, and only the daemon is restarted —
 # wrappers keep running on the parked file until their agent exits.
 $TaskName = 'dev.tappy.daemon'
-schtasks /query /tn $TaskName 2>$null | Out-Null
+# Through cmd, which does its own redirection: with $ErrorActionPreference =
+# 'Stop', Windows PowerShell turns a native command's stderr into a
+# terminating error, so a missing task (the normal case on a first install)
+# aborted the whole installer.
+cmd /c "schtasks /query /tn $TaskName >nul 2>&1"
 $hadTask = ($LASTEXITCODE -eq 0)
 
 # Copies parked by earlier updates, now unused. Best effort: one still running
@@ -128,7 +132,7 @@ Get-ChildItem -Path $InstallDir -Filter 'tappy.exe.old-*' -ErrorAction SilentlyC
 
 $daemons = @(Get-CimInstance Win32_Process -Filter "Name='tappy.exe'" -ErrorAction SilentlyContinue |
   Where-Object { $_.ExecutablePath -ieq $target -and $_.CommandLine -match '\s(serve|run)(\s|$)' })
-if ($hadTask) { schtasks /end /tn $TaskName 2>$null | Out-Null }
+if ($hadTask) { cmd /c "schtasks /end /tn $TaskName >nul 2>&1" }
 foreach ($d in $daemons) { Stop-Process -Id $d.ProcessId -Force -ErrorAction SilentlyContinue }
 if ($hadTask -or $daemons.Count -gt 0) { Start-Sleep -Milliseconds 800 }
 
@@ -146,7 +150,7 @@ if ($daemons.Count -gt 0 -and -not $hadTask) {
 }
 if ($hadTask) {
   # Back on the new binary straight away, rather than at the next login.
-  schtasks /run /tn $TaskName 2>$null | Out-Null
+  cmd /c "schtasks /run /tn $TaskName >nul 2>&1"
   Ok "Restarted tappy in the background"
 }
 
