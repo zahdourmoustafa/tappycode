@@ -20,6 +20,12 @@
  *   prompt_sent     → user_message_chunk, for prompts typed in the window
  *   ask_user        → `_gg/ask_user` request, answered back to `/ask/:id`
  *   run_end         → the open `session/prompt` resolves with its stop reason
+ *   model_change / thinking_change → config_option_update, so the phone's
+ *                     pickers follow a switch made in the window
+ *
+ * Model and thinking are the app's footer pickers, offered as GG Coder's own
+ * `model` / `thinking` selectors; the command list is the app's slash commands
+ * plus its skills (`controls.ts`).
  */
 import { agent, ndJsonStream } from "@agentclientprotocol/sdk";
 import { randomUUID } from "node:crypto";
@@ -28,6 +34,18 @@ import { resolve } from "node:path";
 import { Readable, Writable } from "node:stream";
 
 import { AppClient, type AppEvent, type AppWindow } from "./client.js";
+import {
+  buildCommands,
+  buildConfigOptions,
+  MODEL_OPTION_ID,
+  rewriteSkillPrompt,
+  THINKING_OFF,
+  THINKING_OPTION_ID,
+  type AppCommand,
+  type AppSkill,
+  type BridgeCommand,
+  type BridgeConfigOption,
+} from "./controls.js";
 import { discoverApps } from "./discovery.js";
 import { listConversations, type StoredConversation } from "./sessions.js";
 
@@ -177,9 +195,86 @@ export async function pickWindow(
 ): Promise<AppWindow | undefined> {
   const matches: AppWindow[] = [];
   for (const win of windows) if (await samePath(win.cwd, cwd)) matches.push(win);
-  return matches.sort(
-    (a, b) => b.viewers - a.viewers || Number(a.busy) - Number(b.busy),
-  )[0];
+  return matches.sort((a, b) => b.viewers - a.viewers || Number(a.busy) - Number(b.busy))[0];
+}
+
+/** What the phone shows for one app session: pickers and the command list. */
+export interface Controls {
+  configOptions: BridgeConfigOption[];
+  commands: BridgeCommand[];
+  appCommands: AppCommand[];
+  skills: AppSkill[];
+}
+
+/** Read an app session's pickers, commands and skills in one go. */
+export async function readControls(api: AppClient, sessionId: string): Promise<Controls> {
+  const [state, models, appCommands, skills] = await Promise.all([
+    api.controlState(sessionId),
+    api.models(sessionId).catch(() => []),
+    api.commands(sessionId).catch(() => []),
+    api.skills(sessionId),
+  ]);
+  return {
+    configOptions: state.model ? buildConfigOptions(state, models) : [],
+    commands: buildCommands(appCommands, skills),
+    appCommands,
+    skills,
+  };
+}
+
+/**
+ * An app session to read controls from before a conversation has its own:
+ * a watched window on this project, else any watched window, else any.
+ * The model list is the same in every window; the current model and the
+ * project's commands are this project's when such a window exists.
+ */
+export function referenceSession(windows: AppWindow[], cwd: string): string | undefined {
+  const ranked = [...windows].sort((a, b) => b.viewers - a.viewers);
+  return (
+    ranked.find((w) => w.viewers > 0 && samePathSync(w.cwd, cwd)) ??
+    ranked.find((w) => w.viewers > 0) ??
+    ranked[0]
+  )?.sessionId;
+}
+
+/**
+ * The open app's pickers and commands for a project, or undefined when the
+ * app is closed, unreachable or slow. Bounded, because the phone's whole chat
+ * list waits on the answer this feeds.
+ */
+export async function liveGgAppControls(
+  cwd: string,
+  timeoutMs = 4000,
+): Promise<Controls | undefined> {
+  const read = (async () => {
+    const api = await findLiveApp();
+    if (!api) return undefined;
+    const ref = referenceSession(await api.windows(), cwd);
+    return ref ? await readControls(api, ref) : undefined;
+  })().catch(() => undefined);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<undefined>((resolveTimeout) => {
+    timer = setTimeout(() => resolveTimeout(undefined), timeoutMs);
+  });
+  try {
+    return await Promise.race([read, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Apply one picker change the way the app's own footer does. */
+export async function applyPick(
+  api: AppClient,
+  sessionId: string,
+  configId: string,
+  value: string,
+): Promise<void> {
+  if (configId === MODEL_OPTION_ID) return api.setModel(sessionId, value);
+  if (configId === THINKING_OPTION_ID) {
+    return api.setThinking(sessionId, value === THINKING_OFF ? null : value);
+  }
+  throw new Error(`GG Coder app has no setting '${configId}'.`);
 }
 
 type StopReason = ReturnType<typeof stopReason>;
@@ -232,7 +327,13 @@ export async function runBridge(): Promise<void> {
   // and making that need the app meant a closed (or unreachable) app wiped
   // the phone's whole chat and project list. The app conversation is created
   // when the first message is sent, which is when the app is really needed.
-  const unopened = new Map<string, string>();
+  //
+  // Picker changes made before then are held here and applied to the app
+  // session once it exists, before the first message runs.
+  const unopened = new Map<
+    string,
+    { cwd: string; picks: Map<string, string>; configOptions: BridgeConfigOption[] }
+  >();
   let client: AppClient | undefined;
 
   async function app(): Promise<AppClient> {
@@ -249,8 +350,66 @@ export async function runBridge(): Promise<void> {
 
   const connection = agent({ name: "tappy-gg-app" });
 
+  type Notifier = { client: { notify: (method: string, params: unknown) => Promise<void> } };
+
+  /**
+   * Send the phone this session's pickers and/or command list. Run after the
+   * reply that created the session (a timer, as GG Coder's ACP mode does): the
+   * daemon only files an update under a session it has already been told of.
+   */
+  function announce(
+    ctx: Notifier,
+    externalId: string,
+    controls: Controls,
+    what: { config: boolean; commands: boolean },
+  ): void {
+    setTimeout(() => {
+      if (what.config && controls.configOptions.length > 0) {
+        void ctx.client
+          .notify("session/update", {
+            sessionId: externalId,
+            update: {
+              sessionUpdate: "config_option_update",
+              configOptions: controls.configOptions,
+            },
+          })
+          .catch(() => {});
+      }
+      if (what.commands) {
+        void ctx.client
+          .notify("session/update", {
+            sessionId: externalId,
+            update: {
+              sessionUpdate: "available_commands_update",
+              availableCommands: controls.commands,
+            },
+          })
+          .catch(() => {});
+      }
+    }, 0);
+  }
+
+  /** Re-read a joined session's controls and send them, or nothing on failure. */
+  async function refreshControls(
+    ctx: Notifier,
+    externalId: string,
+    appSessionId: string,
+    what: { config: boolean; commands: boolean },
+  ): Promise<Controls | undefined> {
+    const api = client ?? (await app().catch(() => undefined));
+    if (!api) return undefined;
+    const controls = await readControls(api, appSessionId).catch(() => undefined);
+    if (controls) announce(ctx, externalId, controls, what);
+    return controls;
+  }
+
   async function join(
-    ctx: { client: { notify: (method: string, params: unknown) => Promise<void>; request: (method: string, params: unknown) => Promise<unknown> } },
+    ctx: {
+      client: {
+        notify: (method: string, params: unknown) => Promise<void>;
+        request: (method: string, params: unknown) => Promise<unknown>;
+      };
+    },
     externalId: string,
     appSessionId: string = externalId,
   ): Promise<Joined> {
@@ -267,6 +426,11 @@ export async function runBridge(): Promise<void> {
           const update = translateEvent(event);
           if (update) {
             await ctx.client.notify("session/update", { sessionId: externalId, update });
+            continue;
+          }
+          if (event.type === "model_change" || event.type === "thinking_change") {
+            // Switched in the window (or by the phone): the pickers follow.
+            void refreshControls(ctx, externalId, appSessionId, { config: true, commands: false });
             continue;
           }
           if (event.type === "run_end") {
@@ -322,7 +486,12 @@ export async function runBridge(): Promise<void> {
   async function openFor(cwd: string, sessionPath?: string): Promise<string> {
     const api = client ?? (await app());
     const before = await api.windows();
-    const win = sessionPath ? undefined : await pickWindow(before.filter((w) => w.viewers > 0), cwd);
+    const win = sessionPath
+      ? undefined
+      : await pickWindow(
+          before.filter((w) => w.viewers > 0),
+          cwd,
+        );
     if (win) return win.sessionId;
     // A new chat from the phone: ask a window to start one for the project, so
     // it runs on screen. A window counts once it is on the project with a
@@ -334,6 +503,19 @@ export async function runBridge(): Promise<void> {
       (w) => !known.has(w.sessionId) && samePathSync(w.cwd, cwd),
     );
     return opened ?? (await api.createSession(cwd, sessionPath));
+  }
+
+  /** The `session/load` reply: the window's pickers, with its commands to follow. */
+  async function loadedControls(
+    ctx: Notifier,
+    externalId: string,
+    appSessionId: string,
+  ): Promise<{ configOptions?: BridgeConfigOption[] }> {
+    const api = client ?? (await app());
+    const controls = await readControls(api, appSessionId).catch(() => undefined);
+    if (!controls) return {};
+    announce(ctx, externalId, controls, { config: false, commands: true });
+    return { configOptions: controls.configOptions };
   }
 
   function appIdFor(externalId: string): string {
@@ -367,8 +549,25 @@ export async function runBridge(): Promise<void> {
     .onRequest("session/new", async (ctx) => {
       const { cwd } = ctx.params as { cwd: string };
       const sessionId = `gg-app-${randomUUID()}`;
-      unopened.set(sessionId, cwd);
-      return { sessionId };
+      const pending = {
+        cwd,
+        picks: new Map<string, string>(),
+        configOptions: [] as BridgeConfigOption[],
+      };
+      unopened.set(sessionId, pending);
+      // Best effort: pickers and commands come from an open window, so a
+      // closed app still gets a session — just without them until it opens.
+      const api = client ?? (await findLiveApp().catch(() => undefined));
+      if (api) {
+        client = api;
+        const ref = referenceSession(await api.windows().catch(() => []), cwd);
+        const controls = ref ? await readControls(api, ref).catch(() => undefined) : undefined;
+        if (controls) {
+          pending.configOptions = controls.configOptions;
+          announce(ctx, sessionId, controls, { config: false, commands: true });
+        }
+      }
+      return { sessionId, configOptions: pending.configOptions };
     })
     .onRequest("session/list", async () => ({
       sessions: (await listConversations()).map((entry) => ({
@@ -386,7 +585,7 @@ export async function runBridge(): Promise<void> {
       if (windows.some((w) => w.sessionId === sessionId)) {
         await replay(ctx, sessionId);
         await join(ctx, sessionId);
-        return {};
+        return await loadedControls(ctx, sessionId, sessionId);
       }
       // A stored chat. Join the window that has it open if there is one, so
       // phone and window stay in step; otherwise reopen it in the app's engine.
@@ -394,7 +593,8 @@ export async function runBridge(): Promise<void> {
       if (!stored) {
         throw new Error(`GG Coder has no chat '${sessionId}' on this computer (${cwd}).`);
       }
-      const isStored = (w: AppWindow) => w.sessionPath !== null && samePathSync(w.sessionPath, stored.path);
+      const isStored = (w: AppWindow) =>
+        w.sessionPath !== null && samePathSync(w.sessionPath, stored.path);
       const open = windows.find((w) => w.viewers > 0 && isStored(w)) ?? windows.find(isStored);
       const appSessionId =
         open?.sessionId ??
@@ -402,7 +602,33 @@ export async function runBridge(): Promise<void> {
         (await api.createSession(stored.cwd, stored.path));
       await replay(ctx, sessionId, appSessionId);
       await join(ctx, sessionId, appSessionId);
-      return {};
+      return await loadedControls(ctx, sessionId, appSessionId);
+    })
+    .onRequest("session/set_config_option", async (ctx) => {
+      const { sessionId, configId, value } = (ctx.params ?? {}) as {
+        sessionId?: string;
+        configId?: string;
+        value?: unknown;
+      };
+      if (!sessionId || !configId || typeof value !== "string") {
+        throw new Error(
+          "session/set_config_option needs a sessionId, configId and a string value.",
+        );
+      }
+      const pending = unopened.get(sessionId);
+      if (pending) {
+        // No app session yet: remember it, and apply it before the first message.
+        pending.picks.set(configId, value);
+        pending.configOptions = pending.configOptions.map((option) =>
+          option.id === configId ? { ...option, currentValue: value } : option,
+        );
+        return { configOptions: pending.configOptions };
+      }
+      const api = client ?? (await app());
+      const appSessionId = appIdFor(sessionId);
+      await applyPick(api, appSessionId, configId, value);
+      // The full set: a new model can change which thinking levels exist.
+      return { configOptions: (await readControls(api, appSessionId)).configOptions };
     })
     .onNotification("session/cancel", async (ctx) => {
       const { sessionId } = (ctx.params ?? {}) as { sessionId?: string };
@@ -420,19 +646,35 @@ export async function runBridge(): Promise<void> {
         .map((block) => block.text ?? "")
         .join("\n")
         .trim();
-      const pendingCwd = unopened.get(sessionId);
+      const pending = unopened.get(sessionId);
       const entry =
         joined.get(sessionId) ??
-        (pendingCwd !== undefined
-          ? await join(ctx, sessionId, await openFor(pendingCwd))
+        (pending !== undefined
+          ? await join(ctx, sessionId, await openFor(pending.cwd))
           : await join(ctx, sessionId));
       unopened.delete(sessionId);
       const api = client ?? (await app());
+      if (pending) {
+        // Model before thinking: the model decides which levels exist.
+        for (const id of [MODEL_OPTION_ID, THINKING_OPTION_ID]) {
+          const value = pending.picks.get(id);
+          if (value !== undefined) await applyPick(api, entry.appSessionId, id, value);
+        }
+        // Now the conversation's own window: its project's commands and model.
+        void refreshControls(ctx, sessionId, entry.appSessionId, { config: true, commands: true });
+      }
+      const sent = text.startsWith("/")
+        ? rewriteSkillPrompt(
+            text,
+            await api.commands(entry.appSessionId).catch(() => []),
+            await api.skills(entry.appSessionId),
+          )
+        : text;
       const done = new Promise<StopReason>((resolveTurn) => {
         entry.turn = { resolve: resolveTurn };
       });
       try {
-        await api.prompt(entry.appSessionId, text);
+        await api.prompt(entry.appSessionId, sent);
       } catch (error) {
         entry.turn = undefined;
         throw error;

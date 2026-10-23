@@ -6,6 +6,7 @@
  * `x-gg-session` (which open window's conversation).
  */
 import type { AppConnection } from "./discovery.js";
+import type { AppCommand, AppControlState, AppModel, AppSkill } from "./controls.js";
 
 export interface AppWindow {
   sessionId: string;
@@ -101,6 +102,52 @@ export class AppClient {
       }
     }
     return rows;
+  }
+
+  /** The window's current model and thinking level. */
+  async controlState(sessionId: string): Promise<AppControlState> {
+    const st = await this.json<Partial<AppControlState>>("/state", {}, sessionId);
+    return {
+      model: typeof st.model === "string" ? st.model : "",
+      ...(typeof st.provider === "string" ? { provider: st.provider } : {}),
+      thinkingLevel: typeof st.thinkingLevel === "string" ? st.thinkingLevel : null,
+      supportedThinkingLevels: Array.isArray(st.supportedThinkingLevels)
+        ? st.supportedThinkingLevels.filter((l): l is string => typeof l === "string")
+        : [],
+    };
+  }
+
+  /** The models the app's picker offers: signed-in providers plus local ones. */
+  async models(sessionId: string): Promise<AppModel[]> {
+    const result = await this.json<{ models?: AppModel[] }>("/models", {}, sessionId);
+    return (result.models ?? []).filter((m) => typeof m?.id === "string");
+  }
+
+  /** The app's slash commands (workflows plus `.gg/commands`). */
+  async commands(sessionId: string): Promise<AppCommand[]> {
+    const result = await this.json<{ commands?: AppCommand[] }>("/commands", {}, sessionId);
+    return (result.commands ?? []).filter((c) => typeof c?.name === "string");
+  }
+
+  /** The skills this window's agent loaded; empty on an app without `/skills`. */
+  async skills(sessionId: string): Promise<AppSkill[]> {
+    try {
+      const result = await this.json<{ skills?: AppSkill[] }>("/skills", {}, sessionId);
+      return (result.skills ?? []).filter((s) => typeof s?.name === "string");
+    } catch {
+      // GG Coder 0.95.2 and older have no such route; commands still work.
+      return [];
+    }
+  }
+
+  /** Switch the window's model, as its footer picker does. */
+  async setModel(sessionId: string, model: string): Promise<void> {
+    await this.json("/model", { method: "POST", body: JSON.stringify({ model }) }, sessionId);
+  }
+
+  /** Set the window's thinking level; null turns it off. */
+  async setThinking(sessionId: string, level: string | null): Promise<void> {
+    await this.json("/thinking", { method: "POST", body: JSON.stringify({ level }) }, sessionId);
   }
 
   async prompt(sessionId: string, text: string): Promise<void> {

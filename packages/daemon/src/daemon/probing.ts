@@ -11,6 +11,7 @@ import { readConfigPrefs } from "../config-prefs.js";
 import { readCommandDirs } from "../commands/from-disk.js";
 import { DaemonSpares } from "./spares.js";
 import { listConversations } from "../gg-app/sessions.js";
+import { liveGgAppControls } from "../gg-app/bridge.js";
 import { hydrateMessageCounts } from "../acp/messageCounts.js";
 import { foldProjects } from "../projects.js";
 import { SESSION_HISTORY_LIMIT } from "../session-history.js";
@@ -40,10 +41,7 @@ export abstract class DaemonProbes extends DaemonSpares {
    * revalidate rather than permanent — see `PROBE_TTL_MS` — because the work
    * this list describes is mostly done at the desk, while the daemon runs.
    */
-  async probeProvider(
-    providerId: string,
-    { refresh = false } = {},
-  ): Promise<ProviderCapabilities> {
+  async probeProvider(providerId: string, { refresh = false } = {}): Promise<ProviderCapabilities> {
     if (providerId === GG_GOALS_ID) {
       if (!this.isEnabled(GG_GOALS_ID)) return EMPTY_CAPABILITIES;
       const base = await this.probeRaw(GG_PROVIDER_ID, { refresh });
@@ -103,15 +101,23 @@ export abstract class DaemonProbes extends DaemonSpares {
       this.projectHistory.set(GG_APP_PROVIDER_ID, all);
       const sessions = all.slice(0, SESSION_HISTORY_LIMIT);
       await hydrateMessageCounts(GG_APP_PROVIDER_ID, sessions);
+      const cwd = sessions[0]?.cwd ?? resolveWorkspace();
+      // The app's own pickers and commands, when it is open. Read from a window
+      // rather than a spawn, so this stays as fast as the listing above; a
+      // closed app leaves the start screen with the commands on disk.
+      const live = await liveGgAppControls(cwd);
       const capabilities: ProviderCapabilities = {
-        configOptions: [],
+        configOptions: live?.configOptions ?? [],
         sessions,
         canResume: true,
         projects: foldProjects(all),
-        commands: await readCommandDirs(
-          provider.manifest.tappy.commandDirs,
-          sessions[0]?.cwd ?? resolveWorkspace(),
-        ),
+        commands: live?.commands.length
+          ? live.commands.map(({ name, description, input }) => ({
+              name,
+              description,
+              ...(input ? { hint: input.hint } : {}),
+            }))
+          : await readCommandDirs(provider.manifest.tappy.commandDirs, cwd),
       };
       console.log(
         `[${GG_APP_PROVIDER_ID}] listed ${all.length} chats from disk in ${Date.now() - started}ms`,
@@ -355,7 +361,10 @@ export abstract class DaemonProbes extends DaemonSpares {
     if (probed === EMPTY_CAPABILITIES) return probed;
     const extensions = probed.extensions ?? this.knownExtensions.get(providerId);
     if (providerId === GG_GOALS_ID) {
-      return { ...probed, configOptions: withStoredPrefs(probed.configOptions, await readConfigPrefs(providerId)) };
+      return {
+        ...probed,
+        configOptions: withStoredPrefs(probed.configOptions, await readConfigPrefs(providerId)),
+      };
     }
     return {
       ...probed,

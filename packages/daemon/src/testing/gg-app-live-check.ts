@@ -64,7 +64,9 @@ try {
   void (async () => {
     try {
       for await (const event of window.events(windowSession, viewer.signal)) seen.push(event);
-    } catch {}
+    } catch {
+      // The stream ends when the check aborts the viewer.
+    }
   })();
   await until(() => seen.some((e) => e.type === "ready"), "window ready", 15_000);
 

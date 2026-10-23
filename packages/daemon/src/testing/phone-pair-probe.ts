@@ -35,7 +35,9 @@ const trace = await new Promise<string[]>((resolve) => {
   const done = () => {
     try {
       socket.close();
-    } catch {}
+    } catch {
+      // Already closed.
+    }
     resolve(lines);
   };
   const timer = setTimeout(() => {

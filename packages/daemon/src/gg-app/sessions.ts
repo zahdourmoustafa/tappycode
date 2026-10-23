@@ -49,7 +49,7 @@ function textOf(content: unknown): string {
   return content
     .map((block) =>
       block && typeof block === "object" && (block as { type?: unknown }).type === "text"
-        ? String((block as { text?: unknown }).text ?? "")
+        ? ((text) => (typeof text === "string" ? text : ""))((block as { text?: unknown }).text)
         : "",
     )
     .join(" ");
@@ -72,7 +72,11 @@ export function parseHead(head: string): Parsed | undefined {
   } catch {
     return undefined;
   }
-  if (header.type !== "session" || typeof header.id !== "string" || typeof header.cwd !== "string") {
+  if (
+    header.type !== "session" ||
+    typeof header.id !== "string" ||
+    typeof header.cwd !== "string"
+  ) {
     return undefined;
   }
   let title: string | null = null;
@@ -141,7 +145,8 @@ export async function listConversations(
         continue;
       }
       if (!parsed) continue;
-      if (parsed.title && !titles.has(parsed.conversationId)) titles.set(parsed.conversationId, parsed.title);
+      if (parsed.title && !titles.has(parsed.conversationId))
+        titles.set(parsed.conversationId, parsed.title);
       const current = newest.get(parsed.conversationId);
       if (current && current.mtime >= mtime) {
         if (parsed.hasMessages) current.hasMessages = true;
