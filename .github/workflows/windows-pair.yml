@@ -122,20 +122,23 @@ jobs:
       - name: A machine that has used GG Coder app (one saved chat)
         shell: pwsh
         run: |
-          $proj = "$env:USERPROFILE\myproject"
-          New-Item -ItemType Directory -Force $proj | Out-Null
-          $dir = "$env:USERPROFILE\.gg\sessions\C--Users-runneradmin-myproject"
-          New-Item -ItemType Directory -Force $dir | Out-Null
-          # The app writes this folder while running; it is how tappy knows the app is installed.
-          New-Item -ItemType Directory -Force "$env:USERPROFILE\.gg\app-connections" | Out-Null
-          $cwd = $proj -replace '\\','\\'
-          $lines = @(
-            '{"type":"session","version":2,"id":"conv-1","conversationId":"conv-1","cwd":"' + $cwd + '"}',
-            '{"type":"message","id":"m1","message":{"role":"user","content":"Build the login page"}}',
-            '{"type":"message","id":"m2","message":{"role":"assistant","content":[{"type":"text","text":"Done"}]}}'
-          )
-          [IO.File]::WriteAllLines("$dir\2026-10-22T10-00-00-000Z_abcd1234.jsonl", $lines)
-          Get-ChildItem -Recurse "$env:USERPROFILE\.gg\sessions" | Select-Object FullName, Length
+          # Written with JSON.stringify, as GG Coder itself writes it: a
+          # hand-built PowerShell string mis-escaped the Windows path.
+          bun -e "
+            const fs = require('node:fs'); const path = require('node:path'); const os = require('node:os');
+            const home = os.homedir(); const proj = path.join(home, 'myproject');
+            fs.mkdirSync(proj, { recursive: true });
+            fs.mkdirSync(path.join(home, '.gg', 'app-connections'), { recursive: true });
+            const dir = path.join(home, '.gg', 'sessions', 'C--Users-runneradmin-myproject');
+            fs.mkdirSync(dir, { recursive: true });
+            const lines = [
+              { type: 'session', version: 2, id: 'conv-1', conversationId: 'conv-1', cwd: proj },
+              { type: 'message', id: 'm1', message: { role: 'user', content: 'Build the login page' } },
+              { type: 'message', id: 'm2', message: { role: 'assistant', content: [{ type: 'text', text: 'Done' }] } },
+            ];
+            fs.writeFileSync(path.join(dir, '2026-10-22T10-00-00-000Z_abcd1234.jsonl'), lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+            console.log('wrote chat for', proj);
+          "
 
       - name: Read the stored chats step by step (from source)
         shell: pwsh
