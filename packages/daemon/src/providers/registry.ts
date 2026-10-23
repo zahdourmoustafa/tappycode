@@ -11,6 +11,7 @@ import { statSync } from "node:fs";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { BUNDLED_MANIFESTS } from "./bundled.js";
+import { isCompiled } from "../cli/service-shared.js";
 import { ggAppInstalled } from "../gg-app/installed.js";
 import {
   ProviderManifest,
@@ -175,10 +176,6 @@ function agentInstalled(id: string, command: string, env: NodeJS.ProcessEnv): bo
   return canResolveCommand(command, env);
 }
 
-/** True inside a `bun build --compile` binary, whose modules live in `$bunfs`. */
-function compiledBinary(): boolean {
-  return import.meta.url.includes("/$bunfs/");
-}
 
 /**
  * A manifest command of exactly `tappy` means *this* tappy, never whatever
@@ -190,7 +187,7 @@ function compiledBinary(): boolean {
 export function resolveSelfCommand(
   command: string,
   args: string[],
-  compiled: boolean = compiledBinary(),
+  compiled: boolean = isCompiled(),
 ): { command: string; args: string[] } {
   if (command !== "tappy") return { command, args };
   if (compiled) return { command: process.execPath, args };

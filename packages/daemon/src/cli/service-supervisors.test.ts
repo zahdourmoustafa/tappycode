@@ -26,7 +26,7 @@ import {
   taskXmlBytes,
 } from "./service-schtasks.js";
 import { supervisorPath, supervisorInstalled } from "./service.js";
-import type { CommandResult } from "./service-shared.js";
+import { isCompiledModuleUrl, type CommandResult } from "./service-shared.js";
 
 /** Records every command a backend would have run, and answers as told. */
 function recorder(answers: Record<string, CommandResult> = {}) {
@@ -308,4 +308,16 @@ test("the task file is real UTF-16LE, matching its encoding declaration", () => 
   const text = bytes.subarray(2).toString("utf16le");
   expect(text.startsWith('<?xml version="1.0" encoding="UTF-16"?>')).toBe(true);
   expect(text).toContain("<Task version=");
+});
+
+test("a compiled binary is recognised on every platform, a checkout never", () => {
+  // macOS / Linux virtual filesystem root.
+  expect(isCompiledModuleUrl("file:///$bunfs/root/tappy")).toBe(true);
+  // Windows: B:\~BUN\root. Missing this made every Windows install behave as a
+  // source checkout — GG Coder App never started, so its chats never showed.
+  expect(isCompiledModuleUrl("file:///B:/~BUN/root/tappy.exe")).toBe(true);
+  expect(isCompiledModuleUrl("file:///b:/~bun/root/cli/index.js")).toBe(true);
+  // A source checkout, on either platform.
+  expect(isCompiledModuleUrl("file:///Users/me/tappy/packages/daemon/src/cli/service-shared.ts")).toBe(false);
+  expect(isCompiledModuleUrl("file:///C:/Users/me/tappy/packages/daemon/src/cli/service-shared.ts")).toBe(false);
 });

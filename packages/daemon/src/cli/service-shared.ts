@@ -56,12 +56,20 @@ export type RunCommand = (command: string, args: string[]) => Promise<CommandRes
 /**
  * Is this a compiled binary rather than a source checkout?
  *
- * Bun serves a compiled binary's own modules out of a virtual filesystem rooted
- * at `/$bunfs/`, so `import.meta.url` says so directly. Everything downstream of
- * this question was wrong before it was asked.
+ * Bun serves a compiled binary's own modules out of a virtual filesystem, so
+ * `import.meta.url` says so directly — but the root differs by platform:
+ * `/$bunfs/root/` on macOS and Linux, `B:/~BUN/root/` on Windows. Matching only
+ * the first made every Windows install think it was a source checkout: the GG
+ * Coder App bridge was launched as `tappy.exe <missing .ts file>`, so the phone
+ * showed it with no chats and no projects, and self-update refused to run.
  */
-export function isCompiled(): boolean {
-  return import.meta.url.includes("/$bunfs/");
+export function isCompiled(url: string = import.meta.url): boolean {
+  return isCompiledModuleUrl(url);
+}
+
+/** The test behind `isCompiled`, on any module URL. */
+export function isCompiledModuleUrl(url: string): boolean {
+  return url.includes("/$bunfs/") || /\/~BUN\//i.test(url);
 }
 
 /**

@@ -16,6 +16,9 @@ import { verifyPairing } from "../../../app/src/verifyPairing.js";
 import { loadPairing, pairingUrl } from "../pairing.js";
 
 const deviceId = process.env.PROBE_DEVICE ?? "phone-ci-probe";
+/** Also ask for this provider's chats, as the phone's drawer does. */
+const askProvider = process.env.PROBE_PROVIDER;
+let providerOk = !askProvider;
 const pairing = await loadPairing();
 if (!pairing.relay) throw new Error("this daemon has no relay; nothing to probe");
 const link = pairingUrl({ token: pairing.token, key: pairing.key, port: 0, relay: pairing.relay });
@@ -64,8 +67,27 @@ const trace = await new Promise<string[]>((resolve) => {
       const opened = channel.open(frame) as { t?: string } | undefined;
       lines.push(`${at()} sealed frame: ${opened ? opened.t : "UNREADABLE (wrong key)"}`);
       if (opened?.t === "device.joined") {
-        clearTimeout(timer);
-        done();
+        if (!askProvider) {
+          clearTimeout(timer);
+          done();
+          return;
+        }
+        socket.send(JSON.stringify(channel.seal({ t: "provider.capabilities", providerId: askProvider })));
+        lines.push(`${at()} asked ${askProvider} for its chats`);
+        return;
+      }
+      if (opened?.t === "provider.capabilities") {
+        const caps = opened as unknown as { providerId?: string; sessions?: { title?: string | null }[]; projects?: unknown[] };
+        if (caps.providerId === askProvider) {
+          const count = caps.sessions?.length ?? 0;
+          lines.push(
+            `${at()} ${askProvider}: ${count} chats, ${caps.projects?.length ?? 0} projects` +
+              (count ? ` (first: ${JSON.stringify(caps.sessions?.[0]?.title ?? null)})` : ""),
+          );
+          providerOk = count > 0;
+          clearTimeout(timer);
+          done();
+        }
       }
       return;
     }
@@ -83,4 +105,5 @@ for (const line of trace) console.log(line);
 const t0 = Date.now();
 const result = await verifyPairing(parsed.pairing);
 console.log(`verifyPairing: ${JSON.stringify(result)} in ${Date.now() - t0}ms`);
-process.exit(result.ok ? 0 : 1);
+if (askProvider && !providerOk) console.log(`FAIL: ${askProvider} returned no chats`);
+process.exit(result.ok && providerOk ? 0 : 1);

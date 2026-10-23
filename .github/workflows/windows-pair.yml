@@ -14,6 +14,7 @@ on:
       - .github/workflows/windows-pair.yml
       - packages/daemon/src/testing/phone-pair-probe.ts
       - install.ps1
+      - packages/daemon/src/**
 
 permissions:
   contents: read
@@ -95,3 +96,60 @@ jobs:
           "--- daemon.error.log"; Get-Content "$env:USERPROFILE\.tappy\logs\daemon.error.log" -Tail 40 -ErrorAction SilentlyContinue
           "--- daemon.log"; Get-Content "$env:USERPROFILE\.tappy\logs\daemon.log" -Tail 20 -ErrorAction SilentlyContinue | Select-String -NotMatch "[█▀▄]"
           if (-not $ok -or $probe -ne 0) { exit 1 }
+
+  # The GG Coder App provider, through a tappy.exe compiled from this commit —
+  # the path every Windows user is on, and the one no source-checkout test can
+  # reach: the provider launches tappy itself, which only works if the binary
+  # recognises that it is compiled.
+  gg-app:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+
+      - name: Compile tappy.exe from this commit, as the release does
+        shell: pwsh
+        run: |
+          bun build --compile --minify --target=bun-windows-x64 packages/daemon/src/cli/index.ts --outfile tappy.exe
+          New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\tappy" | Out-Null
+          Copy-Item tappy.exe "$env:LOCALAPPDATA\tappy\tappy.exe"
+          & "$env:LOCALAPPDATA\tappy\tappy.exe" --version
+
+      - name: A machine that has used GG Coder app (one saved chat)
+        shell: pwsh
+        run: |
+          $proj = "$env:USERPROFILE\myproject"
+          New-Item -ItemType Directory -Force $proj | Out-Null
+          $dir = "$env:USERPROFILE\.gg\sessions\C--Users-runneradmin-myproject"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          # The app writes this folder while running; it is how tappy knows the app is installed.
+          New-Item -ItemType Directory -Force "$env:USERPROFILE\.gg\app-connections" | Out-Null
+          $cwd = $proj -replace '\\','\\'
+          $lines = @(
+            '{"type":"session","version":2,"id":"conv-1","conversationId":"conv-1","cwd":"' + $cwd + '"}',
+            '{"type":"message","id":"m1","message":{"role":"user","content":"Build the login page"}}',
+            '{"type":"message","id":"m2","message":{"role":"assistant","content":[{"type":"text","text":"Done"}]}}'
+          )
+          [IO.File]::WriteAllLines("$dir\2026-10-22T10-00-00-000Z_abcd1234.jsonl", $lines)
+          Get-ChildItem -Recurse "$env:USERPROFILE\.gg\sessions" | Select-Object FullName, Length
+
+      - name: Serve, pair like a phone, ask GG Coder App for its chats
+        shell: pwsh
+        run: |
+          $log = "$env:RUNNER_TEMP\serve.log"; $err = "$env:RUNNER_TEMP\serve.err.log"
+          $p = Start-Process -FilePath "$env:LOCALAPPDATA\tappy\tappy.exe" -ArgumentList "serve" `
+            -RedirectStandardOutput $log -RedirectStandardError $err -WindowStyle Hidden -PassThru
+          for ($i = 0; $i -lt 60; $i++) {
+            Start-Sleep -Milliseconds 500
+            if ((Test-Path $log) -and (Select-String -Path $log -Pattern "\[relay\] online" -Quiet)) { break }
+          }
+          $env:PROBE_PROVIDER = "ggcoder-app"
+          bun run packages/daemon/src/testing/phone-pair-probe.ts
+          $probe = $LASTEXITCODE
+          "--- serve.log"; Get-Content $log | Select-String -NotMatch "[█▀▄]"
+          "--- serve.err.log"; Get-Content $err
+          if ($probe -ne 0) { exit 1 }
