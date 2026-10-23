@@ -19,6 +19,25 @@ const deviceId = process.env.PROBE_DEVICE ?? "phone-ci-probe";
 /** Also ask for this provider's chats, as the phone's drawer does. */
 const askProvider = process.env.PROBE_PROVIDER;
 let providerOk = !askProvider;
+/**
+ * Also check what the composer gets: the model/thinking pickers and the `/`
+ * list, before a chat (the capability reply) and inside one (a started chat).
+ * Set to the project folder to start the chat in.
+ */
+const controlsCwd = process.env.PROBE_CONTROLS_CWD;
+let controlsOk = !controlsCwd;
+let startedId: string | undefined;
+const sessionCommands = new Set<string>();
+const describeConfig = (raw: unknown) => {
+  const list = Array.isArray(raw)
+    ? (raw as { id?: string; currentValue?: unknown; options?: unknown[] }[])
+    : [];
+  return list.length
+    ? list
+        .map((o) => `${o.id}=${String(o.currentValue)} (${o.options?.length ?? 0} choices)`)
+        .join(", ")
+    : "NONE";
+};
 const pairing = await loadPairing();
 if (!pairing.relay) throw new Error("this daemon has no relay; nothing to probe");
 const link = pairingUrl({ token: pairing.token, key: pairing.key, port: 0, relay: pairing.relay });
@@ -74,17 +93,25 @@ const trace = await new Promise<string[]>((resolve) => {
           done();
           return;
         }
-        socket.send(JSON.stringify(channel.seal({ t: "provider.capabilities", providerId: askProvider })));
+        socket.send(
+          JSON.stringify(channel.seal({ t: "provider.capabilities", providerId: askProvider })),
+        );
         lines.push(`${at()} asked ${askProvider} for its chats`);
         return;
       }
       if (opened?.t === "providers" && askProvider) {
         const list = (opened as unknown as { providers?: { id?: string }[] }).providers ?? [];
         const entry = list.find((p) => p.id === askProvider);
-        lines.push(`${at()} announced ${askProvider}: ${entry ? JSON.stringify(entry).slice(0, 400) : "NOT ANNOUNCED"}`);
+        lines.push(
+          `${at()} announced ${askProvider}: ${entry ? JSON.stringify(entry).slice(0, 400) : "NOT ANNOUNCED"}`,
+        );
       }
       if (opened?.t === "provider.capabilities") {
-        const caps = opened as unknown as { providerId?: string; sessions?: { title?: string | null }[]; projects?: unknown[] };
+        const caps = opened as unknown as {
+          providerId?: string;
+          sessions?: { title?: string | null }[];
+          projects?: unknown[];
+        };
         if (caps.providerId === askProvider) {
           const count = caps.sessions?.length ?? 0;
           lines.push(
@@ -92,13 +119,67 @@ const trace = await new Promise<string[]>((resolve) => {
               (count ? ` (first: ${JSON.stringify(caps.sessions?.[0]?.title ?? null)})` : ""),
           );
           providerOk = count > 0;
+          const raw = opened as unknown as { configOptions?: unknown; commands?: unknown[] };
+          lines.push(
+            `${at()} ${askProvider} pickers before a chat: ${describeConfig(raw.configOptions)}`,
+          );
+          lines.push(`${at()} ${askProvider} commands before a chat: ${raw.commands?.length ?? 0}`);
+          if (controlsCwd) {
+            socket.send(
+              JSON.stringify(
+                channel.seal({
+                  t: "session.start",
+                  requestId: "probe-1",
+                  providerId: askProvider,
+                  cwd: controlsCwd,
+                }),
+              ),
+            );
+            lines.push(`${at()} started a chat in ${controlsCwd}`);
+            return;
+          }
           clearTimeout(timer);
           done();
         }
       }
+      if (controlsCwd && opened?.t === "session.started") {
+        const st = opened as unknown as {
+          sessionId?: string;
+          requestId?: string;
+          configOptions?: unknown;
+        };
+        if (st.requestId === "probe-1") {
+          startedId = st.sessionId;
+          lines.push(`${at()} chat started; its pickers: ${describeConfig(st.configOptions)}`);
+          controlsOk = describeConfig(st.configOptions) !== "NONE";
+          // Commands arrive as a session event a moment later.
+          setTimeout(() => {
+            lines.push(
+              `${at()} chat commands: ${sessionCommands.size} (${[...sessionCommands].slice(0, 8).join(", ")})`,
+            );
+            if (sessionCommands.size === 0) controlsOk = false;
+            clearTimeout(timer);
+            done();
+          }, 6000);
+        }
+      }
+      if (controlsCwd && opened?.t === "session.event") {
+        const ev = opened as unknown as {
+          sessionId?: string;
+          payload?: {
+            update?: { sessionUpdate?: string; availableCommands?: { name?: string }[] };
+          };
+        };
+        const update = ev.payload?.update;
+        if (ev.sessionId === startedId && update?.sessionUpdate === "available_commands_update") {
+          for (const c of update.availableCommands ?? []) if (c.name) sessionCommands.add(c.name);
+        }
+      }
       return;
     }
-    lines.push(`${at()} cleartext ${frame.t}${frame.code ? ` ${frame.code}: ${frame.message}` : ""}`);
+    lines.push(
+      `${at()} cleartext ${frame.t}${frame.code ? ` ${frame.code}: ${frame.message}` : ""}`,
+    );
   };
   socket.onerror = () => lines.push(`${at()} socket error`);
   socket.onclose = (event) => {
@@ -113,4 +194,5 @@ const t0 = Date.now();
 const result = await verifyPairing(parsed.pairing);
 console.log(`verifyPairing: ${JSON.stringify(result)} in ${Date.now() - t0}ms`);
 if (askProvider && !providerOk) console.log(`FAIL: ${askProvider} returned no chats`);
-process.exit(result.ok && providerOk ? 0 : 1);
+if (!controlsOk) console.log(`FAIL: ${askProvider} chat had no pickers or no commands`);
+process.exit(result.ok && providerOk && controlsOk ? 0 : 1);
